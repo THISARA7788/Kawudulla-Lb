@@ -424,39 +424,4 @@ router.get('/users/:id/history', protect, authorize('librarian'), async (req, re
   }
 });
 
-// ===========================
-// TEACHER ONLY ROUTES
-// ===========================
-
-// GET /api/library/users - Only teacher and librarian can view all users
-router.get('/users', protect, authorize('teacher', 'librarian'), async (req, res) => {
-  try {
-    const users = await User.find().select('-password -resetToken -resetTokenExpiry');
-    res.json({ users, count: users.length });
-  } catch (error) {
-    console.error('Get users error:', error.message);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// ===========================
-// LIBRARIAN ONLY ROUTES
-// ===========================
-
-// DELETE /api/library/users/:id - Only librarian can delete a user
-router.delete('/users/:id', protect, authorize('librarian'), async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user._id.toString() === req.user._id.toString()) {
-      return res.status(400).json({ message: 'You cannot delete yourself' });
-    }
-    await user.deleteOne();
-    res.json({ message: 'User removed', userId: req.params.id });
-  } catch (error) {
-    console.error('Delete user error:', error.message);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 module.exports = router;

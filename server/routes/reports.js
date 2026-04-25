@@ -33,7 +33,8 @@ router.get('/dashboard', async (req, res) => {
       unpaidFines: finesUnpaid[0]?.total || 0,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Reports operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -61,7 +62,8 @@ router.get('/circulation', async (req, res) => {
 
     res.json({ transactions, summary: { issued, returned, overdue, active } });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Reports operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -101,7 +103,8 @@ router.get('/members', async (req, res) => {
 
     res.json({ members: enriched, total: enriched.length });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Reports operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -142,7 +145,8 @@ router.get('/popular-books', async (req, res) => {
 
     res.json({ popular, leastPopular, categories });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Reports operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -178,7 +182,8 @@ router.get('/fines', async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Reports operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

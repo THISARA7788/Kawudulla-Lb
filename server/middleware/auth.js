@@ -95,16 +95,4 @@ const authorize = (...allowedRoles) => {
   };
 };
 
-/**
- * Check if user account is active (approved)
- */
-const checkActive = (req, res, next) => {
-  if (req.user && req.user.status === 'active') {
-    return next();
-  }
-  return res.status(403).json({
-    message: 'Your account is pending approval or has been rejected. Please contact the librarian.',
-  });
-};
-
 module.exports = { protect, authorize, checkRole };

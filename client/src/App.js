@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 
@@ -18,10 +18,6 @@ import MembersPage from './pages/MembersPage';
 import FineManagement from './pages/FineManagement';
 import ReportsPage from './pages/ReportsPage';
 import QrScannerPage from './pages/QrScannerPage';
-
-function LibrarianLayout() {
-  return <Outlet />;
-}
 
 function App() {
   return (

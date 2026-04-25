@@ -5,7 +5,7 @@ import Sidebar from '../components/dashboard/Sidebar';
 import TopBar from '../components/dashboard/TopBar';
 
 export default function ReturnBook() {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const [step, setStep] = useState(1);
 
   const [memberSearch, setMemberSearch] = useState('');

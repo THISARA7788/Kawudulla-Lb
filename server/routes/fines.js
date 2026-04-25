@@ -19,7 +19,8 @@ router.get('/config', async (req, res) => {
     }
     res.json({ config });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Get fines config error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -36,7 +37,8 @@ router.put('/config', async (req, res) => {
     }
     res.json({ config });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Fines operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -55,7 +57,8 @@ router.get('/stats', async (req, res) => {
       waivedCount: waived[0]?.count || 0,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Fines operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -97,7 +100,8 @@ router.get('/pending', async (req, res) => {
 
     res.json({ pendingFines, config });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Fines operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -128,7 +132,8 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({ fine: populated });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Fines operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -167,7 +172,8 @@ router.get('/', async (req, res) => {
       totalPages: Math.ceil(total / limit),
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Fines operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -182,7 +188,8 @@ router.put('/:id/pay', async (req, res) => {
     await fine.save();
     res.json({ fine });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Fines operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -196,7 +203,8 @@ router.put('/:id/waive', async (req, res) => {
     await fine.save();
     res.json({ fine });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Fines operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -208,7 +216,8 @@ router.delete('/:id', async (req, res) => {
     await fine.deleteOne();
     res.json({ message: 'Fine deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Fines operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
