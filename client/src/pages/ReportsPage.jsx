@@ -118,17 +118,31 @@ export default function ReportsPage() {
 
       const transactions = reportData.transactions || [];
       if (reportType === 'circulation') {
-        columns = ['Transaction ID', 'Member ID', 'Member', 'Book ID', 'Book', 'Issue Date', 'Due Date', 'Status'];
-        rows = transactions.map((t) => [
-          t.transactionId || '',
-          t.user?.memberId || '',
-          t.user?.name || '',
-          t.book?.bookId || '',
-          t.book?.title || '',
-          new Date(t.issueDate).toLocaleDateString(),
-          new Date(t.dueDate).toLocaleDateString(),
-          t.status,
-        ]);
+        columns = ['TRX ID', 'Member ID', 'Member', 'Book ID', 'Book', 'Issue Date', 'Due Date', 'Status'];
+        rows = transactions.map((t) => {
+          const isOverdue = t.status === 'overdue' || (!t.returnDate && new Date(t.dueDate) < new Date());
+          const wasReturnedOverdue = t.returnDate && t.overdueDays > 0;
+          const daysOverdue = isOverdue
+            ? Math.floor((Date.now() - new Date(t.dueDate)) / 86400000)
+            : (wasReturnedOverdue ? t.overdueDays : 0);
+
+          let statusText = t.status;
+          if (isOverdue) statusText = `Overdue (${daysOverdue}d)`;
+          else if (wasReturnedOverdue) statusText = `Returned (Overdue ${daysOverdue}d)`;
+          else if (t.status === 'returned') statusText = 'Returned';
+          else statusText = 'Active';
+
+          return [
+            t.transactionId || '—',
+            t.user?.memberId || '—',
+            t.user?.name || '—',
+            t.book?.bookId || '—',
+            t.book?.title || '—',
+            new Date(t.issueDate).toLocaleDateString(),
+            new Date(t.dueDate).toLocaleDateString(),
+            statusText,
+          ];
+        });
       }
 
       const members = reportData.members || [];
@@ -230,17 +244,39 @@ export default function ReportsPage() {
                   </thead>
                   <tbody>
                     {txns.map((t) => {
-                      const sBadge = { active: { bg: '#dbeafe', c: '#1e40af' }, returned: { bg: '#dcfce7', c: '#166534' }, overdue: { bg: '#fee2e2', c: '#b31b25' } }[t.status] || { bg: '#f0f0f0', c: '#666' };
+                      const isOverdue = t.status === 'overdue' || (!t.returnDate && new Date(t.dueDate) < new Date());
+                      const wasReturnedOverdue = t.returnDate && t.overdueDays > 0;
+                      const daysOverdue = isOverdue
+                        ? Math.floor((Date.now() - new Date(t.dueDate)) / 86400000)
+                        : (wasReturnedOverdue ? t.overdueDays : 0);
+
+                      let badge;
+                      if (isOverdue) {
+                        badge = { bg: '#fee2e2', c: '#b31b25', text: `Overdue (${daysOverdue}d)` };
+                      } else if (wasReturnedOverdue) {
+                        badge = { bg: '#fee2e2', c: '#b31b25', text: `Returned (Overdue ${daysOverdue}d)` };
+                      } else if (t.status === 'returned') {
+                        badge = { bg: '#dcfce7', c: '#166534', text: 'Returned' };
+                      } else {
+                        badge = { bg: '#dbeafe', c: '#1e40af', text: 'Active' };
+                      }
+
                       return (
                         <tr key={t._id} style={{ borderBottom: '1px solid #f8f8f8' }}>
                           <td className="py-2 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>{t.transactionId || '—'}</td>
                           <td className="py-2 px-4 text-xs font-mono font-bold" style={{ color: '#4062BB' }}>{t.user?.memberId || '—'}</td>
-                          <td className="py-2 px-4 text-xs" style={{ color: '#2C2C3E' }}>{t.user?.name || ''}</td>
+                          <td className="py-2 px-4 text-xs font-semibold" style={{ color: '#2C2C3E' }}>{t.user?.name || '—'}</td>
                           <td className="py-2 px-4 text-xs font-mono font-bold" style={{ color: '#166534' }}>{t.book?.bookId || '—'}</td>
-                          <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{t.book?.title || ''}</td>
+                          <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{t.book?.title || '—'}</td>
                           <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(t.issueDate).toLocaleDateString()}</td>
-                          <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(t.dueDate).toLocaleDateString()}</td>
-                          <td className="py-2 px-4"><span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: sBadge.bg, color: sBadge.c }}>{t.status}</span></td>
+                          <td className="py-2 px-4 text-xs font-semibold" style={{ color: (isOverdue || wasReturnedOverdue) ? '#b31b25' : '#595c5e' }}>
+                            {new Date(t.dueDate).toLocaleDateString()}
+                          </td>
+                          <td className="py-2 px-4">
+                            <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: badge.bg, color: badge.c }}>
+                              {badge.text}
+                            </span>
+                          </td>
                         </tr>
                       );
                     })}

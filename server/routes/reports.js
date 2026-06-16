@@ -43,24 +43,47 @@ router.get('/circulation', async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     const query = {};
+    const now = new Date();
+
     if (startDate || endDate) {
-      query.$or = [];
-      if (startDate) query.$or.push({ issueDate: { $gte: new Date(startDate) } });
-      if (endDate) query.$or.push({ issueDate: { $lte: new Date(endDate + 'T23:59:59') } });
+      query.issueDate = {};
+      if (startDate) query.issueDate.$gte = new Date(startDate);
+      if (endDate) query.issueDate.$lte = new Date(endDate + 'T23:59:59');
     }
 
     const transactions = await Transaction.find(query)
       .populate('user', 'memberId name email role')
       .populate('book', 'bookId title author')
       .populate('issuedBy', 'name')
-      .sort({ issueDate: -1 });
+      .sort({ updatedAt: -1 }); // Sort by most recent activity (issue or return)
 
-    const issued = transactions.length;
-    const returned = transactions.filter((t) => t.status === 'returned').length;
-    const overdue = transactions.filter((t) => t.status === 'overdue' || (t.status === 'active' && new Date(t.dueDate) < new Date())).length;
-    const active = transactions.filter((t) => t.status === 'active').length;
+    // Format transactions and calculate accurate, non-overlapping summary
+    let issued = 0;
+    let returned = 0;
+    let overdue = 0;
+    let active = 0;
 
-    res.json({ transactions, summary: { issued, returned, overdue, active } });
+    const formattedTransactions = transactions.map(t => {
+      const doc = t.toObject();
+      const isReturned = doc.status === 'returned';
+      const isOverdue = !isReturned && (doc.status === 'overdue' || new Date(doc.dueDate) < now);
+      const isActive = !isReturned && !isOverdue;
+
+      if (isReturned) returned++;
+      else if (isOverdue) overdue++;
+      else if (isActive) active++;
+
+      issued++; // All transactions in this query are "issued"
+
+      // Ensure status is explicitly tagged for the frontend
+      if (isOverdue && doc.status !== 'returned') {
+        doc.status = 'overdue';
+      }
+
+      return doc;
+    });
+
+    res.json({ transactions: formattedTransactions, summary: { issued, returned, overdue, active } });
   } catch (err) {
     console.error('Reports operation error:', err.message);
     res.status(500).json({ message: 'Server error' });

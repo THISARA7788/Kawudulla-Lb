@@ -4,6 +4,8 @@ const { protect, authorize } = require('../middleware/auth');
 const Book = require('../models/Book');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
+const Fine = require('../models/Fine');
+const FineConfig = require('../models/FineConfig');
 
 const BORROW_LIMIT = { student: 5, teacher: 10, librarian: 1 };
 
@@ -252,7 +254,7 @@ router.post('/issue', protect, authorize('librarian'), async (req, res) => {
 // POST /api/library/return - Librarian receives a returned book
 router.post('/return', protect, authorize('librarian'), async (req, res) => {
   try {
-    const { userId, bookId, returnDate } = req.body;
+    const { userId, bookId, returnDate, overdueFine } = req.body;
 
     if (!userId || !bookId) {
       return res.status(400).json({ message: 'userId and bookId are required' });
@@ -273,12 +275,47 @@ router.post('/return', protect, authorize('librarian'), async (req, res) => {
     // Increment available copies
     const book = await Book.findByIdAndUpdate(bookId, { $inc: { availableCopies: 1 } }, { new: true });
 
-    // Find and update transaction
+    // Find and update transaction (match 'active' or 'overdue' in case it was flagged)
     const transaction = await Transaction.findOneAndUpdate(
-      { user: userId, book: bookId, status: 'active' },
+      { user: userId, book: bookId, status: { $in: ['active', 'overdue'] } },
       { returnDate: normalizedReturnDate, status: 'returned' },
       { new: true }
     );
+
+    if (!transaction) {
+      return res.status(404).json({ message: 'Transaction record not found for this borrowing' });
+    }
+
+    // Calculate overdue days and auto-generate fine if applicable
+    const dueDate = new Date(borrowEntry.dueDate);
+    const daysOverdue = Math.max(0, Math.floor((normalizedReturnDate - dueDate) / (1000 * 60 * 60 * 24)));
+
+    if (daysOverdue > 0) {
+      transaction.overdueDays = daysOverdue;
+      await transaction.save();
+
+      // Fetch fine configuration
+      const config = await FineConfig.findOne() || { fineRatePerDay: 10, gracePeriodDays: 0 };
+
+      // Calculate effective overdue days (subtracting grace period)
+      const graceEnd = new Date(dueDate.getTime() + config.gracePeriodDays * 86400000);
+      const effectiveOverdueDays = Math.max(0, Math.floor((normalizedReturnDate - graceEnd) / (1000 * 60 * 60 * 24)));
+
+      if (effectiveOverdueDays > 0) {
+        const existingFine = await Fine.findOne({ transaction: transaction._id });
+        if (!existingFine) {
+          await Fine.create({
+            transaction: transaction._id,
+            user: userId,
+            book: bookId,
+            amount: effectiveOverdueDays * config.fineRatePerDay,
+            daysOverdue: effectiveOverdueDays,
+            ratePerDay: config.fineRatePerDay,
+            status: 'unpaid',
+          });
+        }
+      }
+    }
 
     // Notify user and librarian about return
     const { createNotification } = require('../notificationsHelper');
@@ -319,25 +356,56 @@ router.get('/transactions', protect, async (req, res) => {
   try {
     const { userId, status, page = 1, limit = 20 } = req.query;
     let query = {};
+    const now = new Date();
 
     if (userId) query.user = userId;
-    if (status && status !== 'all') query.status = status;
+
+    // Dynamic status filtering to correctly identify overdue books
+    if (status && status !== 'all') {
+      if (status === 'overdue') {
+        query.returnDate = null;
+        query.$or = [
+          { status: 'overdue' },
+          { status: 'active', dueDate: { $lt: now } }
+        ];
+      } else if (status === 'active') {
+        // Only truly active (currently borrowed and NOT yet overdue)
+        query.status = 'active';
+        query.dueDate = { $gte: now };
+        query.returnDate = null;
+      } else {
+        query.status = status;
+      }
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const transactions = await Transaction.find(query)
-      .sort({ createdAt: -1 })
+      .sort({ updatedAt: -1 }) // Sort by last update (issue time or return time) to show most recent activity first
       .skip(skip)
       .limit(parseInt(limit))
       .populate('user', 'name email role memberId grade')
       .populate('book', 'title author isbn bookId category')
       .populate('issuedBy', 'name');
 
+    // Dynamically tag overdue transactions for the UI
+    const formattedTransactions = transactions.map(t => {
+      const doc = t.toObject();
+      // If it's not returned and past due date, flag it as overdue for the UI
+      if (!doc.returnDate && new Date(doc.dueDate) < now && doc.status !== 'returned') {
+        doc.status = 'overdue';
+      }
+      return doc;
+    });
+
     const total = await Transaction.countDocuments(query);
 
+    console.log('[DEBUG] Transactions query:', JSON.stringify(query));
+    console.log('[DEBUG] Found transactions:', formattedTransactions.length, 'Total in DB:', total);
+
     res.json({
-      transactions,
-      count: transactions.length,
+      transactions: formattedTransactions,
+      count: formattedTransactions.length,
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / parseInt(limit)),

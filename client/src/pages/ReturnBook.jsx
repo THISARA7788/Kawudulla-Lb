@@ -313,34 +313,7 @@ export default function ReturnBook() {
                     />
                   </div>
 
-                  {/* Suggestions (when idle) */}
-                  {showMemberSuggestions && !selectedMember && memberSearch.length === 0 && (
-                    <div className="mt-2">
-                      {recentMembers.length > 0 && (
-                        <>
-                          <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: '#9CA3AF' }}>Recent Returns</p>
-                          <div className="rounded-xl overflow-y-auto mb-2" style={{ maxHeight: '100px', backgroundColor: '#FAFBFC', border: '1px solid #F3F4F6' }}>
-                            {recentMembers.map(u => (
-                              <button
-                                key={u._id}
-                                onClick={() => handleSelectMember(u)}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-green-50 transition-colors border-b"
-                                style={{ borderColor: '#F3F4F6' }}
-                              >
-                                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#D1FAE5' }}>
-                                  <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#10B981' }}>history</span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-semibold" style={{ color: '#1a1245' }}>{u.name}</div>
-                                  <div className="text-[10px]" style={{ color: '#9CA3AF' }}>{u.memberId || '—'}</div>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
+                  {/* Suggestions (when idle) - Removed Recent Returns as requested */}
 
                   {/* Results (when searching) */}
                   {memberSearch.length >= 1 && (
@@ -597,15 +570,22 @@ export default function ReturnBook() {
                         <div className="text-xs font-semibold truncate" style={{ color: '#1a1245' }}>
                           {tx.book?.title || 'Unknown'}
                         </div>
-                        <div className="text-[11px]" style={{ color: '#9CA3AF' }}>
-                          {tx.user?.name || 'Unknown'}
-                        </div>
-                        <div className="flex items-center justify-between mt-0.5">
-                          <span className="text-[10px]" style={{ color: '#9CA3AF' }}>
-                            Returned: {tx.returnDate ? new Date(tx.returnDate).toLocaleDateString() : '—'}
-                          </span>
-                          <span className="text-[9px] font-bold px-1 py-0.5 rounded-full text-green-700 bg-green-100">Returned</span>
-                        </div>
+                         <div className="text-[11px]" style={{ color: '#9CA3AF' }}>
+                           {tx.user?.name || 'Unknown'}
+                         </div>
+                         <div className="flex items-center justify-between mt-0.5">
+                           <span className="text-[10px]" style={{ color: '#9CA3AF' }}>
+                             Returned: {tx.returnDate ? new Date(tx.returnDate).toLocaleDateString() : '—'}
+                           </span>
+                           <div className="flex items-center gap-1">
+                             <span className="text-[9px] font-bold px-1 py-0.5 rounded-full text-green-700 bg-green-100">Returned</span>
+                             {tx.overdueDays > 0 && (
+                               <span className="text-[9px] font-bold px-1 py-0.5 rounded-full text-red-600 bg-red-100">
+                                 Overdue {tx.overdueDays}d
+                               </span>
+                             )}
+                           </div>
+                         </div>
                       </div>
                     ))}
                   </div>

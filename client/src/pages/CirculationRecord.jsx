@@ -17,7 +17,7 @@ export default function CirculationRecord() {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const params = { page, status: statusFilter };
+      const params = { page, status: statusFilter, limit: 20 };
       const res = await api.get('/library/transactions', { params });
       setTransactions(res.data.transactions || []);
       setTotal(res.data.total || 0);
@@ -105,7 +105,23 @@ export default function CirculationRecord() {
                   </thead>
                   <tbody>
                     {filteredTransactions.map((t) => {
-                      const badge = statusBadge(t.status);
+                      const isCurrentlyOverdue = !t.returnDate && new Date(t.dueDate) < new Date();
+                      const wasReturnedOverdue = t.returnDate && t.overdueDays > 0;
+                      const daysOverdue = isCurrentlyOverdue
+                        ? Math.floor((Date.now() - new Date(t.dueDate)) / 86400000)
+                        : (wasReturnedOverdue ? t.overdueDays : 0);
+
+                      let badge;
+                      if (isCurrentlyOverdue) {
+                        badge = { bg: '#FEF2F2', color: '#b31b25', text: `Overdue (${daysOverdue}d)` };
+                      } else if (wasReturnedOverdue) {
+                        badge = { bg: '#FEF2F2', color: '#b31b25', text: `Returned (Overdue ${daysOverdue}d)` };
+                      } else {
+                        badge = statusBadge(t.status);
+                      }
+
+                      const showRedDueDate = isCurrentlyOverdue || wasReturnedOverdue;
+
                       return (
                         <tr key={t._id} className="hover:bg-slate-50 transition-colors" style={{ borderBottom: '1px solid #f8f8f8' }}>
                           <td className="py-3 px-4 text-[11px] font-mono" style={{ color: '#4F5B7D' }}>{t.transactionId || '—'}</td>
@@ -121,8 +137,12 @@ export default function CirculationRecord() {
                             <div className="text-[11px] font-mono" style={{ color: '#94a3b8' }}>{t.book?.bookId || ''}</div>
                           </td>
                           <td className="py-3 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(t.issueDate).toLocaleDateString()}</td>
-                          <td className="py-3 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(t.dueDate).toLocaleDateString()}</td>
-                          <td className="py-3 px-4 text-xs" style={{ color: t.returnDate ? '#166534' : '#94a3b8' }}>{t.returnDate ? new Date(t.returnDate).toLocaleDateString() : '—'}</td>
+                          <td className="py-3 px-4 text-xs font-semibold" style={{ color: showRedDueDate ? '#b31b25' : '#595c5e' }}>
+                            {new Date(t.dueDate).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 px-4 text-xs" style={{ color: t.returnDate ? '#166534' : '#94a3b8' }}>
+                            {t.returnDate ? new Date(t.returnDate).toLocaleDateString() : '—'}
+                          </td>
                           <td className="py-3 px-4">
                             <span className="text-[11px] font-bold px-2 py-1 rounded-full" style={{ backgroundColor: badge.bg, color: badge.color }}>
                               {badge.text}
