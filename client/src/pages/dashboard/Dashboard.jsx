@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import Sidebar from '../components/dashboard/Sidebar';
-import TopBar from '../components/dashboard/TopBar';
-import LibrarianDashboardMain from '../components/dashboard/LibrarianDashboardMain';
+import { useAuth } from '../../context/AuthContext';
+import Sidebar from '../../components/layout/Sidebar';
+import TopBar from '../../components/layout/TopBar';
+import LibrarianDashboardMain from '../../components/dashboard/LibrarianDashboardMain';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();

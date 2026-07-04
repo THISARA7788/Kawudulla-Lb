@@ -262,7 +262,7 @@ router.put('/approve/:id', protect, authorize('librarian'), async (req, res) => 
     await user.save();
 
     // Send notification
-    const { createNotification } = require('../notificationsHelper');
+    const { createNotification } = require('../utils/notificationsHelper');
     await createNotification({
       recipient: user._id,
       type: 'registration_approved',
@@ -303,7 +303,7 @@ router.put('/reject/:id', protect, authorize('librarian'), async (req, res) => {
     await user.save();
 
     // Send notification
-    const { createNotification } = require('../notificationsHelper');
+    const { createNotification } = require('../utils/notificationsHelper');
     await createNotification({
       recipient: user._id,
       type: 'registration_rejected',

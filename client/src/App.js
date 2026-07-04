@@ -3,21 +3,21 @@ import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 
 /** Page imports */
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import BookManagement from './pages/BookManagement';
-import IssueBook from './pages/IssueBook';
-import ReturnBook from './pages/ReturnBook';
-import CirculationRecord from './pages/CirculationRecord';
-import PendingRegistration from './pages/PendingRegistration';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import ProfileSettings from './pages/ProfileSettings';
-import MembersPage from './pages/MembersPage';
-import FineManagement from './pages/FineManagement';
-import ReportsPage from './pages/ReportsPage';
-import QrScannerPage from './pages/QrScannerPage';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import Dashboard from './pages/dashboard/Dashboard';
+import BookManagement from './pages/books/BookManagement';
+import IssueBook from './pages/books/IssueBook';
+import ReturnBook from './pages/books/ReturnBook';
+import CirculationRecord from './pages/books/CirculationRecord';
+import PendingRegistration from './pages/auth/PendingRegistration';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
+import ProfileSettings from './pages/profile/ProfileSettings';
+import MembersPage from './pages/members/MembersPage';
+import FineManagement from './pages/books/FineManagement';
+import ReportsPage from './pages/books/ReportsPage';
+import QrScannerPage from './pages/books/QrScannerPage';
 
 function App() {
   return (

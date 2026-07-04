@@ -140,7 +140,7 @@ router.post('/borrow/:bookId', protect, async (req, res) => {
     await user.save();
 
     // Notify user
-    const { createNotification } = require('../notificationsHelper');
+    const { createNotification } = require('../utils/notificationsHelper');
     await createNotification({
       recipient: req.user._id,
       type: 'book_borrowed',
@@ -218,7 +218,7 @@ router.post('/issue', protect, authorize('librarian'), async (req, res) => {
     });
 
     // Notify user and librarian
-    const { createNotification } = require('../notificationsHelper');
+    const { createNotification } = require('../utils/notificationsHelper');
     await Promise.all([
       createNotification({
         recipient: userId,
@@ -318,7 +318,7 @@ router.post('/return', protect, authorize('librarian'), async (req, res) => {
     }
 
     // Notify user and librarian about return
-    const { createNotification } = require('../notificationsHelper');
+    const { createNotification } = require('../utils/notificationsHelper');
     await Promise.all([
       createNotification({
         recipient: userId,

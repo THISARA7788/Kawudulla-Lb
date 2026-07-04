@@ -1,5 +1,19 @@
 {
+  "name": "kawudulla-library-management",
+  "version": "1.0.0",
+  "description": "Kawudulla Library Management System",
+  "scripts": {
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "start": "concurrently \"npm run start --prefix server\" \"npm run start --prefix client\"",
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run start --prefix client\"",
+    "electron": "npm run dev:electron --prefix client",
+    "build:client": "npm run build --prefix client",
+    "seed:db": "npm run seed:mock --prefix server"
+  },
   "dependencies": {
     "mongodb": "^7.2.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }
