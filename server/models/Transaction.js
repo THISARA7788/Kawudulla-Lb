@@ -1,3 +1,10 @@
+// =========================================================================
+// WHAT DOES THIS FILE DO?
+// This file defines the Mongoose Database Schema for Transactions.
+// It logs book issues (checkout logs), due dates, actual return logs,
+// outstanding overdue day calculations, and statuses (active/returned/overdue).
+// =========================================================================
+
 const mongoose = require('mongoose');
 
 const transactionSchema = new mongoose.Schema(

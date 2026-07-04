@@ -1,6 +1,11 @@
-// ------------------------------------------
-// Helper: generate JWT
-// ------------------------------------------
+// =========================================================================
+// WHAT DOES THIS FILE DO?
+// This middleware handles backend security. It signs JWT tokens for logins,
+// decodes and validates tokens to secure protected API routes (protect),
+// checks user accounts statuses, and guards routes against unauthorized access
+// using role-based filters (e.g., student vs. teacher vs. librarian).
+// =========================================================================
+
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 

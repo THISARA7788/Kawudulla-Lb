@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
-import Sidebar from '../../components/layout/Sidebar';
-import TopBar from '../../components/layout/TopBar';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 import ActiveBorrowsList from '../../components/circulation/ActiveBorrowsList';
 import RecentTransactionsList from '../../components/circulation/RecentTransactionsList';
 
@@ -202,11 +201,7 @@ export default function ReturnBook() {
   }
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#F5F3FC' }}>
-      <Sidebar />
-      <div className="flex-1 flex flex-col ml-72" style={{ background: '#F5F3FC' }}>
-        <TopBar />
-        <main className="flex-1 pt-20 pb-4 px-4 overflow-y-auto">
+    <DashboardLayout>
 
           {/* Header */}
           <div className="mb-4">
@@ -522,8 +517,6 @@ export default function ReturnBook() {
               </div>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

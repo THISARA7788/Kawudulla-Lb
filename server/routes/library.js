@@ -1,3 +1,12 @@
+// =========================================================================
+// WHAT DOES THIS FILE DO?
+// This file houses all backend routes for the book catalog and circulation systems.
+// It exposes REST API endpoints to:
+// - Catalog books (Create, Read, Update, Delete).
+// - Issue books (checks borrow limits, adds active records, locks copy inventories).
+// - Return books (marks returned dates, triggers overdue checkouts calculations).
+// =========================================================================
+
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');

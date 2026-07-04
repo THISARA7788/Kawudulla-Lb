@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
-import Sidebar from '../../components/layout/Sidebar';
-import TopBar from '../../components/layout/TopBar';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 import MemberTable from '../../components/members/MemberTable';
 import MemberModals from '../../components/members/MemberModals';
 
@@ -191,11 +190,7 @@ export default function MembersPage() {
   };
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#F5F3FC' }}>
-      <Sidebar />
-      <div className="flex-1 flex flex-col ml-72" style={{ background: '#F5F3FC' }}>
-        <TopBar />
-        <main className="flex-1 pt-20 pb-4 overflow-y-auto px-10">
+    <DashboardLayout>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Members</h1>
@@ -259,31 +254,29 @@ export default function MembersPage() {
               ))}
             </div>
           )}
-        </main>
-      </div>
 
-      {/* Modals Container */}
-      <MemberModals
-        modal={modal}
-        selected={selected}
-        form={form}
-        setForm={setForm}
-        saving={saving}
-        error={error}
-        handleSave={handleSave}
-        setModal={setModal}
-        newRole={newRole}
-        setNewRole={setNewRole}
-        actionLoading={actionLoading}
-        handleRoleChange={handleRoleChange}
-        historyLoading={historyLoading}
-        historyData={historyData}
-        setHistoryData={setHistoryData}
-        ROLES={ROLES}
-        GRADES={GRADES}
-        CLASS_SECTIONS={CLASS_SECTIONS}
-        AL_STREAMS={AL_STREAMS}
-      />
-    </div>
+          {/* Modals Container */}
+          <MemberModals
+            modal={modal}
+            selected={selected}
+            form={form}
+            setForm={setForm}
+            saving={saving}
+            error={error}
+            handleSave={handleSave}
+            setModal={setModal}
+            newRole={newRole}
+            setNewRole={setNewRole}
+            actionLoading={actionLoading}
+            handleRoleChange={handleRoleChange}
+            historyLoading={historyLoading}
+            historyData={historyData}
+            setHistoryData={setHistoryData}
+            ROLES={ROLES}
+            GRADES={GRADES}
+            CLASS_SECTIONS={CLASS_SECTIONS}
+            AL_STREAMS={AL_STREAMS}
+          />
+    </DashboardLayout>
   );
 }

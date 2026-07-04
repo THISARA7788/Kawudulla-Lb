@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
-import Sidebar from '../../components/layout/Sidebar';
-import TopBar from '../../components/layout/TopBar';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 import ReportSummaryCards from '../../components/reports/ReportSummaryCards';
 import ReportDetailsTable from '../../components/reports/ReportDetailsTable';
 import jsPDF from 'jspdf';
@@ -222,11 +221,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#F5F3FC' }}>
-      <Sidebar />
-      <div className="flex-1 flex flex-col ml-72" style={{ background: '#F5F3FC' }}>
-        <TopBar />
-        <main className="flex-1 pt-20 pb-4 overflow-y-auto px-10">
+    <DashboardLayout>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Reports</h1>
@@ -280,8 +275,6 @@ export default function ReportsPage() {
           ) : (
             renderBody()
           )}
-        </main>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

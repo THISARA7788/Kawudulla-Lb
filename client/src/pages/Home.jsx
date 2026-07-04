@@ -1,66 +1,92 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import api from '../../api/axios';
+// =========================================================================
+// WHAT DOES THIS FILE DO?
+// This is the public landing homepage of the website. It welcomes visitors,
+// presents the main tagline ("Smart Catalog, Seamless Borrowing"), details
+// the core library system capabilities, and provides a CTA "Login" button
+// to redirect users to the login screen.
+// =========================================================================
 
-const ForgotPassword = () => {
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccessMessage('');
-    setLoading(true);
-    try {
-      await api.post('/auth/forgot-password', { email });
-      setSuccessMessage('Reset link sent to your email');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send reset link. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function Home() {
+  const navigate = useNavigate();
 
   return (
-    <div class="flex h-screen overflow-hidden bg-slate-50" style={{ fontFamily: "'Inter', sans-serif" }}>
-      
+    <div className="flex min-h-screen bg-white" style={{ fontFamily: "'Poppins', sans-serif" }}>
       {/* Keyframe Animations for Floating and Rotating effects */}
       <style>{`
         @keyframes float-badge {
-          0%, 100% { transform: translateY(0) rotate(2deg); }
-          50% { transform: translateY(-6px) rotate(0.5deg); }
+          0%, 100% { transform: translateY(0) rotate(3deg); }
+          50% { transform: translateY(-8px) rotate(1deg); }
         }
         @keyframes float-badge-reverse {
-          0%, 100% { transform: translateY(0) rotate(-2deg); }
-          50% { transform: translateY(6px) rotate(-0.5deg); }
+          0%, 100% { transform: translateY(0) rotate(-3deg); }
+          50% { transform: translateY(8px) rotate(-1deg); }
         }
         @keyframes float-y {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
+          0%, 100% { transform: translateY(0) rotate(-2.5deg); }
+          50% { transform: translateY(-8px) rotate(-1deg); }
         }
         @keyframes rotate-slow {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
         .animate-float-badge {
-          animation: float-badge 6s ease-in-out infinite;
+          animation: float-badge 5s ease-in-out infinite;
         }
         .animate-float-badge-reverse {
-          animation: float-badge-reverse 6s ease-in-out infinite;
+          animation: float-badge-reverse 5s ease-in-out infinite;
         }
         .animate-float-y {
           animation: float-y 5s ease-in-out infinite;
         }
         .animate-rotate-slow {
-          animation: rotate-slow 25s linear infinite;
+          animation: rotate-slow 40s linear infinite;
         }
       `}</style>
 
-      {/* ===== LEFT SHOWCASE PANEL (Aesthetic replica of reference photo) ===== */}
+      {/* ===== LEFT BRANDING COLUMN (Landing Slogan & Action Button) ===== */}
+      <div className="flex-1 flex flex-col justify-center px-8 sm:px-16 lg:px-24 py-12">
+        <div className="max-w-xl">
+
+          {/* Logo brand */}
+          <div className="flex items-center gap-3.5 mb-10">
+            <img src="/images/logo.png" alt="KMV School Logo" className="w-16 h-16 object-contain" />
+            <div className="text-left">
+              <h1 className="text-base font-black tracking-tight" style={{ color: '#1E2A4A', fontFamily: "'Manrope', sans-serif" }}>KAWUDULLA MAHA VIDYALAYA</h1>
+              <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none mt-0.5">LIBRARY PORTAL</p>
+            </div>
+          </div>
+
+          {/* Slogans / Slogan headers */}
+          <h2 className="text-4xl sm:text-5xl font-black leading-tight tracking-tight mb-5" style={{ color: '#1E2A4A', fontFamily: "'Manrope', sans-serif" }}>
+            Smart Catalog,<br />
+            <span className="text-indigo-600">Seamless Borrowing</span>
+          </h2>
+
+          {/* Slogans paragraphs */}
+          <p className="text-slate-500 text-sm sm:text-base leading-relaxed mb-8">
+            Welcome to the official Kawudulla school library portal. Browse thousands of catalog books, search by title or barcode, review active checkouts, and request registration approvals from your librarian. Access your account dynamically from any device.
+          </p>
+
+          {/* CTA login redirect button */}
+          <div>
+            <button
+              onClick={() => navigate('/login')}
+              className="px-10 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20 active:scale-[0.98] transform transition-all duration-150"
+              style={{ cursor: 'pointer' }}
+            >
+              Login
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ===== RIGHT GRAPHICS COLUMN (Aesthetic replica of reference photo) ===== */}
       <div
-        className="hidden lg:flex lg:w-[58%] flex-col items-center justify-center relative overflow-hidden px-8 select-none h-full"
+        className="hidden lg:flex lg:w-[45%] flex-col items-center justify-center relative overflow-hidden px-8 select-none"
         style={{ backgroundColor: '#EFF3FD' }}
       >
         {/* Soft abstract blur blobs */}
@@ -92,11 +118,11 @@ const ForgotPassword = () => {
           </div>
 
           {/* 4. Large Main Visual Photo (Real photo of students) */}
-          <div className="absolute bottom-[60px] left-[70px] right-[20px] h-[300px] rounded-[32px] overflow-hidden shadow-2xl border-[8px] border-white z-10 bg-white transition-all duration-500 hover:scale-[1.04] hover:shadow-indigo-500/10 cursor-pointer group/photo">
+          <div className="absolute bottom-[60px] left-[70px] right-[20px] h-[300px] rounded-[32px] overflow-hidden shadow-2xl border-[8px] border-white z-10 bg-white">
             <img
               src="/images/library_illustration.png"
               alt="Students Studying"
-              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/photo:scale-110"
+              className="w-full h-full object-cover"
             />
           </div>
 
@@ -115,7 +141,7 @@ const ForgotPassword = () => {
                   return (
                     <span
                       key={idx}
-                      className={`p-0.5 rounded flex items-center justify-center text-[8px] ${isSelected ? 'bg-indigo-600 text-white font-bold' : ''}`}
+                      className={`p-0.5 rounded flex items-center justify-center text-[8px] ${isSelected ? 'bg-[#0ea5e9] text-white font-bold' : ''}`}
                     >
                       {idx + 1}
                     </span>
@@ -171,93 +197,6 @@ const ForgotPassword = () => {
         </div>
       </div>
 
-      {/* ===== RIGHT FORM PANEL (Clean forms layout with card frame) ===== */}
-      <div className="flex-1 flex items-center justify-center bg-[#F8FAFC] px-4 sm:px-6 py-8 h-full overflow-hidden">
-        
-        {/* Balanced Form Card: strictly max-w-[440px] & reduced vertical padding */}
-        <div className="w-full max-w-[440px] bg-white rounded-[28px] shadow-xl border border-slate-100 p-8 sm:p-9 transition-all duration-300">
-
-          {/* Institutional Branding */}
-          <div className="mb-6 text-center">
-            <div className="flex flex-col items-center justify-center mb-4">
-              <img src="/images/logo.png" alt="KMV Logo" className="h-20 w-20 object-contain mb-3 transition-transform duration-300 hover:scale-105" />
-              <h1 className="text-base font-black tracking-tight text-[#1E2A4A] uppercase leading-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
-                KAWUDULLA MAHA VIDYALAYA
-              </h1>
-              <p className="text-[11px] font-bold text-indigo-600/80 tracking-widest uppercase leading-none mt-1 font-manrope" style={{ fontFamily: "'Manrope', sans-serif" }}>
-                LIBRARY PORTAL
-              </p>
-            </div>
-            <h2 className="text-2xl font-black text-[#1E2A4A] tracking-tight leading-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>Forgot Password</h2>
-          </div>
-
-          {/* Error notifications */}
-          {error && (
-            <div className="mb-5 p-3.5 rounded-xl text-xs font-semibold text-center bg-red-50 border border-red-200 text-red-600 animate-shake">
-              {error}
-            </div>
-          )}
-          
-          {/* Success notification */}
-          {successMessage && (
-            <div className="mb-6 p-4 rounded-xl text-xs font-semibold text-center bg-emerald-50 border border-emerald-200 text-emerald-600">
-              {successMessage}
-            </div>
-          )}
-
-          {!successMessage && (
-            <form onSubmit={handleSubmit} class="space-y-4">
-              <div>
-                <label className="block text-[11px] font-extrabold text-[#1E2A4A] uppercase tracking-wider mb-1.5" style={{ fontFamily: "'Manrope', sans-serif" }}>
-                  Email Address
-                </label>
-                <div className="relative group">
-                  {/* Email Icon */}
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors duration-200">
-                    <span className="material-symbols-outlined text-[19px]">mail</span>
-                  </div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email address"
-                    required
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl text-slate-700 text-xs font-semibold placeholder-slate-500 focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 outline-none transition-all duration-200"
-                  />
-                </div>
-              </div>
-
-              <div class="pt-3">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white rounded-xl font-black text-sm uppercase tracking-wider shadow-lg shadow-indigo-600/20 transition-all duration-150 flex items-center justify-center"
-                  style={{ cursor: 'pointer' }}
-                >
-                  {loading ? 'Sending link...' : 'Send Reset Link'}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Back to Login link */}
-          <div className="mt-5 text-center">
-            <p className="text-xs font-semibold text-slate-400">
-              Already have an account? 
-              <Link
-                to="/login"
-                className="ml-1 text-xs font-bold text-[#1E2A4A] hover:text-indigo-600 border-b border-slate-300 hover:border-indigo-600 transition-all pb-0.5"
-              >
-                Login
-              </Link>
-            </p>
-          </div>
-
-        </div>
-      </div>
-
     </div>
   );
-};
-
-export default ForgotPassword;
+}

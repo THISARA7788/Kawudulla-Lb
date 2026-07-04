@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
-import Sidebar from '../../components/layout/Sidebar';
-import TopBar from '../../components/layout/TopBar';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 
 export default function ProfileSettings() {
   const { user, token, login, logout } = useAuth();
@@ -76,11 +75,7 @@ export default function ProfileSettings() {
   };
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#0F1A33' }}>
-      <Sidebar />
-      <div className="flex-1 flex flex-col ml-64" style={{ background: '#0F1A33' }}>
-        <TopBar />
-        <main className="flex-1 pt-20 pb-4 overflow-y-auto px-4">
+    <DashboardLayout style={{ background: '#0F1A33' }}>
           <div className="mb-6">
             <h1 className="text-3xl font-extrabold" style={{ color: '#ffffff', fontFamily: "'Manrope', sans-serif" }}>Profile & Settings</h1>
             <p className="text-xs mt-1" style={{ color: '#5a6a8a' }}>Manage your account information and preferences.</p>
@@ -230,8 +225,6 @@ export default function ProfileSettings() {
               </form>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

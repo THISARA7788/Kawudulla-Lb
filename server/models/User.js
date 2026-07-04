@@ -1,3 +1,11 @@
+// =========================================================================
+// WHAT DOES THIS FILE DO?
+// This file defines the Mongoose Database Schema for User accounts.
+// It stores names, roles (student/teacher/librarian), status, and hashes
+// passwords using bcrypt on pre-save hooks. It also manages database counters
+// to automatically generate unique Member IDs (like KMV-0001) for library cards.
+// =========================================================================
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 

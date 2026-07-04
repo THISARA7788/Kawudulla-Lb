@@ -1,7 +1,6 @@
 {
   "name": "mern-auth-client",
   "version": "1.0.0",
-  "main": "electron/main.js",
   "private": true,
   "dependencies": {
     "axios": "^1.6.2",
@@ -17,42 +16,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "dev:electron": "concurrently -k \"react-scripts start\" \"wait-on http://localhost:3000 && electron .\"",
-    "dist": "npm run build && ncp electron/main.js build/electron.js && electron-builder --win"
-  },
-  "build": {
-    "appId": "com.mernauth.app",
-    "productName": "MERN Auth",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "build/**/*",
-      "electron/**/*",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "../server",
-        "to": "server",
-        "filter": [
-          "**/*",
-          "!**/*.md"
-        ]
-      }
-    ],
-    "win": {
-      "target": "NSIS"
-    },
-    "nsis": {
-      "oneClick": false,
-      "perMachine": true,
-      "allowToChangeInstallationDirectory": true
-    },
-    "extraMetadata": {
-      "main": "build/electron.js"
-    }
+    "eject": "react-scripts eject"
   },
   "browserslist": {
     "production": [
@@ -69,11 +33,8 @@
   "devDependencies": {
     "autoprefixer": "^10.4.27",
     "concurrently": "^9.2.1",
-    "electron": "^41.0.3",
-    "electron-builder": "^26.8.1",
     "ncp": "^2.0.0",
     "postcss": "^8.5.8",
-    "tailwindcss": "^3.4.19",
-    "wait-on": "^9.0.4"
+    "tailwindcss": "^3.4.19"
   }
 }

@@ -1,3 +1,11 @@
+// =========================================================================
+// WHAT DOES THIS FILE DO?
+// This is the left-aligned navigation drawer panel for the library system.
+// It maps lists of pages (like Books, Issues, Fines, Scanner) and dynamically
+// highlights the active menu link using path matching. Supports mobile
+// devices by sliding off-screen using open/close drawer states.
+// =========================================================================
+
 import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 
@@ -22,38 +30,64 @@ const msOutline = {
   fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
 }
 
-export default function Sidebar() {
-  const { logout } = useAuth()
+export default function Sidebar({ isOpen, setIsOpen }) {
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
   const handleNav = (route) => {
     if (route && route !== '#') {
       navigate(route)
+      if (typeof setIsOpen === 'function') {
+        setIsOpen(false)
+      }
     }
   }
 
   return (
     <aside
-      className="fixed left-0 top-0 h-screen w-64 flex flex-col z-50"
+      className={`fixed left-0 top-0 h-screen w-64 flex flex-col z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}
       style={{ background: 'linear-gradient(180deg, #1E2A4A 0%, #0F1A33 100%)', padding: '1rem', fontFamily: "'Inter', sans-serif" }}
     >
-      {/* Profile */}
-      <div className="flex items-center gap-3 px-2 mb-8">
-        <img
-          src="/images/logo.png"
-          alt="School Logo"
-          className="w-12 h-12 object-contain flex-shrink-0"
-        />
-        <div>
-          <h2 className="text-lg leading-tight" style={{ color: '#ffffff', fontFamily: "'Manrope', sans-serif", fontWeight: 800 }}>Kawudulla Maha Vidyalaya Library</h2>
+      {/* Profile / Brand Header */}
+      <div className="flex items-center justify-between gap-3 px-2 mb-8">
+        <div className="flex items-center gap-3">
+          <img
+            src="/images/logo.png"
+            alt="School Logo"
+            className="w-12 h-12 object-contain flex-shrink-0"
+          />
+          <div>
+            <h2 className="text-sm leading-tight" style={{ color: '#ffffff', fontFamily: "'Manrope', sans-serif", fontWeight: 800 }}>Kawudulla Maha Vidyalaya Library</h2>
+          </div>
         </div>
+        {/* Close mobile drawer toggle */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="lg:hidden p-1.5 rounded-xl hover:bg-white/10"
+          style={{ color: '#B0C4DE' }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 22 }}>close</span>
+        </button>
       </div>
 
       {/* Nav links */}
       <nav className="flex-1 space-y-1 overflow-y-auto no-scrollbar" style={{ scrollbarWidth: 'none' }}>
-        {navItems.map((item) => {
-          const isActive = item.route !== '#' && location.pathname === item.route
+        {navItems
+          .map((item) => {
+            if (user?.role !== 'librarian' && item.route === '/books') {
+              return { ...item, label: "Browse Books" };
+            }
+            return item;
+          })
+          .filter((item) => {
+            if (user?.role === 'librarian') return true;
+            return item.route === '/dashboard' || item.route === '/books';
+          })
+          .map((item) => {
+            const isActive = item.route !== '#' && location.pathname === item.route
           return (
             <button
               key={item.label}

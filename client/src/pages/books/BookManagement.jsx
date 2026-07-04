@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
-import Sidebar from '../../components/layout/Sidebar';
-import TopBar from '../../components/layout/TopBar';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 import BookTable from '../../components/books/BookTable';
 import BookFormModal from '../../components/books/BookFormModal';
 
@@ -144,88 +143,88 @@ export default function BookManagement() {
   };
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#F5F3FC' }}>
-      <Sidebar />
-      <div className="flex-1 flex flex-col ml-72" style={{ background: '#F5F3FC' }}>
-        <TopBar />
-        <main className="flex-1 pt-20 pb-4 overflow-y-auto px-4">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
-                Book Management
-              </h1>
-              <p className="text-xs" style={{ color: '#94a3b8' }}>Manage the library catalog — add, edit, and remove books.</p>
-            </div>
-            <button
-              onClick={openAdd}
-              className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2"
-              style={{ backgroundColor: '#1a1245', color: '#fff', boxShadow: '0 2px 8px rgba(26,18,69,0.15)' }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
-              Add New Book
-            </button>
-          </div>
-
-          {/* Search + Filter */}
-          <div className="flex gap-3 mb-4">
-            <div className="relative flex-1">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94a3b8', fontSize: 18 }}>search</span>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by title, author, ISBN, or Book ID..."
-                className="w-full py-2.5 pl-9 pr-4 text-sm rounded-xl outline-none"
-                style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }}
-              />
-            </div>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="py-2 px-3 text-sm rounded-xl outline-none"
-              style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0', color: '#2C2C3E', minWidth: 120 }}
-            >
-              {categories.map((c) => (
-                <option key={c} value={c} style={{ backgroundColor: '#fff', color: '#2C2C3E' }}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Book Table */}
-          <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#fff', borderColor: '#f0f0f0' }}>
-            <BookTable
-              loading={loading}
-              filtered={filtered}
-              openEdit={openEdit}
-              handleDelete={handleDelete}
-              openAdd={openAdd}
-            />
-          </div>
-
-          {/* Stats Row */}
-          {!loading && (
-            <div className="flex gap-4 mt-4">
-              <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }}>
-                <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Total Books</p>
-                <p className="text-xl font-bold" style={{ color: '#1a1245' }}>{books.length}</p>
-              </div>
-              <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }}>
-                <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Showing</p>
-                <p className="text-xl font-bold" style={{ color: '#1a1245' }}>{filtered.length}</p>
-              </div>
-              <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }}>
-                <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Categories</p>
-                <p className="text-xl font-bold" style={{ color: '#1a1245' }}>{new Set(books.map((b) => b.category)).size}</p>
-              </div>
-            </div>
-          )}
-        </main>
+    <DashboardLayout>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-3xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
+            Book Catalog
+          </h1>
+          <p className="text-xs" style={{ color: '#94a3b8' }}>
+            {user?.role === 'librarian'
+              ? 'Manage the library catalog — add, edit, and remove books.'
+              : 'Browse the library catalog — search for books and check availability.'}
+          </p>
+        </div>
+        {user?.role === 'librarian' && (
+          <button
+            onClick={openAdd}
+            className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2"
+            style={{ backgroundColor: '#1a1245', color: '#fff', boxShadow: '0 2px 8px rgba(26,18,69,0.15)' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
+            Add New Book
+          </button>
+        )}
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Search + Filter */}
+      <div className="flex gap-3 mb-4">
+        <div className="relative flex-1">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94a3b8', fontSize: 18 }}>search</span>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by title, author, ISBN, or Book ID..."
+            className="w-full py-2.5 pl-9 pr-4 text-sm rounded-xl outline-none"
+            style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }}
+          />
+        </div>
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="py-2 px-3 text-sm rounded-xl outline-none"
+          style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0', color: '#2C2C3E', minWidth: 120 }}
+        >
+          {categories.map((c) => (
+            <option key={c} value={c} style={{ backgroundColor: '#fff', color: '#2C2C3E' }}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Book Table */}
+      <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#fff', borderColor: '#f0f0f0' }}>
+        <BookTable
+          loading={loading}
+          filtered={filtered}
+          openEdit={openEdit}
+          handleDelete={handleDelete}
+          openAdd={openAdd}
+          role={user?.role}
+        />
+      </div>
+
+      {/* Stats Row */}
+      {!loading && (
+        <div className="flex gap-4 mt-4">
+          <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }}>
+            <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Total Books</p>
+            <p className="text-xl font-bold" style={{ color: '#1a1245' }}>{books.length}</p>
+          </div>
+          <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }}>
+            <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Showing</p>
+            <p className="text-xl font-bold" style={{ color: '#1a1245' }}>{filtered.length}</p>
+          </div>
+          <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }}>
+            <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Categories</p>
+            <p className="text-xl font-bold" style={{ color: '#1a1245' }}>{new Set(books.map((b) => b.category)).size}</p>
+          </div>
+        </div>
+      )}
+
       <BookFormModal
         showModal={showModal}
         editingBook={editingBook}
@@ -239,6 +238,6 @@ export default function BookManagement() {
         setShowModal={setShowModal}
         CATEGORIES={CATEGORIES}
       />
-    </div>
+    </DashboardLayout>
   );
 }

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
-import Sidebar from '../../components/layout/Sidebar';
-import TopBar from '../../components/layout/TopBar';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 
 export default function CirculationRecord() {
   const { token } = useAuth();
@@ -51,18 +50,13 @@ export default function CirculationRecord() {
   };
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#F5F3FC' }}>
-      <Sidebar />
-      <div className="flex-1 flex flex-col ml-72" style={{ background: '#F5F3FC' }}>
-        <TopBar />
-        <main className="flex-1 pt-20 pb-4 overflow-y-auto px-4">
-          <div className="mb-8">
-            <h1 className="text-3xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Circulation Record</h1>
-            <p style={{ color: '#94a3b8' }}>Track all book issue and return transactions.</p>
-          </div>
+    <DashboardLayout>
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Circulation Record</h1>
+        <p style={{ color: '#94a3b8' }}>Track all book issue and return transactions.</p>
+      </div>
 
-          {/* Filters */}
-          <div className="flex gap-3 mb-6">
+      <div className="flex gap-3 mb-6">
             <div className="relative flex-1">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94a3b8', fontSize: 18 }}>search</span>
               <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
@@ -183,8 +177,6 @@ export default function CirculationRecord() {
               </button>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

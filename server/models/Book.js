@@ -1,3 +1,10 @@
+// =========================================================================
+// WHAT DOES THIS FILE DO?
+// This file defines the Mongoose Database Schema for Book catalog items.
+// It stores details like titles, authors, categories, ISBNs, copy tracking stats,
+// and automatically assigns a catalog sequence ID (like BK0001) for search lookups.
+// =========================================================================
+
 const mongoose = require('mongoose');
 
 const counterSchema = new mongoose.Schema({
