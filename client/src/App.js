@@ -28,20 +28,29 @@ import FineManagement from './pages/books/FineManagement';
 import ReportsPage from './pages/books/ReportsPage';
 import QrScannerPage from './pages/books/QrScannerPage';
 
+// PageWrapper component to apply GPU-accelerated page entry animations
+const PageWrapper = ({ children }) => (
+  <div className="animate-page-fade w-full h-full">
+    {children}
+  </div>
+);
+
 function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
+        <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
+        <Route path="/register" element={<PageWrapper><Register /></PageWrapper>} />
+        <Route path="/forgot-password" element={<PageWrapper><ForgotPassword /></PageWrapper>} />
+        <Route path="/reset-password/:token" element={<PageWrapper><ResetPassword /></PageWrapper>} />
         <Route
           path="/dashboard"
           element={
             <PrivateRoute>
-              <Dashboard />
+              <PageWrapper>
+                <Dashboard />
+              </PageWrapper>
             </PrivateRoute>
           }
         />
@@ -49,7 +58,9 @@ function App() {
           path="/books"
           element={
             <PrivateRoute>
-              <BookManagement />
+              <PageWrapper>
+                <BookManagement />
+              </PageWrapper>
             </PrivateRoute>
           }
         />
@@ -57,7 +68,9 @@ function App() {
           path="/issue-book"
           element={
             <PrivateRoute>
-              <IssueBook />
+              <PageWrapper>
+                <IssueBook />
+              </PageWrapper>
             </PrivateRoute>
           }
         />
@@ -65,7 +78,9 @@ function App() {
           path="/return-book"
           element={
             <PrivateRoute>
-              <ReturnBook />
+              <PageWrapper>
+                <ReturnBook />
+              </PageWrapper>
             </PrivateRoute>
           }
         />
@@ -73,7 +88,9 @@ function App() {
           path="/circulation"
           element={
             <PrivateRoute>
-              <CirculationRecord />
+              <PageWrapper>
+                <CirculationRecord />
+              </PageWrapper>
             </PrivateRoute>
           }
         />
@@ -81,7 +98,9 @@ function App() {
           path="/pending-registration"
           element={
             <PrivateRoute>
-              <PendingRegistration />
+              <PageWrapper>
+                <PendingRegistration />
+              </PageWrapper>
             </PrivateRoute>
           }
         />
@@ -89,7 +108,9 @@ function App() {
           path="/members"
           element={
             <PrivateRoute>
-              <MembersPage />
+              <PageWrapper>
+                <MembersPage />
+              </PageWrapper>
             </PrivateRoute>
           }
         />
@@ -97,7 +118,9 @@ function App() {
           path="/fines"
           element={
             <PrivateRoute>
-              <FineManagement />
+              <PageWrapper>
+                <FineManagement />
+              </PageWrapper>
             </PrivateRoute>
           }
         />
@@ -105,7 +128,9 @@ function App() {
           path="/reports"
           element={
             <PrivateRoute>
-              <ReportsPage />
+              <PageWrapper>
+                <ReportsPage />
+              </PageWrapper>
             </PrivateRoute>
           }
         />
@@ -113,7 +138,9 @@ function App() {
           path="/qr-scanner"
           element={
             <PrivateRoute>
-              <QrScannerPage />
+              <PageWrapper>
+                <QrScannerPage />
+              </PageWrapper>
             </PrivateRoute>
           }
         />
@@ -121,7 +148,9 @@ function App() {
           path="/profile"
           element={
             <PrivateRoute>
-              <ProfileSettings />
+              <PageWrapper>
+                <ProfileSettings />
+              </PageWrapper>
             </PrivateRoute>
           }
         />
