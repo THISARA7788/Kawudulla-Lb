@@ -4,47 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import Sidebar from '../../components/layout/Sidebar';
 import TopBar from '../../components/layout/TopBar';
+import FineRow from '../../components/fines/FineRow';
+import FineModals from '../../components/fines/FineModals';
 
 const STATUS_OPTIONS = ['all', 'unpaid', 'paid', 'waived'];
 
-function FineRow({ fine, onPay, onWaive, onDelete }) {
-  const statusStyle = {
-    unpaid: { bg: '#fef9c3', color: '#854d0e' },
-    paid: { bg: '#dcfce7', color: '#166534' },
-    waived: { bg: '#ece9f8', color: '#5b51d0' },
-  }[fine.status] || { bg: '#f0f0f0', color: '#666' };
 
-  return (
-    <tr className="hover:bg-slate-50 transition-colors" style={{ borderBottom: '1px solid #f8f8f8' }}>
-      <td className="py-3 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>{fine.transaction?.transactionId || '—'}</td>
-      <td className="py-3 px-4">
-        <span className="text-xs font-semibold" style={{ color: '#1a1245' }}>{fine.user?.name || '—'}</span>
-      </td>
-      <td className="py-3 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>{fine.user?.memberId || '—'}</td>
-      <td className="py-3 px-4 text-xs" style={{ color: '#595c5e' }}>{fine.book?.title || '—'} <span className="font-mono" style={{ color: '#94a3b8' }}>({fine.book?.bookId})</span></td>
-      <td className="py-3 px-4 text-center font-semibold" style={{ color: '#b31b25' }}>{fine.daysOverdue}d</td>
-      <td className="py-3 px-4 text-right font-bold" style={{ color: '#1a1245' }}>&#8360; {fine.amount.toFixed(2)}</td>
-      <td className="py-3 px-4 text-center">
-        <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: statusStyle.bg, color: statusStyle.color }}>{fine.status}</span>
-      </td>
-      <td className="py-3 px-4 text-right">
-        {fine.status === 'unpaid' && (
-          <button onClick={() => onPay(fine)} className="mr-1 p-1 rounded hover:bg-slate-100" style={{ color: '#166534' }} title="Mark Paid">
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>payments</span>
-          </button>
-        )}
-        {fine.status === 'unpaid' && (
-          <button onClick={() => onWaive(fine)} className="mr-1 p-1 rounded hover:bg-slate-100" style={{ color: '#2563eb' }} title="Waive Fine">
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>cancel</span>
-          </button>
-        )}
-        <button onClick={() => onDelete(fine._id)} className="p-1 rounded hover:bg-slate-100" style={{ color: '#b31b25' }} title="Delete">
-          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
-        </button>
-      </td>
-    </tr>
-  );
-}
 
 export default function FineManagement() {
   const { user, token } = useAuth();
@@ -300,87 +265,23 @@ export default function FineManagement() {
             </div>
           )}
         </main>
-      </div>
-
-      {/* Pay Modal */}
-      {modal === 'pay' && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="rounded-2xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: '#fff' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Mark Fine as Paid</h2>
-              <button onClick={() => setModal(null)} className="p-1 rounded hover:bg-slate-100" style={{ color: '#94a3b8' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 22 }}>close</span>
-              </button>
-            </div>
-            <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: '#f5f7fa', border: '1px solid #e0e0e0' }}>
-              <p className="text-sm" style={{ color: '#2C2C3E' }}>Member: <strong>{selected.user?.name}</strong> <span className="text-xs font-mono" style={{ color: '#94a3b8' }}>({selected.user?.memberId})</span></p>
-              <p className="text-sm" style={{ color: '#2C2C3E' }}>Book: <strong>{selected.book?.title}</strong></p>
-              <p className="text-lg font-bold" style={{ color: '#1a1245' }}>Amount: &#8360; {selected.amount.toFixed(2)}</p>
-            </div>
-            {error && <div className="mb-4 px-4 py-3 rounded-xl text-sm" style={{ backgroundColor: '#fee2e2', color: '#b31b25' }}>{error}</div>}
-            <div className="flex gap-3">
-              <button onClick={handlePay} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ backgroundColor: '#166534', color: '#fff', opacity: saving ? 0.6 : 1 }}>{saving ? 'Processing...' : 'Confirm Payment'}</button>
-              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border-2" style={{ borderColor: '#1a1245', color: '#1a1245' }}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Waive Modal */}
-      {modal === 'waive' && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="rounded-2xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: '#fff' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Waive Fine</h2>
-              <button onClick={() => setModal(null)} className="p-1 rounded hover:bg-slate-100" style={{ color: '#94a3b8' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 22 }}>close</span>
-              </button>
-            </div>
-            <div className="rounded-xl p-4 mb-4" style={{ backgroundColor: '#f5f7fa', border: '1px solid #e0e0e0' }}>
-              <p className="text-sm" style={{ color: '#2C2C3E' }}>Member: <strong>{selected.user?.name}</strong></p>
-              <p className="text-sm" style={{ color: '#2C2C3E' }}>Amount to waive: <strong style={{ color: '#b31b25' }}>&#8360; {selected.amount.toFixed(2)}</strong></p>
-            </div>
-            {error && <div className="mb-4 px-4 py-3 rounded-xl text-sm" style={{ backgroundColor: '#fee2e2', color: '#b31b25' }}>{error}</div>}
-            <div className="mb-4">
-              <label className="block text-xs font-semibold mb-1" style={{ color: '#595c5e' }}>Reason (optional)</label>
-              <textarea value={waiveReason} onChange={(e) => setWaiveReason(e.target.value)} placeholder="e.g. Book returned damaged, exceptional circumstances..." rows="3" className="w-full px-3 py-2 text-sm rounded-xl outline-none resize-none" style={{ backgroundColor: '#f5f7fa', border: '1px solid #e0e0e0' }} />
-            </div>
-            <div className="flex gap-3">
-              <button onClick={handleWaive} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ backgroundColor: '#1a1245', color: '#fff', opacity: saving ? 0.6 : 1 }}>{saving ? 'Processing...' : 'Waive Fine'}</button>
-              <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border-2" style={{ borderColor: '#1a1245', color: '#1a1245' }}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Config Modal */}
-      {modal === 'config' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="rounded-2xl p-6 w-full max-w-sm mx-4" style={{ backgroundColor: '#fff' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Fine Settings</h2>
-              <button onClick={() => setModal(null)} className="p-1 rounded hover:bg-slate-100" style={{ color: '#94a3b8' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 22 }}>close</span>
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold mb-1" style={{ color: '#595c5e' }}>Fine Rate per Day (LKR)</label>
-                <input type="number" min="0" step="0.5" value={newRate} onChange={(e) => setNewRate(e.target.value)} className="w-full px-3 py-2 text-sm rounded-xl outline-none" style={{ backgroundColor: '#f5f7fa', border: '1px solid #e0e0e0' }} />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold mb-1" style={{ color: '#595c5e' }}>Grace Period (Days)</label>
-                <input type="number" min="0" value={newGrace} onChange={(e) => setNewGrace(e.target.value)} className="w-full px-3 py-2 text-sm rounded-xl outline-none" style={{ backgroundColor: '#f5f7fa', border: '1px solid #e0e0e0' }} />
-                <p className="text-xs mt-1" style={{ color: '#94a3b8' }}>Number of days after due date before fines start applying.</p>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={saveConfig} disabled={saving} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ backgroundColor: '#1a1245', color: '#fff', opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving...' : 'Save Settings'}</button>
-                <button onClick={() => setModal(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border-2" style={{ borderColor: '#1a1245', color: '#1a1245' }}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <FineModals
+        modal={modal}
+        selected={selected}
+        saving={saving}
+        error={error}
+        handlePay={handlePay}
+        handleWaive={handleWaive}
+        saveConfig={saveConfig}
+        setModal={setModal}
+        waiveReason={waiveReason}
+        setWaiveReason={setWaiveReason}
+        newRate={newRate}
+        setNewRate={setNewRate}
+        newGrace={newGrace}
+        setNewGrace={setNewGrace}
+      />
     </div>
-  );
+  </div>
+);
 }

@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import Sidebar from '../../components/layout/Sidebar';
 import TopBar from '../../components/layout/TopBar';
+import ActiveBorrowsList from '../../components/circulation/ActiveBorrowsList';
+import RecentTransactionsList from '../../components/circulation/RecentTransactionsList';
 
 const GRADES = [
   'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8',
@@ -654,31 +656,14 @@ export default function IssueBook() {
                   <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#6366F1' }}>receipt_long</span>
                   <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>Current Borrowings</span>
                 </div>
-
-                {selectedMember ? (
+                {selectedMember && (
                   <>
                     <div className="mb-2 text-xs font-semibold truncate" style={{ color: '#6366F1' }}>{selectedMember.name}</div>
-                    {activeBorrows.length === 0 ? (
-                      <p className="text-xs py-3 text-center" style={{ color: '#9CA3AF' }}>No active borrowings</p>
-                    ) : (
-                      <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                        {activeBorrows.map((b, i) => {
-                          const isOverdue = new Date(b.dueDate) < new Date();
-                          return (
-                            <div key={i} className="p-2 rounded-lg text-xs" style={{ backgroundColor: isOverdue ? '#FEF2F2' : '#F9FAFB' }}>
-                              <div className="flex items-center justify-between">
-                                <span className="font-semibold truncate" style={{ color: '#1a1245' }}>{b.book?.title}</span>
-                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ml-1 ${isOverdue ? 'text-red-600 bg-red-100' : 'text-green-700 bg-green-100'}`}>
-                                  {isOverdue ? 'Overdue' : 'Active'}
-                                </span>
-                              </div>
-                              <div className="mt-0.5" style={{ color: '#9CA3AF' }}>Due: {new Date(b.dueDate).toLocaleDateString()}</div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
+                    <ActiveBorrowsList
+                      borrows={activeBorrows}
+                      selectedMember={selectedMember}
+                      maxHeight="128px"
+                    />
                     <div className="mt-3 pt-2" style={{ borderTop: '1px solid #F3F4F6' }}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px]" style={{ color: '#9CA3AF' }}>Borrow limit</span>
@@ -692,7 +677,8 @@ export default function IssueBook() {
                       </div>
                     </div>
                   </>
-                ) : (
+                )}
+                {!selectedMember && (
                   <div className="text-center py-4">
                     <span className="material-symbols-outlined mx-auto block mb-1" style={{ color: '#D1D5DB', fontSize: 28 }}>person_outline</span>
                     <p className="text-xs" style={{ color: '#9CA3AF' }}>Select a member to view</p>
@@ -707,38 +693,11 @@ export default function IssueBook() {
                   <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>Recent Issues</span>
                 </div>
 
-                {recentIssues.length === 0 ? (
-                  <p className="text-xs text-center py-3" style={{ color: '#9CA3AF' }}>No recent issues</p>
-                ) : (
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                    {recentIssues.slice(0, 6).map((tx) => {
-                      const isOverdue = new Date(tx.dueDate) < new Date();
-                      const dueSoon = !isOverdue && new Date(tx.dueDate) - Date.now() < 3 * 86400000;
-                      return (
-                        <div key={tx._id || tx.transactionId} className="p-2 rounded-lg" style={{ backgroundColor: isOverdue ? '#FEF2F2' : dueSoon ? '#FFFBEB' : '#F9FAFB' }}>
-                          <div className="text-xs font-semibold truncate" style={{ color: '#1a1245' }}>
-                            {tx.book?.title || 'Unknown'}
-                          </div>
-                          <div className="text-[11px]" style={{ color: '#9CA3AF' }}>
-                            {tx.user?.name || 'Unknown'}
-                          </div>
-                          <div className="flex items-center justify-between mt-0.5">
-                            <span className="text-[10px]" style={{ color: '#9CA3AF' }}>
-                              {new Date(tx.dueDate).toLocaleDateString()}
-                            </span>
-                            <span className={`text-[9px] font-bold px-1 py-0.5 rounded-full ${
-                              isOverdue ? 'text-red-600 bg-red-100' :
-                              dueSoon ? 'text-amber-700 bg-amber-100' :
-                              'text-green-700 bg-green-100'
-                            }`}>
-                              {isOverdue ? 'Overdue' : dueSoon ? 'Due Soon' : 'Active'}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <RecentTransactionsList
+                  transactions={recentIssues}
+                  type="issues"
+                  maxHeight="192px"
+                />
               </div>
             </div>
           </div>

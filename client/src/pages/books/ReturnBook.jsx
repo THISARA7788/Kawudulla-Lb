@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import Sidebar from '../../components/layout/Sidebar';
 import TopBar from '../../components/layout/TopBar';
+import ActiveBorrowsList from '../../components/circulation/ActiveBorrowsList';
+import RecentTransactionsList from '../../components/circulation/RecentTransactionsList';
 
 const GRADES = [
   'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8',
@@ -382,62 +384,13 @@ export default function ReturnBook() {
                     </h2>
                   </div>
 
-                  {selectedMember ? (
-                    activeBorrows.length === 0 ? (
-                      <div className="text-center py-6">
-                        <span className="material-symbols-outlined mx-auto block mb-1" style={{ color: '#D1D5DB', fontSize: 36 }}>check_circle</span>
-                        <p className="text-xs font-medium" style={{ color: '#9CA3AF' }}>No active borrowings</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '340px' }}>
-                        {activeBorrows.map((b, i) => {
-                          const isOverdue = new Date(b.dueDate) < new Date();
-                          const daysOverdue = isOverdue ? Math.floor((Date.now() - new Date(b.dueDate)) / 86400000) : 0;
-                          const book = b.book || {};
-                          const isSelected = selectedBorrow && selectedBorrow.book?._id === book._id;
-                          return (
-                            <button
-                              key={i}
-                              onClick={() => setSelectedBorrow(isSelected ? null : b)}
-                              className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all border-2 ${
-                                isSelected ? 'border-amber-400' : 'border-gray-100 hover:border-amber-200'
-                              }`}
-                              style={{ backgroundColor: isSelected ? '#FFFBEB' : '#FAFBFC' }}
-                            >
-                              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: isOverdue ? '#FEE2E2' : '#FEF3C7' }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 20, color: isOverdue ? '#DC2626' : '#F59E0B' }}>menu_book</span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-bold truncate" style={{ color: '#1a1245' }}>{book.title || 'Book'}</div>
-                                <div className="text-[11px]" style={{ color: '#9CA3AF' }}>
-                                  {book.author} \u2022 {book.bookId || '—'} \u2022 {book.category || ''}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isOverdue ? 'text-red-600 bg-red-100' : 'text-green-700 bg-green-100'}`}>
-                                    {isOverdue ? `Overdue (${daysOverdue}d)` : 'Active'}
-                                  </span>
-                                </div>
-                                <div className="text-[10px] mt-1" style={{ color: '#9CA3AF' }}>
-                                  Due: {new Date(b.dueDate).toLocaleDateString()}
-                                </div>
-                              </div>
-                              <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                                isSelected ? 'border-amber-400 bg-amber-400' : 'border-gray-300'
-                              }`}>
-                                {isSelected && <span className="material-symbols-outlined text-white" style={{ fontSize: 14 }}>check</span>}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )
-                  ) : (
-                    <div className="text-center py-8">
-                      <span className="material-symbols-outlined mx-auto block mb-2" style={{ color: '#D1D5DB', fontSize: 40 }}>person_outline</span>
-                      <p className="text-xs" style={{ color: '#9CA3AF' }}>Select a member to view their borrowings</p>
-                      <p className="text-[10px] mt-1" style={{ color: '#D1D5DB' }}>Or click a recent member above</p>
-                    </div>
-                  )}
+                  <ActiveBorrowsList
+                    borrows={activeBorrows}
+                    selectedMember={selectedMember}
+                    selectedBorrow={selectedBorrow}
+                    onSelect={setSelectedBorrow}
+                    maxHeight="340px"
+                  />
                 </div>
               </div>
 
@@ -561,35 +514,11 @@ export default function ReturnBook() {
                   <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>Recent Returns</span>
                 </div>
 
-                {recentReturns.length === 0 ? (
-                  <p className="text-xs text-center py-3" style={{ color: '#9CA3AF' }}>No recent returns</p>
-                ) : (
-                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                    {recentReturns.slice(0, 8).map((tx) => (
-                      <div key={tx._id || tx.transactionId} className="p-2 rounded-lg" style={{ backgroundColor: '#F9FAFB' }}>
-                        <div className="text-xs font-semibold truncate" style={{ color: '#1a1245' }}>
-                          {tx.book?.title || 'Unknown'}
-                        </div>
-                         <div className="text-[11px]" style={{ color: '#9CA3AF' }}>
-                           {tx.user?.name || 'Unknown'}
-                         </div>
-                         <div className="flex items-center justify-between mt-0.5">
-                           <span className="text-[10px]" style={{ color: '#9CA3AF' }}>
-                             Returned: {tx.returnDate ? new Date(tx.returnDate).toLocaleDateString() : '—'}
-                           </span>
-                           <div className="flex items-center gap-1">
-                             <span className="text-[9px] font-bold px-1 py-0.5 rounded-full text-green-700 bg-green-100">Returned</span>
-                             {tx.overdueDays > 0 && (
-                               <span className="text-[9px] font-bold px-1 py-0.5 rounded-full text-red-600 bg-red-100">
-                                 Overdue {tx.overdueDays}d
-                               </span>
-                             )}
-                           </div>
-                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <RecentTransactionsList
+                  transactions={recentReturns}
+                  type="returns"
+                  maxHeight="256px"
+                />
               </div>
             </div>
           </div>
