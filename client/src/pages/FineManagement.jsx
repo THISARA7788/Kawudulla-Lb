@@ -122,6 +122,20 @@ export default function FineManagement() {
     try { await api.delete(`/library/fines/${id}`, { headers: { Authorization: `Bearer ${token}` } }); setFines((p) => p.filter((f) => f._id !== id)); fetchStats(); } catch (err) { alert('Failed'); }
   };
 
+  const handleDeletePending = async (pf) => {
+    if (!window.confirm(`Delete this pending fine for ${pf.transaction?.user?.name}? This will permanently delete the overdue transaction and all related records.`)) return;
+    setSaving(true);
+    try {
+      await api.delete(`/library/transactions/${pf.transaction._id}`, { headers: { Authorization: `Bearer ${token}` } });
+      setPendingFines((p) => p.filter((item) => item !== pf));
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete transaction');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const createFine = async (pf) => {
     if (!window.confirm(`Create fine of &#8360; ${pf.amount} for ${pf.transaction?.user?.name}? (${pf.daysOverdue} days overdue)`)) return;
     setSaving(true);
@@ -191,13 +205,13 @@ export default function FineManagement() {
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                          {['Member', 'Book', 'Days Overdue', 'Fine Amount', ''].map((h) => (
-                            <th key={h} className="py-2 px-4 text-xs text-slate-400 font-semibold">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
+                       <thead>
+                         <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                           {['Member', 'Book', 'Days Overdue', 'Fine Amount', 'Actions'].map((h) => (
+                             <th key={h} className="py-2 px-4 text-xs text-slate-400 font-semibold text-right">{h}</th>
+                           ))}
+                         </tr>
+                       </thead>
                       <tbody>
                         {pendingFines.map((pf, i) => (
                           <tr key={i} style={{ borderBottom: '1px solid #f8f8f8' }}>
@@ -205,8 +219,13 @@ export default function FineManagement() {
                             <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{pf.transaction.book?.title} <span style={{ color: '#94a3b8' }}>({pf.transaction.book?.bookId})</span></td>
                             <td className="py-2 px-4 font-bold" style={{ color: '#b31b25' }}>{pf.daysOverdue} days</td>
                             <td className="py-2 px-4 font-bold" style={{ color: '#1a1245' }}>&#8360; {pf.amount.toFixed(2)}</td>
-                            <td className="py-2 px-4">
+                            <td className="py-2 px-4 text-right">
                               <button onClick={() => createFine(pf)} disabled={saving} className="px-3 py-1 rounded-lg text-xs font-semibold" style={{ backgroundColor: '#1a1245', color: '#fff' }}>Create Fine</button>
+                            </td>
+                            <td className="py-2 px-4 text-right">
+                              <button onClick={() => handleDeletePending(pf)} disabled={saving} className="p-1 rounded hover:bg-slate-100" style={{ color: '#b31b25' }} title="Delete">
+                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
+                              </button>
                             </td>
                           </tr>
                         ))}

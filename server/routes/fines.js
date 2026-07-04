@@ -221,4 +221,23 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// DELETE /api/library/transactions/:id
+router.delete('/transactions/:id', async (req, res) => {
+  try {
+    const transaction = await Transaction.findById(req.params.id);
+    if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
+    
+    // Delete related fines first
+    await Fine.deleteMany({ transaction: transaction._id });
+    
+    // Delete the transaction
+    await transaction.deleteOne();
+    
+    res.json({ message: 'Transaction and related fines deleted' });
+  } catch (err) {
+    console.error('Transaction operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
