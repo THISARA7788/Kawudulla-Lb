@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');t
+const { app, BrowserWindow } = require('electron');thisara
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
