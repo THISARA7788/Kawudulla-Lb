@@ -11,7 +11,6 @@ import React from 'react';
  */
 export default function BookTable({ loading, filtered, openEdit, handleDelete, openAdd, role }) {
   
-  // 1. Rendering the circular spinner when loading is true
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16" style={{ color: '#94a3b8' }}>
@@ -21,14 +20,13 @@ export default function BookTable({ loading, filtered, openEdit, handleDelete, o
     );
   }
 
-  // 2. Empty state layout displayed when book search query returns zero records
   if (filtered.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16" style={{ color: '#94a3b8' }}>
         <span className="material-symbols-outlined mb-2" style={{ fontSize: 48, opacity: 0.3 }}>search_off</span>
         <p className="text-sm font-medium">No books found</p>
         {role === 'librarian' && (
-          <button onClick={openAdd} className="text-xs mt-2 font-semibold" style={{ color: '#1a1245' }}>
+          <button onClick={openAdd} className="text-xs mt-2 font-semibold hover:underline" style={{ color: '#1a1245' }}>
             + Add your first book
           </button>
         )}
@@ -36,17 +34,27 @@ export default function BookTable({ loading, filtered, openEdit, handleDelete, o
     );
   }
 
-  const columns = ['Book ID', 'Title', 'Author', 'ISBN', 'Category', 'Copies'];
+  // Setup table columns (incorporating Cover and Status)
+  const columns = ['Book ID', 'Cover', 'Title', 'Author', 'ISBN', 'Category', 'Copies', 'Status'];
   if (role === 'librarian') {
-    columns.push(''); // For actions
+    columns.push(''); // For actions column
   }
 
-  // 3. Grid representation with horizontal scroll enabled for tablet/mobile screen viewports
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'Borrowed':
+        return { backgroundColor: '#ffedd5', color: '#ea580c' }; // Orange
+      case 'Reserved':
+        return { backgroundColor: '#fee2e2', color: '#dc2626' }; // Red
+      case 'Available':
+      default:
+        return { backgroundColor: '#dcfce7', color: '#166534' }; // Green
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        
-        {/* Table header headers */}
+      <table className="w-full text-left text-sm align-middle">
         <thead>
           <tr style={{ borderBottom: '2px solid #f0f0f0' }}>
             {columns.map((h, idx) => (
@@ -61,46 +69,77 @@ export default function BookTable({ loading, filtered, openEdit, handleDelete, o
           </tr>
         </thead>
         
-        {/* Table rows matching filtered records */}
         <tbody>
           {filtered.map((book) => (
             <tr key={book._id} className="hover:bg-slate-50 transition-colors" style={{ borderBottom: '1px solid #f8f8f8' }}>
               
               {/* Unique Book Barcode/ID */}
-              <td className="py-3 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>
+              <td className="py-3.5 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>
                 {book.bookId || '—'}
               </td>
-              
-              {/* Title & Author */}
-              <td className="py-3 px-4 font-semibold" style={{ color: '#2C2C3E' }}>
-                {book.title}
+
+              {/* Book Cover Thumbnail */}
+              <td className="py-3.5 px-4">
+                {book.coverImageUrl ? (
+                  <img
+                    src={book.coverImageUrl}
+                    alt={book.title}
+                    className="w-8 h-11 object-cover rounded shadow-sm hover:scale-105 transition-transform"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = ''; // Clear source to fallback to visual representation
+                    }}
+                  />
+                ) : (
+                  <div className="w-8 h-11 bg-slate-100 border border-dashed rounded flex flex-col items-center justify-center text-slate-400" title="No Cover Available">
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>image</span>
+                  </div>
+                )}
               </td>
-              <td className="py-3 px-4" style={{ color: '#595c5e' }}>{book.author}</td>
+              
+              {/* Title */}
+              <td className="py-3.5 px-4 font-semibold text-slate-800" style={{ maxWidth: 220 }}>
+                <div className="truncate" title={book.title}>{book.title}</div>
+              </td>
+
+              {/* Author */}
+              <td className="py-3.5 px-4 text-slate-600">
+                <div className="truncate" title={book.author} style={{ maxWidth: 150 }}>{book.author}</div>
+              </td>
               
               {/* Optional ISBN string */}
-              <td className="py-3 px-4 text-xs font-mono" style={{ color: '#94a3b8' }}>{book.isbn || '—'}</td>
+              <td className="py-3.5 px-4 text-xs font-mono text-slate-400">{book.isbn || '—'}</td>
               
               {/* Categorization pill */}
-              <td className="py-3 px-4">
-                <span className="text-xs font-bold uppercase px-2 py-1 rounded-full" style={{
-                  backgroundColor: '#CAD6FF',
-                  color: '#3E4A6C',
+              <td className="py-3.5 px-4">
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full" style={{
+                  backgroundColor: '#e0e7ff',
+                  color: '#4338ca',
                 }}>
                   {book.category}
                 </span>
               </td>
               
               {/* Copy counts (Turns Red when copies are zero/fully checked out, else Green) */}
-              <td className="py-3 px-4">
-                <span className="text-xs font-bold" style={{ color: book.availableCopies > 0 ? '#166534' : '#b31b25' }}>
+              <td className="py-3.5 px-4">
+                <span className="text-xs font-bold" style={{ color: book.availableCopies > 0 ? '#15803d' : '#b91c1c' }}>
                   {book.availableCopies} / {book.totalCopies}
+                </span>
+              </td>
+
+              {/* Book Circulation Status */}
+              <td className="py-3.5 px-4">
+                <span
+                  className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full"
+                  style={getStatusStyle(book.status || 'Available')}
+                >
+                  {book.status || 'Available'}
                 </span>
               </td>
               
               {/* Interactive buttons */}
               {role === 'librarian' && (
-                <td className="py-3 px-4 text-right">
-                  
+                <td className="py-3.5 px-4 text-right whitespace-nowrap">
                   {/* Edit Button */}
                   <button
                     onClick={() => openEdit(book)}
@@ -115,7 +154,7 @@ export default function BookTable({ loading, filtered, openEdit, handleDelete, o
                   <button
                     onClick={() => handleDelete(book._id)}
                     className="p-1 rounded hover:bg-slate-100 transition-colors"
-                    style={{ color: '#b31b25' }}
+                    style={{ color: '#b91c1c' }}
                     title="Delete"
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>

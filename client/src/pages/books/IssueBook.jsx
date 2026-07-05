@@ -22,14 +22,15 @@ export default function IssueBook() {
   const [memberResults, setMemberResults] = useState([]);
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(true);
   const [selectedMember, setSelectedMember] = useState(null);
-  const memberRef = useRef(null);
+  const memberInputRef = useRef(null);
+  const [memberInputFocused, setMemberInputFocused] = useState(false);
+  const [memberError, setMemberError] = useState('');
 
   // Book state
   const [bookSearch, setBookSearch] = useState('');
   const [bookResults, setBookResults] = useState([]);
   const [showBookSuggestions, setShowBookSuggestions] = useState(true);
   const [selectedBook, setSelectedBook] = useState(null);
-  const bookRef = useRef(null);
 
   // Issue details
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
@@ -40,11 +41,18 @@ export default function IssueBook() {
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [issuedDetails, setIssuedDetails] = useState(null);
 
   // Right panel
   const [activeBorrows, setActiveBorrows] = useState([]);
   const [borrowLimit, setBorrowLimit] = useState(5);
   const [recentIssues, setRecentIssues] = useState([]);
+
+  // Unified scanner / manual book search state
+  const [bookInputFocused, setBookInputFocused] = useState(false);
+  const bookInputRef = useRef(null);
+  const [bookError, setBookError] = useState('');
 
   // Data
   const [allUsers, setAllUsers] = useState([]);
@@ -182,13 +190,15 @@ export default function IssueBook() {
     setSelectedMember(m);
     setMemberSearch(m.name);
     setShowMemberSuggestions(false);
+    setMemberError('');
     fetchBorrowingInfo(m._id);
   };
 
   const handleSelectBook = (b) => {
     setSelectedBook(b);
-    setBookSearch(`${b.title} (${b.bookId})`);
+    setBookSearch(b.isbn || b.bookId || '');
     setShowBookSuggestions(false);
+    setBookError('');
   };
 
   const clearMember = () => {
@@ -196,12 +206,14 @@ export default function IssueBook() {
     setMemberSearch('');
     setActiveBorrows([]);
     setShowMemberSuggestions(true);
+    setMemberError('');
   };
 
   const clearBook = () => {
     setSelectedBook(null);
     setBookSearch('');
     setShowBookSuggestions(true);
+    setBookError('');
   };
 
   const clearAll = () => {
@@ -209,6 +221,146 @@ export default function IssueBook() {
     clearBook();
     setNotes('');
   };
+
+  const playBeep = useCallback((type = 'success') => {
+    // Audio feedback disabled per user preference
+  }, []);
+
+  const handleMemberSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      const query = memberSearch.trim().toUpperCase();
+      if (!query) return;
+
+      e.preventDefault();
+
+      // Find in allUsers directly to avoid dependency on React's render/useEffect timing
+      const matchedUser = allUsers.find(
+        u => u.memberId && u.memberId.toUpperCase() === query
+      );
+
+      if (matchedUser) {
+        handleSelectMember(matchedUser);
+        setMemberSearch('');
+        setMemberError('');
+      } else {
+        // Fallback to checking partial/name matches in memberResults
+        if (memberResults.length > 0) {
+          handleSelectMember(memberResults[0]);
+          setMemberSearch('');
+          setMemberError('');
+        } else {
+          setMemberError(`No member found matching ID/name "${memberSearch}"`);
+        }
+      }
+    }
+  };
+
+  const handleBookSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      const query = bookSearch.trim();
+      if (!query) return;
+
+      const upperQuery = query.toUpperCase();
+      const queryClean = query.replace(/[-\s]/g, '').toUpperCase();
+
+      const book = allBooks.find(b => 
+        (b.bookId && b.bookId.toUpperCase() === upperQuery) ||
+        (b.isbn && b.isbn.replace(/[-\s]/g, '').toUpperCase() === queryClean)
+      );
+
+      if (book) {
+        e.preventDefault();
+        setBookError('');
+        if (book.availableCopies <= 0) {
+          playBeep('error');
+          setBookError(`Book "${book.title}" has no copies available.`);
+          return;
+        }
+        if (selectedMember && selectedMember.borrowedBooks && selectedMember.borrowedBooks.some(b => b.book.toString() === book._id && !b.returnDate)) {
+          playBeep('error');
+          setBookError(`Member already has "${book.title}" borrowed.`);
+          return;
+        }
+
+        handleSelectBook(book);
+        playBeep('success');
+      } else {
+        if (upperQuery.startsWith('BK') || /^\d{6,}/.test(query)) {
+          e.preventDefault();
+          playBeep('error');
+          setBookError(`No book found matching barcode/ISBN "${query}".`);
+        }
+      }
+    }
+  };
+
+  // Auto-focus inputs on state changes (immediate layout adjustment)
+  useEffect(() => {
+    if (!selectedMember) {
+      if (memberInputRef.current) {
+        memberInputRef.current.focus();
+      }
+    } else if (!selectedBook) {
+      if (bookInputRef.current) {
+        bookInputRef.current.focus();
+      }
+    }
+  }, [selectedMember, selectedBook]);
+
+  // Global keydown scanner interceptor
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (showSuccessModal) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setShowSuccessModal(false);
+          setIssuedDetails(null);
+          if (!selectedMember) {
+            if (memberInputRef.current) memberInputRef.current.focus();
+          } else {
+            if (bookInputRef.current) bookInputRef.current.focus();
+          }
+          return;
+        }
+
+        // Alphanumeric character indicating a new scan started
+        if (e.key.length === 1) {
+          setShowSuccessModal(false);
+          setIssuedDetails(null);
+          if (!selectedMember) {
+            if (memberInputRef.current) memberInputRef.current.focus();
+          } else {
+            if (bookInputRef.current) bookInputRef.current.focus();
+          }
+          return; // Let character pass through to the now-focused input
+        }
+      }
+
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'CapsLock', 'Enter', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backspace', 'Delete'].includes(e.key)) return;
+
+      if (
+        document.activeElement.tagName === 'INPUT' ||
+        document.activeElement.tagName === 'TEXTAREA' ||
+        document.activeElement.tagName === 'SELECT'
+      ) {
+        return;
+      }
+
+      if (!selectedMember) {
+        if (memberInputRef.current) {
+          memberInputRef.current.focus();
+        }
+      } else if (!selectedBook) {
+        if (bookInputRef.current) {
+          bookInputRef.current.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [selectedMember, selectedBook, showSuccessModal]);
 
   const canIssue = selectedMember && selectedBook && !saving;
 
@@ -237,13 +389,20 @@ export default function IssueBook() {
       setAllBooks(booksRes.data.books || []);
       setRecentIssues(txRes.data.transactions || []);
 
+      // Keep details for the success popup before clearing states
+      setIssuedDetails({
+        member: selectedMember,
+        book: selectedBook,
+        dueDate,
+      });
+      setShowSuccessModal(true);
+
       clearAll();
       setShowMemberSuggestions(true);
       setShowBookSuggestions(true);
       setIssueDate(new Date().toISOString().split('T')[0]);
       const d = new Date(); d.setDate(d.getDate() + 14);
       setDueDate(d.toISOString().split('T')[0]);
-      alert('Book issued successfully!');
       console.log('Book issued successfully!');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to issue book.');
@@ -354,17 +513,32 @@ export default function IssueBook() {
 
                   {/* Search bar */}
                   <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#9CA3AF', fontSize: 20 }}>person_search</span>
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: memberInputFocused ? '#6366F1' : '#9CA3AF', fontSize: 20 }}>person_search</span>
                     <input
+                      ref={memberInputRef}
                       type="text"
                       value={memberSearch}
-                      onChange={(e) => setMemberSearch(e.target.value)}
-                      onFocus={() => setShowMemberSuggestions(memberSearch.length === 0)}
+                      onChange={(e) => { setMemberSearch(e.target.value); setMemberError(''); }}
+                      onKeyDown={handleMemberSearchKeyDown}
+                      onFocus={() => { setMemberInputFocused(true); setShowMemberSuggestions(memberSearch.length === 0); }}
+                      onBlur={() => setMemberInputFocused(false)}
                       placeholder="Type name, email, or member ID..."
-                      className="w-full py-2 pl-10 pr-3 text-sm rounded-xl outline-none"
-                      style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}
+                      className="w-full py-2 pl-10 pr-3 text-sm rounded-xl outline-none transition-all"
+                      style={{ 
+                        backgroundColor: '#F9FAFB', 
+                        border: memberInputFocused ? '2px solid #6366F1' : '1px solid #E5E7EB',
+                        fontFamily: memberSearch.toUpperCase().startsWith('KMV') ? 'monospace' : 'inherit',
+                        fontWeight: memberSearch.toUpperCase().startsWith('KMV') ? 'bold' : 'normal'
+                      }}
                     />
                   </div>
+
+                  {memberError && (
+                    <div className="mt-2 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5" style={{ backgroundColor: '#FEF2F2', color: '#DC2626' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>error</span>
+                      {memberError}
+                    </div>
+                  )}
 
                   {/* Suggestions (when search is empty) */}
                   {showMemberSuggestions && !selectedMember && memberSearch.length === 0 && (
@@ -454,7 +628,7 @@ export default function IssueBook() {
                 </div>
 
                 {/* --- BOOK SELECTION --- */}
-                <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: '#fff' }}>
+                <div className="rounded-2xl p-4 shadow-sm transition-all" style={{ backgroundColor: '#fff', border: bookInputFocused ? '2px solid #F59E0B' : '1px solid #E5E7EB' }}>
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#F59E0B' }}>
                       <span className="material-symbols-outlined text-white" style={{ fontSize: 16 }}>menu_book</span>
@@ -467,19 +641,36 @@ export default function IssueBook() {
                     )}
                   </div>
 
-                  {/* Book search */}
+                  {/* Book search / Scan */}
                   <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#9CA3AF', fontSize: 20 }}>search</span>
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: bookInputFocused ? '#F59E0B' : '#9CA3AF', fontSize: 20 }}>
+                      {bookInputFocused ? 'qr_code_scanner' : 'search'}
+                    </span>
                     <input
+                      ref={bookInputRef}
+                      id="book-search-input"
                       type="text"
                       value={bookSearch}
-                      onChange={(e) => setBookSearch(e.target.value)}
-                      onFocus={() => setShowBookSuggestions(bookSearch.length === 0)}
-                      placeholder="Type title, author, ID, ISBN..."
-                      className="w-full py-2 pl-10 pr-3 text-sm rounded-xl outline-none"
-                      style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}
+                      onChange={(e) => { setBookSearch(e.target.value); setBookError(''); }}
+                      onFocus={() => { setBookInputFocused(true); setShowBookSuggestions(bookSearch.length === 0); }}
+                      onBlur={() => setBookInputFocused(false)}
+                      onKeyDown={handleBookSearchKeyDown}
+                      placeholder="Scan book barcode / ISBN or type title, author..."
+                      className="w-full py-2 pl-10 pr-3 text-sm rounded-xl outline-none transition-all font-medium"
+                      style={{ 
+                        backgroundColor: '#F9FAFB', 
+                        border: bookInputFocused ? '1px solid #F59E0B' : '1px solid #E5E7EB',
+                        fontFamily: bookSearch.startsWith('BK') || /^\d{6}/.test(bookSearch) ? 'monospace' : 'inherit'
+                      }}
                     />
                   </div>
+
+                  {bookError && (
+                    <div className="mt-2 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5" style={{ backgroundColor: '#FEF2F2', color: '#DC2626' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>error</span>
+                      {bookError}
+                    </div>
+                  )}
 
                   {/* Suggestions (when search is empty) */}
                   {showBookSuggestions && !selectedBook && bookSearch.length === 0 && (
@@ -696,6 +887,92 @@ export default function IssueBook() {
               </div>
             </div>
           </div>
+
+          {/* Success Modal Overlay */}
+          {showSuccessModal && issuedDetails && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn" style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(8px)' }}>
+              <style>{`
+                @keyframes fadeIn {
+                  from { opacity: 0; }
+                  to { opacity: 1; }
+                }
+                @keyframes scaleUp {
+                  from { transform: scale(0.95); opacity: 0; }
+                  to { transform: scale(1); opacity: 1; }
+                }
+                .animate-fadeIn {
+                  animation: fadeIn 0.2s ease-out forwards;
+                }
+                .animate-scaleUp {
+                  animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                }
+              `}</style>
+              <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl transition-all border border-slate-100 flex flex-col items-center text-center relative overflow-hidden animate-scaleUp">
+                {/* Elegant top background shape for a premium feel */}
+                <div className="absolute top-0 left-0 right-0 h-2 bg-emerald-500" />
+                
+                {/* Icon checkmark inside a container */}
+                <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4 mt-2 animate-bounce">
+                  <span className="material-symbols-outlined text-4xl font-bold">check_circle</span>
+                </div>
+
+                <h3 className="text-xl font-extrabold mb-1" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
+                  Book Issued Successfully!
+                </h3>
+                <p className="text-slate-400 text-xs mb-5">Checkout transaction completed and recorded</p>
+
+                {/* Issued Details Box */}
+                <div className="w-full rounded-2xl p-4 mb-6 border border-slate-100 bg-slate-50/50 flex flex-col gap-3.5 text-left text-xs">
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-slate-400 mt-0.5" style={{ fontSize: 18 }}>person</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Borrower</div>
+                      <div className="font-bold text-slate-800 truncate">{issuedDetails.member.name}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">{issuedDetails.member.memberId}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="border-t border-dashed border-slate-200" />
+
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-slate-400 mt-0.5" style={{ fontSize: 18 }}>menu_book</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Issued Item</div>
+                      <div className="font-bold text-slate-800 truncate">{issuedDetails.book.title}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">Catalog ID: {issuedDetails.book.bookId}</div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-dashed border-slate-200" />
+
+                  <div className="flex gap-3">
+                    <span className="material-symbols-outlined text-emerald-600 mt-0.5" style={{ fontSize: 18 }}>event</span>
+                    <div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Return Due Date</div>
+                      <div className="font-extrabold text-emerald-700 text-sm mt-0.5">
+                        {new Date(issuedDetails.dueDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={() => {
+                      setShowSuccessModal(false);
+                      setIssuedDetails(null);
+                    }}
+                    className="flex-1 py-3 rounded-xl text-xs font-extrabold text-white transition-all hover:opacity-90 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-700/20"
+                    style={{ backgroundColor: '#10B981' }}
+                  >
+                    <span className="material-symbols-outlined text-sm font-bold">qr_code_scanner</span>
+                    Scan Next Book (Enter)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
     </DashboardLayout>
   );
 }

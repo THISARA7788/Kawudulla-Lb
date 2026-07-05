@@ -22,16 +22,14 @@ router.get('/quick-lookup/:id', async (req, res) => {
     const { id } = req.params;
     const trimmed = id.trim();
 
-    // Determine lookup type by prefix
-    const isMemberId = trimmed.toUpperCase().startsWith('KMV-');
-    const isBookId = trimmed.toUpperCase().startsWith('BK');
-
-    if (isMemberId) {
+    // 1. Try to find user by memberId (case-insensitive)
+    const user = await User.findOne({ memberId: trimmed.toUpperCase() }, '-password -borrowedBooks -resetToken -resetTokenExpiry');
+    
+    if (user) {
       const Fine = require('../models/Fine');
-      const user = await User.findOne({ memberId: trimmed.toUpperCase() }, '-password -borrowedBooks -resetToken -resetTokenExpiry')
+      const populatedUser = await User.findById(user._id, '-password -borrowedBooks -resetToken -resetTokenExpiry')
         .populate('borrowedBooks.book', 'bookId title author');
-      if (!user) return res.status(404).json({ message: 'Member not found' });
-
+        
       const activeBorrows = await Transaction.find({ user: user._id, status: 'active' })
         .populate('book', 'bookId title author')
         .sort({ issueDate: -1 })
@@ -45,20 +43,35 @@ router.get('/quick-lookup/:id', async (req, res) => {
 
       return res.json({
         type: 'member',
-        member: user,
+        member: populatedUser,
         activeBorrows,
         totalBorrows,
         activeFines,
       });
     }
 
-    if (isBookId) {
-      const book = await Book.findOne({ bookId: trimmed.toUpperCase() });
-      if (!book) return res.status(404).json({ message: 'Book not found' });
-      return res.json({ type: 'book', book });
+    // 2. Try to find book by bookId or isbn (handling spaces and hyphens)
+    const isbnCleaned = trimmed.replace(/[-\s]/g, '');
+    const book = await Book.findOne({
+      $or: [
+        { bookId: trimmed.toUpperCase() },
+        { isbn: trimmed },
+        { isbn: isbnCleaned }
+      ]
+    });
+
+    if (book) {
+      const activeTransactions = await Transaction.find({ book: book._id, status: { $in: ['active', 'overdue'] } })
+        .populate('user', 'name email memberId grade class role');
+
+      return res.json({
+        type: 'book',
+        book,
+        activeTransactions: activeTransactions || []
+      });
     }
 
-    return res.status(400).json({ message: 'Invalid ID format. Use KMV-XXXX for members or BKXXX for books' });
+    return res.status(404).json({ message: `No member or book found with ID/ISBN "${trimmed}"` });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -83,6 +83,11 @@ router.put('/books/:id', protect, authorize('librarian'), async (req, res) => {
   try {
     const book = await Book.findById(req.params.id);
     if (!book) return res.status(404).json({ message: 'Book not found' });
+    if (req.body.totalCopies !== undefined) {
+      const newTotal = Number(req.body.totalCopies);
+      const diff = newTotal - book.totalCopies;
+      book.availableCopies = Math.max(0, book.availableCopies + diff);
+    }
     Object.assign(book, req.body);
     await book.save();
     res.json({ message: 'Book updated', book });
@@ -435,6 +440,23 @@ router.get('/users/:id/borrowing-info', protect, async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const activeBorrows = (user.borrowedBooks || []).filter(b => !b.returnDate);
+    
+    // Fetch active transactions to retrieve notes
+    const transactions = await Transaction.find({ user: user._id, status: { $in: ['active', 'overdue'] } });
+
+    // Map borrowed books to append notes (safeguarded against deleted books / null population)
+    const activeBorrowsWithNotes = activeBorrows
+      .map(b => {
+        const doc = b.toObject ? b.toObject() : b;
+        if (!doc.book || !doc.book._id) return null;
+        const tx = transactions.find(t => t.book && t.book.toString() === doc.book._id.toString());
+        return {
+          ...doc,
+          notes: tx ? tx.notes : '',
+        };
+      })
+      .filter(Boolean);
+
     const overdueBorrows = activeBorrows.filter(b => new Date(b.dueDate) < new Date());
     const limit = BORROW_LIMIT[user.role] || 5;
 
@@ -450,7 +472,7 @@ router.get('/users/:id/borrowing-info', protect, async (req, res) => {
       activeCount: activeBorrows.length,
       overdueCount: overdueBorrows.length,
       limit,
-      borrowedBooks: activeBorrows,
+      borrowedBooks: activeBorrowsWithNotes,
       allBorrows: user.borrowedBooks,
     });
   } catch (error) {

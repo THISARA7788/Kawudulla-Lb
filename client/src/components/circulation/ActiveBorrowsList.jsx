@@ -86,6 +86,12 @@ export default function ActiveBorrowsList({
                 <div className="text-[10px] mt-1" style={{ color: '#9CA3AF' }}>
                   Due: {new Date(b.dueDate).toLocaleDateString()}
                 </div>
+                {b.notes && (
+                  <div className="mt-1.5 pt-1.5 border-t border-dashed border-slate-200 text-[10px] text-slate-500 flex items-start gap-1">
+                    <span className="material-symbols-outlined text-[12px] mt-0.5" style={{ color: '#9CA3AF' }}>notes</span>
+                    <span className="italic truncate">{b.notes}</span>
+                  </div>
+                )}
               </div>
               
               {/* Radio check selection ring */}
@@ -108,6 +114,12 @@ export default function ActiveBorrowsList({
               </span>
             </div>
             <div className="mt-0.5" style={{ color: '#9CA3AF' }}>Due: {new Date(b.dueDate).toLocaleDateString()}</div>
+            {b.notes && (
+              <div className="mt-1 pt-1 border-t border-dashed border-slate-200 text-[10px] text-slate-500 flex items-start gap-1">
+                <span className="material-symbols-outlined text-[12px] mt-0.5" style={{ color: '#9CA3AF' }}>notes</span>
+                <span className="italic truncate">{b.notes}</span>
+              </div>
+            )}
           </div>
         );
       })}

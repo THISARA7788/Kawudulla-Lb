@@ -61,6 +61,15 @@ const bookSchema = new mongoose.Schema(
     publishedYear: {
       type: Number,
     },
+    coverImageUrl: {
+      type: String,
+      default: '',
+    },
+    status: {
+      type: String,
+      enum: ['Available', 'Borrowed', 'Reserved'],
+      default: 'Available',
+    },
   },
   {
     timestamps: true,

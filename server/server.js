@@ -20,6 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 // API Routes (specific routes must be registered before general /api/library)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/books', require('./routes/books'));
 app.use('/api/library/fines', require('./routes/fines'));
 app.use('/api/library/reports', require('./routes/reports'));
 app.use('/api/library', require('./routes/quickLookup'));

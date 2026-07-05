@@ -49,6 +49,12 @@ export default function RecentTransactionsList({
                   {isOverdue ? 'Overdue' : dueSoon ? 'Due Soon' : 'Active'}
                 </span>
               </div>
+              {tx.notes && (
+                <div className="mt-1.5 pt-1 border-t border-dashed border-slate-200 text-[9px] text-slate-500 flex items-start gap-1">
+                  <span className="material-symbols-outlined text-[11px] mt-0.5" style={{ color: '#9CA3AF' }}>notes</span>
+                  <span className="italic truncate">{tx.notes}</span>
+                </div>
+              )}
             </div>
           );
         }
@@ -81,6 +87,12 @@ export default function RecentTransactionsList({
                 )}
               </div>
             </div>
+            {tx.notes && (
+              <div className="mt-1.5 pt-1 border-t border-dashed border-slate-200 text-[9px] text-slate-500 flex items-start gap-1">
+                <span className="material-symbols-outlined text-[11px] mt-0.5" style={{ color: '#9CA3AF' }}>notes</span>
+                <span className="italic truncate">{tx.notes}</span>
+              </div>
+            )}
           </div>
         );
       })}

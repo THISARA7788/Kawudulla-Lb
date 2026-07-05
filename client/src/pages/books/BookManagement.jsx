@@ -16,6 +16,8 @@ const emptyForm = {
   totalCopies: 1,
   publisher: '',
   publishedYear: '',
+  coverImageUrl: '',
+  status: 'Available',
 };
 
 export default function BookManagement() {
@@ -80,6 +82,8 @@ export default function BookManagement() {
       totalCopies: book.totalCopies || 1,
       publisher: book.publisher || '',
       publishedYear: book.publishedYear || '',
+      coverImageUrl: book.coverImageUrl || '',
+      status: book.status || 'Available',
     });
     setCustomCategory(!CATEGORIES.includes(book.category) ? book.category : '');
     setForm((prev) => ({ ...prev, category: !CATEGORIES.includes(book.category) ? 'Other' : book.category }));
@@ -122,7 +126,7 @@ export default function BookManagement() {
         });
         setBooks((prev) => prev.map((b) => (b._id === editingBook._id ? res.data.book : b)));
       } else {
-        const res = await api.post('/library/books', body, {
+        const res = await api.post('/books', body, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBooks((prev) => [res.data.book, ...prev]);
