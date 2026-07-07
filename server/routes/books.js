@@ -60,6 +60,8 @@ router.post('/', protect, authorize('librarian'), async (req, res) => {
   }
 });
 
+const { lookupSriLankanISBN } = require('../utils/isbnLkpHelper');
+
 // @route   GET /api/books/check/:isbn
 // @desc    Check if a book with the given ISBN exists
 // @access  Private (Librarian)
@@ -75,6 +77,23 @@ router.get('/check/:isbn', protect, authorize('librarian'), async (req, res) => 
   } catch (error) {
     console.error('Check book error:', error.message);
     res.status(500).json({ message: 'Server error while checking book' });
+  }
+});
+
+// @route   GET /api/books/lookup-srilanka/:isbn
+// @desc    Scrape details of a Sri Lankan book by ISBN
+// @access  Private (Librarian)
+router.get('/lookup-srilanka/:isbn', protect, authorize('librarian'), async (req, res) => {
+  try {
+    const { isbn } = req.params;
+    const details = await lookupSriLankanISBN(isbn);
+    if (details) {
+      return res.json({ success: true, book: details });
+    }
+    res.json({ success: false, message: 'Book not found in Sri Lankan registry' });
+  } catch (error) {
+    console.error('Sri Lankan ISBN lookup error:', error.message);
+    res.status(500).json({ message: 'Server error during Sri Lankan ISBN lookup' });
   }
 });
 

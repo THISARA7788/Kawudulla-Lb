@@ -124,13 +124,33 @@ export default function BookFormModal({
               title: info.title || '',
               author: info.authors ? info.authors.map(a => a.name).join(', ') : '',
               publisher: info.publishers ? info.publishers.map(p => p.name).join(', ') : '',
-              publishedYear: info.publish_date ? info.publish_date.split(' ').pop() : '',
+              publishedYear: info.published_date ? info.published_date.split(' ').pop() : '',
               description: typeof info.notes === 'string' ? info.notes : '',
               coverImageUrl: info.cover ? (info.cover.large || info.cover.medium || info.cover.small) : '',
             };
           }
         } catch (olErr) {
           console.warn('Open Library fallback failed:', olErr);
+        }
+      }
+
+      // 4. Fallback to Sri Lankan National Registry (isbn.lk)
+      if (!bookData) {
+        try {
+          const slResponse = await api.get(`/books/lookup-srilanka/${cleanIsbn}`);
+          if (slResponse.data && slResponse.data.success && slResponse.data.book) {
+            const info = slResponse.data.book;
+            bookData = {
+              title: info.title || '',
+              author: info.author || '',
+              publisher: info.publisher || '',
+              publishedYear: info.publishedYear || '',
+              description: '',
+              coverImageUrl: ''
+            };
+          }
+        } catch (slErr) {
+          console.warn('Sri Lankan registry lookup failed:', slErr);
         }
       }
 
