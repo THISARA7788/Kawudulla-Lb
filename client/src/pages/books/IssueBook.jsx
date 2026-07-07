@@ -84,7 +84,7 @@ export default function IssueBook() {
   }, []);
 
   // Derived: grades and classes that exist in the data
-  const allStudents = allUsers.filter(u => u.role === 'student');
+  const allStudents = allUsers.filter(u => u.role === 'student' && u.status === 'active');
   const availableGrades = [...new Set(allStudents.map(u => u.grade).filter(Boolean))];
   const availableClasses = [...new Set(
     allStudents.filter(u => u.grade === memberGradeFilter && u.class).map(u => u.class)
@@ -120,7 +120,7 @@ export default function IssueBook() {
 
   // Filter members
   useEffect(() => {
-    let list = allUsers.filter(u => u.status !== 'rejected' && u.role !== 'librarian');
+    let list = allUsers.filter(u => u.status === 'active' && u.role !== 'librarian');
 
     // Role filter
     if (memberRoleFilter === 'student') list = list.filter(u => u.role === 'student');
@@ -285,10 +285,32 @@ export default function IssueBook() {
         handleSelectBook(book);
         playBeep('success');
       } else {
-        if (upperQuery.startsWith('BK') || /^\d{6,}/.test(query)) {
+        // Fallback to checking partial/name matches in bookResults
+        if (bookResults.length > 0) {
           e.preventDefault();
-          playBeep('error');
-          setBookError(`No book found matching barcode/ISBN "${query}".`);
+          const firstBook = bookResults[0];
+          
+          if (firstBook.availableCopies <= 0) {
+            playBeep('error');
+            setBookError(`Book "${firstBook.title}" has no copies available.`);
+            return;
+          }
+          if (selectedMember && selectedMember.borrowedBooks && selectedMember.borrowedBooks.some(b => b.book.toString() === firstBook._id && !b.returnDate)) {
+            playBeep('error');
+            setBookError(`Member already has "${firstBook.title}" borrowed.`);
+            return;
+          }
+
+          handleSelectBook(firstBook);
+          playBeep('success');
+          setBookSearch('');
+          setBookError('');
+        } else {
+          if (upperQuery.startsWith('BK') || /^\d{6,}/.test(query)) {
+            e.preventDefault();
+            playBeep('error');
+            setBookError(`No book found matching barcode/ISBN "${query}".`);
+          }
         }
       }
     }
@@ -424,11 +446,7 @@ export default function IssueBook() {
   return (
     <DashboardLayout>
 
-          {/* Header */}
-          <div className="mb-4">
-            <h1 className="text-2xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Issue Book</h1>
-            <p className="text-xs" style={{ color: '#94a3b8' }}>Select a member and a book to issue a borrowing.</p>
-          </div>
+
 
           {error && (
             <div className="mb-3 px-4 py-2 rounded-xl text-sm flex items-center gap-2" style={{ backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>

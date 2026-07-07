@@ -77,7 +77,7 @@ export default function ReturnBook() {
   }, []);
 
   // Derived: grades and classes that exist
-  const allStudents = allUsers.filter(u => u.role === 'student' && u.status !== 'rejected');
+  const allStudents = allUsers.filter(u => u.role === 'student' && u.status === 'active');
   const availableGrades = [...new Set(allStudents.map(u => u.grade).filter(Boolean))];
   const availableClasses = [...new Set(
     allStudents.filter(u => u.grade === memberGradeFilter && u.class).map(u => u.class)
@@ -86,7 +86,7 @@ export default function ReturnBook() {
   // Filter members
   useEffect(() => {
     let list = allUsers.filter(u =>
-      u.status !== 'rejected' &&
+      u.status === 'active' &&
       u.role !== 'librarian'
     );
 
@@ -408,11 +408,7 @@ export default function ReturnBook() {
   return (
     <DashboardLayout>
 
-          {/* Header */}
-          <div className="mb-4">
-            <h1 className="text-2xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Return Book</h1>
-            <p className="text-xs" style={{ color: '#94a3b8' }}>Select a member and the book they are returning.</p>
-          </div>
+
 
           {error && (
             <div className="mb-3 px-4 py-2 rounded-xl text-sm flex items-center gap-2" style={{ backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>

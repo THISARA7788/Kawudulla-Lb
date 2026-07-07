@@ -15,7 +15,8 @@ export default function BookFormModal({
   handleChange,
   handleSave,
   setShowModal,
-  CATEGORIES
+  CATEGORIES,
+  onImportComplete
 }) {
   if (!showModal) return null;
 
@@ -253,6 +254,59 @@ export default function BookFormModal({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
 
+  // Bulk CSV Import States & Handlers
+  const fileInputRef = useRef(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+
+  const downloadCSVTemplate = () => {
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + "title,author,isbn,category,totalCopies,publisher,publishedYear,description\n"
+      + "මැයි මාර ප්‍රසංගය,Mahinda Masimbula,9786245594252,Fiction,5,Liyanage,2022,A great Sinhala novel\n"
+      + "A Brief History of Time,Stephen Hawking,9780553380163,Science,3,Bantam Books,1998,Classic physics literature";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "library_book_import_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleCSVImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    e.target.value = null;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const csvText = event.target.result;
+      if (!csvText.trim()) {
+        alert("CSV file is empty!");
+        return;
+      }
+
+      setImporting(true);
+      try {
+        const res = await api.post('/library/books/import', { csvText });
+        setImportResult({
+          success: true,
+          importedCount: res.data.importedCount,
+          skippedCount: res.data.skippedCount,
+        });
+        if (onImportComplete) {
+          onImportComplete();
+        }
+      } catch (err) {
+        alert(err.response?.data?.message || "Failed to import books. Please check column headers.");
+      } finally {
+        setImporting(false);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const compressImage = (file) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -346,24 +400,72 @@ export default function BookFormModal({
     }
   };
 
+  const isFormValid = !!(
+    form.title?.trim() &&
+    form.author?.trim() &&
+    (form.category !== 'Other' || customCategory?.trim())
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}>
       <div
-        className="rounded-2xl p-6 w-full max-w-xl mx-4 shadow-2xl transition-all"
-        style={{ backgroundColor: '#fff', maxHeight: '92vh', overflowY: 'auto' }}
+        className="rounded-2xl p-6 w-full max-w-5xl mx-4 shadow-2xl transition-all"
+        style={{ backgroundColor: '#fff', maxHeight: '94vh', overflowY: 'auto' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 border-b pb-3">
+        <div className="flex items-center justify-between mb-4 border-b pb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
           <div>
-            <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
+            <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
               <span className="material-symbols-outlined" style={{ fontSize: 24 }}>menu_book</span>
-              {editingBook ? 'Edit Book Details' : 'Add New Book to Catalog'}
+              {editingBook ? 'Edit Book Details' : 'Add New Book'}
             </h2>
-            <p className="text-slate-400 text-xs mt-0.5">Fill book information manually or use barcode lookup</p>
+            <p className="text-slate-400 text-[10px] sm:text-xs mt-0.5">Fill details manually or use barcode lookup</p>
           </div>
-          <button onClick={() => { stopCamera(); setShowModal(false); }} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors" style={{ color: '#94a3b8' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 22 }}>close</span>
-          </button>
+
+          <div className="flex items-center gap-3">
+            {/* Bulk Import controls inside header when adding book */}
+            {!editingBook && (
+              <div className="flex items-center gap-2 border-r pr-3 border-slate-100">
+                {/* Download CSV Template */}
+                <button
+                  type="button"
+                  onClick={downloadCSVTemplate}
+                  className="flex items-center justify-center bg-white border border-slate-200 hover:border-slate-350 hover:bg-slate-55 rounded-xl p-2 shadow-sm text-slate-500 hover:text-slate-700 transition-all active:scale-95 cursor-pointer"
+                  title="Download CSV Import Template"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>download</span>
+                </button>
+
+                {/* Bulk Import trigger */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                  title="Import Books from CSV/Excel"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>upload_file</span>
+                  Bulk Import
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCSVImport}
+                  className="hidden"
+                />
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => { stopCamera(); setShowModal(false); }}
+              className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              style={{ color: '#94a3b8' }}
+              title="Close"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 22 }}>close</span>
+            </button>
+          </div>
         </div>
 
         {/* Local DB Duplicate Match Overlay */}
@@ -379,7 +481,7 @@ export default function BookFormModal({
             
             <div className="flex gap-3 items-center bg-white p-3 rounded-lg border border-orange-100">
               {duplicateBook.coverImageUrl ? (
-                <img src={duplicateBook.coverImageUrl} alt="Book Cover" className="w-9 h-12 object-cover rounded shadow" />
+                <img src={duplicateBook.coverImageUrl} alt="Book Cover" className="w-9 h-12 object-contain rounded shadow" />
               ) : (
                 <div className="w-9 h-12 bg-slate-100 flex items-center justify-center rounded border border-dashed"><span className="material-symbols-outlined text-slate-400" style={{ fontSize: 16 }}>image</span></div>
               )}
@@ -476,254 +578,317 @@ export default function BookFormModal({
         )}
 
         <form onSubmit={handleSave} className="space-y-4">
-          {/* Main Book Meta Section (Autofill Helpers) */}
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-3">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-slate-400">Barcode Scanning Integration</span>
-              {!showCamera && (
-                <button
-                  type="button"
-                  onClick={startCamera}
-                  className="px-2.5 py-1 text-xs font-bold flex items-center gap-1 bg-white border border-slate-205 rounded-lg shadow-sm hover:bg-slate-100 transition-colors text-slate-700"
-                >
-                  <span className="material-symbols-outlined text-slate-500" style={{ fontSize: 16 }}>videocam</span>
-                  Open Camera Scanner
-                </button>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold mb-1" style={{ color: '#595c5e' }}>ISBN-10 or ISBN-13 Code</label>
-              <div className="relative flex gap-2">
-                <div className="relative flex-1">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: 18 }}>barcode_reader</span>
-                  <input
-                    ref={isbnInputRef}
-                    autoFocus
-                    name="isbn"
-                    value={form.isbn || ''}
-                    onChange={handleChange}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        triggerIsbnSearch(form.isbn);
-                      }
-                    }}
-                    placeholder="Scan barcode or enter ISBN..."
-                    className="w-full pl-9 pr-4 py-2 text-sm rounded-xl outline-none border transition-all"
-                    style={{ backgroundColor: '#fff', borderColor: '#e0e0e0' }}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            
+            {/* Left Column: General Book Information */}
+            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-3.5">
+              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none flex items-center gap-1.5 mb-1">
+                <span className="material-symbols-outlined text-slate-400" style={{ fontSize: 16 }}>info</span>
+                General Book Information
+              </h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Title <span className="text-red-500 font-bold">*</span></label>
+                  <input name="title" value={form.title || ''} onChange={handleChange} required
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                    placeholder="e.g. Sherlock Holmes"
                   />
-                  {searchingIsbn && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-                      <span className="material-symbols-outlined animate-spin text-slate-400" style={{ fontSize: 18 }}>progress_activity</span>
-                    </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Author <span className="text-red-500 font-bold">*</span></label>
+                  <input name="author" value={form.author || ''} onChange={handleChange} required
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                    placeholder="e.g. Arthur Conan Doyle"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Category <span className="text-red-500 font-bold">*</span></label>
+                  <select name="category" value={CATEGORIES.includes(form.category) ? form.category : 'Other'} onChange={handleChange}
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white text-slate-700 cursor-pointer"
+                  >
+                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    {!CATEGORIES.includes(form.category) && <option value="Other">{form.category}</option>}
+                  </select>
+                  {(form.category === 'Other') && (
+                    <input value={customCategory} onChange={(e) => setCustomCategory(e.target.value)}
+                      placeholder="Enter custom category" required
+                      className="w-full mt-2 px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                    />
                   )}
                 </div>
-                <button
-                  type="button"
-                  disabled={searchingIsbn || !form.isbn}
-                  onClick={() => triggerIsbnSearch(form.isbn)}
-                  className="px-4 py-2 text-sm font-semibold rounded-xl text-white shadow-sm transition-all flex items-center gap-1"
-                  style={{ backgroundColor: '#1a1245', opacity: searchingIsbn || !form.isbn ? 0.6 : 1 }}
-                >
-                  Lookup
-                </button>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Publisher <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
+                  <input name="publisher" value={form.publisher || ''} onChange={handleChange}
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                    placeholder="e.g. George Newnes"
+                  />
+                </div>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1">Press Enter inside field or connect hardware USB scanner to scan at any time</p>
-            </div>
-          </div>
 
-          {/* Catalog Record Details */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold mb-1" style={{ color: '#595c5e' }}>Title *</label>
-              <input name="title" value={form.title || ''} onChange={handleChange} required
-                className="w-full px-3 py-2 text-sm rounded-xl outline-none border focus:border-slate-400"
-                style={{ backgroundColor: '#fff', borderColor: '#e0e0e0' }}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold mb-1" style={{ color: '#595c5e' }}>Author *</label>
-              <input name="author" value={form.author || ''} onChange={handleChange} required
-                className="w-full px-3 py-2 text-sm rounded-xl outline-none border focus:border-slate-400"
-                style={{ backgroundColor: '#fff', borderColor: '#e0e0e0' }}
-              />
-            </div>
-          </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Published Year <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
+                  <input name="publishedYear" type="number" value={form.publishedYear || ''} onChange={handleChange}
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                    placeholder="e.g. 1892"
+                  />
+                </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2">
-              <label className="block text-xs font-bold mb-1" style={{ color: '#595c5e' }}>Category *</label>
-              <select name="category" value={CATEGORIES.includes(form.category) ? form.category : 'Other'} onChange={handleChange}
-                className="w-full px-3 py-2 text-sm rounded-xl outline-none border focus:border-slate-400"
-                style={{ backgroundColor: '#fff', borderColor: '#e0e0e0', color: '#2C2C3E' }}
-              >
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                {!CATEGORIES.includes(form.category) && <option value="Other">{form.category}</option>}
-              </select>
-              {(form.category === 'Other') && (
-                <input value={customCategory} onChange={(e) => setCustomCategory(e.target.value)}
-                  placeholder="Enter custom category" required
-                  className="w-full mt-2 px-3 py-2 text-sm rounded-xl outline-none border focus:border-slate-400"
-                  style={{ backgroundColor: '#fff', borderColor: '#e0e0e0', color: '#2C2C3E' }}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Book ID</label>
+                  <input
+                    value={form.bookId || editingBook?.bookId || 'BKXXXX'}
+                    readOnly
+                    disabled
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 font-mono font-bold text-slate-400 bg-slate-50"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Description / Synopsis <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
+                <textarea name="description" value={form.description || ''} onChange={handleChange} rows="2"
+                  className="w-full px-3 py-2 text-sm rounded-xl outline-none resize-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                  placeholder="Brief summary or description..."
                 />
-              )}
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold mb-1" style={{ color: '#595c5e' }}>Total Copies</label>
-              <input name="totalCopies" type="number" min="1" value={form.totalCopies || 1} onChange={handleChange}
-                className="w-full px-3 py-2 text-sm rounded-xl outline-none border focus:border-slate-400"
-                style={{ backgroundColor: '#fff', borderColor: '#e0e0e0' }}
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2">
-              <label className="block text-xs font-bold mb-1" style={{ color: '#595c5e' }}>Publisher</label>
-              <input name="publisher" value={form.publisher || ''} onChange={handleChange}
-                className="w-full px-3 py-2 text-sm rounded-xl outline-none border focus:border-slate-400"
-                style={{ backgroundColor: '#fff', borderColor: '#e0e0e0' }}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold mb-1" style={{ color: '#595c5e' }}>Published Year</label>
-              <input name="publishedYear" type="number" value={form.publishedYear || ''} onChange={handleChange}
-                className="w-full px-3 py-2 text-sm rounded-xl outline-none border focus:border-slate-400"
-                style={{ backgroundColor: '#fff', borderColor: '#e0e0e0' }}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold mb-1" style={{ color: '#595c5e' }}>Library Circulation Status</label>
-              <select
-                name="status"
-                value={form.status || 'Available'}
-                onChange={handleChange}
-                className="w-full px-3 py-2 text-sm rounded-xl outline-none border focus:border-slate-400"
-                style={{ backgroundColor: '#fff', borderColor: '#e0e0e0', color: '#2C2C3E' }}
-              >
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold mb-1" style={{ color: '#595c5e' }}>Book ID (Auto Generated)</label>
-              <input
-                value={form.bookId || editingBook?.bookId || 'BKXXXX (on save)'}
-                readOnly
-                disabled
-                className="w-full px-3 py-2 text-sm rounded-xl outline-none border font-mono font-bold"
-                style={{ backgroundColor: '#f8fafc', borderColor: '#e2e8f0', color: '#64748b' }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold mb-1" style={{ color: '#595c5e' }}>Description / Synopsis</label>
-            <textarea name="description" value={form.description || ''} onChange={handleChange} rows="2"
-              className="w-full px-3 py-2 text-sm rounded-xl outline-none resize-none border focus:border-slate-400"
-              style={{ backgroundColor: '#fff', borderColor: '#e0e0e0' }}
-            />
-          </div>
-
-          {/* Book Cover Image Upload Section */}
-          <div className="border-t pt-4">
-            <label className="block text-xs font-bold mb-2 text-slate-700">Cover Book Illustration</label>
-            
-            <div className="flex gap-4 items-center">
-              {/* Cover Image Preview */}
-              <div className="relative w-20 h-28 flex-shrink-0 bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm flex items-center justify-center">
-                {form.coverImageUrl ? (
-                  <>
-                    <img src={form.coverImageUrl} alt="Book cover" className="w-full h-full object-cover" />
+            {/* Right Column: Smart Scanning, Inventory, Cover Art */}
+            <div className="space-y-4">
+              {/* Section: Barcode & ISBN Auto-Fill */}
+              <div className="bg-indigo-50/30 p-3 rounded-2xl border-l-4 border-l-indigo-500 border border-indigo-100/50 flex flex-col gap-2.5 shadow-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1.5 select-none">
+                    <span className="material-symbols-outlined text-indigo-500" style={{ fontSize: 16 }}>qr_code_scanner</span>
+                    Barcode & ISBN Auto-Fill
+                  </span>
+                  {!showCamera && (
                     <button
                       type="button"
-                      onClick={() => handleChange({ target: { name: 'coverImageUrl', value: '' } })}
-                      className="absolute top-1 right-1 p-0.5 bg-red-650 hover:bg-red-700 text-white rounded-full flex items-center justify-center transition-colors"
-                      style={{ backgroundColor: '#dc2626' }}
+                      onClick={startCamera}
+                      className="px-2 py-0.5 text-xs font-bold flex items-center gap-1 bg-white border border-slate-200 hover:border-slate-350 rounded-lg shadow-sm hover:bg-slate-50 transition-all text-slate-700 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[12px]">delete</span>
+                      <span className="material-symbols-outlined text-slate-500" style={{ fontSize: 14 }}>videocam</span>
+                      Camera Scan
                     </button>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center gap-1 text-slate-400">
-                    <span className="material-symbols-outlined text-[28px]">image</span>
-                    <span className="text-[8px] font-bold uppercase tracking-wider">No Cover</span>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">ISBN Code <span className="text-slate-400 text-[9px] font-normal normal-case ml-1">(Optional)</span></label>
+                  <div className="relative flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: 16 }}>barcode_reader</span>
+                      <input
+                        ref={isbnInputRef}
+                        name="isbn"
+                        value={form.isbn || ''}
+                        onChange={handleChange}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            triggerIsbnSearch(form.isbn);
+                          }
+                        }}
+                        placeholder="Scan barcode or enter ISBN number..."
+                        className="w-full pl-9 pr-4 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                      />
+                      {searchingIsbn && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                          <span className="material-symbols-outlined animate-spin text-indigo-500" style={{ fontSize: 16 }}>progress_activity</span>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={searchingIsbn || !form.isbn}
+                      onClick={() => triggerIsbnSearch(form.isbn)}
+                      className="px-3.5 py-1.5 text-xs font-bold rounded-xl text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 transition-all cursor-pointer active:scale-95 whitespace-nowrap shadow-sm hover:shadow"
+                    >
+                      Lookup
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Drag and Drop Zone */}
-              <div
-                className={`flex-1 border-2 border-dashed rounded-2xl p-4 text-center transition-all cursor-pointer ${
-                  dragActive ? 'border-indigo-500 bg-indigo-50/20' : 'border-slate-200 hover:border-slate-300'
-                }`}
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-                onClick={() => document.getElementById('cover-file-input').click()}
-              >
-                <input
-                  id="cover-file-input"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      handleImageFile(e.target.files[0]);
-                    }
-                  }}
-                  className="hidden"
-                />
+              {/* Section: Cover Art & Inventory */}
+              <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 space-y-3">
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none flex items-center gap-1.5 mb-1">
+                  <span className="material-symbols-outlined text-slate-400" style={{ fontSize: 16 }}>palette</span>
+                  Cover Art & Inventory <span className="text-slate-400 text-[10px] font-normal normal-case ml-1">(Optional)</span>
+                </h3>
+                
+                <div className="flex gap-4 items-center">
+                  {/* Cover Image Preview */}
+                  <div className="relative w-16 h-20 flex-shrink-0 bg-white border border-slate-200 rounded overflow-hidden shadow-sm flex items-center justify-center">
+                    {form.coverImageUrl ? (
+                      <>
+                        <img src={form.coverImageUrl} alt="Book cover" className="w-full h-full object-contain" />
+                        <button
+                          type="button"
+                          onClick={() => handleChange({ target: { name: 'coverImageUrl', value: '' } })}
+                          className="absolute top-0.5 right-0.5 p-0.5 bg-red-655 hover:bg-red-700 text-white rounded-full flex items-center justify-center transition-colors"
+                          style={{ backgroundColor: '#dc2626' }}
+                        >
+                          <span className="material-symbols-outlined text-[10px]">delete</span>
+                        </button>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-0.5 text-slate-400">
+                        <span className="material-symbols-outlined text-[18px]">image</span>
+                        <span className="text-[7px] font-bold uppercase tracking-wider">No Cover</span>
+                      </div>
+                    )}
+                  </div>
 
-                {uploadingImage ? (
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <span className="material-symbols-outlined animate-spin text-slate-400" style={{ fontSize: 24 }}>progress_activity</span>
-                    <span className="text-xs font-semibold text-slate-600">Uploading cover image... {uploadProgress}%</span>
-                    <div className="w-full max-w-[150px] bg-slate-105 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-indigo-600 h-full rounded-full transition-all duration-200" style={{ width: `${uploadProgress}%` }}></div>
+                  {/* Drag and Drop Zone */}
+                  <div
+                    className={`flex-1 border border-dashed rounded-xl p-2.5 text-center transition-all cursor-pointer ${
+                      dragActive ? 'border-indigo-500 bg-indigo-50/20' : 'border-slate-200 hover:border-slate-350 hover:bg-slate-50/30'
+                    }`}
+                    onDragEnter={handleDrag}
+                    onDragOver={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDrop={handleDrop}
+                    onClick={() => document.getElementById('cover-file-input').click()}
+                  >
+                    <input
+                      id="cover-file-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleImageFile(e.target.files[0]);
+                        }
+                      }}
+                      className="hidden"
+                    />
+
+                    {uploadingImage ? (
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <span className="material-symbols-outlined animate-spin text-indigo-500" style={{ fontSize: 16 }}>progress_activity</span>
+                        <span className="text-[8px] font-semibold text-slate-600">Uploading... {uploadProgress}%</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-slate-500">
+                        <span className="material-symbols-outlined text-[16px] text-slate-400">cloud_upload</span>
+                        <p className="text-[10px] font-semibold">
+                          Drop cover or <span className="text-indigo-650 font-bold hover:underline">browse</span>
+                        </p>
+                        <p className="text-[7px] text-slate-400">PNG, JPG, WEBP</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-150 pt-3 flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-500">Total Copies in Stock <span className="text-slate-400 text-[10px] font-normal ml-0.5">(Optional)</span></label>
+                  
+                  <div className="flex items-center gap-2">
+                    <input
+                      name="totalCopies"
+                      type="number"
+                      min="1"
+                      value={form.totalCopies ?? ''}
+                      onChange={handleChange}
+                      className="w-16 px-2 py-1.5 text-center text-sm font-bold rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = Number(form.totalCopies) || 1;
+                          handleChange({ target: { name: 'totalCopies', value: current + 1 } });
+                        }}
+                        className="w-6 h-5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 hover:text-indigo-650 flex items-center justify-center text-slate-500 active:scale-90 transition-all cursor-pointer shadow-sm"
+                        title="Increase copies"
+                      >
+                        <span className="material-symbols-outlined text-[18px] leading-none">arrow_drop_up</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = Number(form.totalCopies) || 1;
+                          handleChange({ target: { name: 'totalCopies', value: Math.max(1, current - 1) } });
+                        }}
+                        className="w-6 h-5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 hover:text-indigo-650 flex items-center justify-center text-slate-500 active:scale-90 transition-all cursor-pointer shadow-sm"
+                        title="Decrease copies"
+                      >
+                        <span className="material-symbols-outlined text-[18px] leading-none">arrow_drop_down</span>
+                      </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-1 text-slate-500">
-                    <span className="material-symbols-outlined text-[24px]">cloud_upload</span>
-                    <p className="text-xs font-semibold">
-                      Drag & drop cover art or <span className="text-indigo-600 font-bold hover:underline">browse files</span>
-                    </p>
-                    <p className="text-[9px] text-slate-400">Allowed formats: PNG, JPG, JPEG, WEBP. Auto-compressed.</p>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Form Actions */}
-          <div className="flex gap-3 pt-3 border-t">
+          <div className="flex gap-3 border-t border-slate-100 pt-4 mt-6">
             <button
               type="submit"
-              disabled={saving || uploadingImage}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white shadow hover:opacity-95 transition-opacity"
-              style={{ backgroundColor: '#1a1245', opacity: saving || uploadingImage ? 0.6 : 1 }}
+              disabled={!isFormValid || saving || uploadingImage}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center ${
+                isFormValid && !saving && !uploadingImage
+                  ? 'text-white bg-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg active:scale-95 cursor-pointer'
+                  : 'text-white/60 bg-slate-900 opacity-40 cursor-not-allowed shadow-none'
+              }`}
             >
               {saving ? 'Saving Book...' : editingBook ? 'Save Update' : 'Catalog Book'}
             </button>
             <button
               type="button"
               onClick={() => { stopCamera(); setShowModal(false); }}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors hover:bg-slate-50"
-              style={{ borderColor: '#1a1245', color: '#1a1245' }}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer active:scale-95"
             >
               Cancel
             </button>
           </div>
         </form>
       </div>
+
+      {/* Bulk Import Progress Overlay */}
+      {importing && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex flex-col items-center justify-center z-50 transition-all select-none animate-fadeIn" style={{ fontFamily: "'Inter', sans-serif" }}>
+          <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 text-center max-w-sm mx-4">
+            <div className="w-16 h-16 border-4 border-indigo-650 border-t-transparent rounded-full animate-spin"></div>
+            <h3 className="text-lg font-bold text-slate-800 mt-2">Importing Books</h3>
+            <p className="text-xs text-slate-500">Parsing spreadsheet and updating library database. Please wait...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Result Dialog */}
+      {importResult && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 transition-all" style={{ fontFamily: "'Inter', sans-serif" }}>
+          <div className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center text-center max-w-sm mx-4 animate-fadeIn">
+            <span className="material-symbols-outlined text-5xl text-emerald-500 mb-3" style={{ fontSize: 56 }}>check_circle</span>
+            <h3 className="text-xl font-bold text-slate-800">Import Complete</h3>
+            <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+              Successfully imported <strong className="text-slate-800">{importResult.importedCount}</strong> new books.
+            </p>
+            {importResult.skippedCount > 0 && (
+              <p className="text-xs text-amber-600 mt-1 font-semibold">
+                Skipped {importResult.skippedCount} duplicate ISBNs.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => { setImportResult(null); stopCamera(); setShowModal(false); }}
+              className="mt-6 w-full py-2.5 bg-slate-900 text-white rounded-2xl text-sm font-bold shadow-md hover:bg-slate-800 transition-all active:scale-95 cursor-pointer"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

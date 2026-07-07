@@ -15,6 +15,7 @@ const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const Fine = require('../models/Fine');
 const FineConfig = require('../models/FineConfig');
+const mongoose = require('mongoose');
 
 const BORROW_LIMIT = { student: 5, teacher: 10, librarian: 1 };
 
@@ -185,6 +186,9 @@ router.post('/issue', protect, authorize('librarian'), async (req, res) => {
     // Check user exists
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.status !== 'active') {
+      return res.status(400).json({ message: `Cannot issue book. Member is currently "${user.status}" (must be "active").` });
+    }
 
     // Check borrowing limit
     const activeCount = user.borrowedBooks ? user.borrowedBooks.filter(b => !b.returnDate).length : 0;
@@ -520,6 +524,165 @@ router.get('/users/:id/history', protect, authorize('librarian'), async (req, re
   } catch (error) {
     console.error('Get member history error:', error.message);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /api/library/books/import - Bulk import books via CSV text
+router.post('/books/import', protect, authorize('librarian'), async (req, res) => {
+  try {
+    const { csvText } = req.body;
+    if (!csvText) {
+      return res.status(400).json({ message: 'No CSV data provided' });
+    }
+
+    // Native robust CSV Parser
+    const parsedRows = [];
+    let row = [''];
+    let inQuotes = false;
+
+    for (let i = 0; i < csvText.length; i++) {
+      const c = csvText[i];
+      const next = csvText[i + 1];
+
+      if (c === '"') {
+        if (inQuotes && next === '"') {
+          row[row.length - 1] += '"';
+          i++; // skip double quote escape
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (c === ',' && !inQuotes) {
+        row.push('');
+      } else if ((c === '\r' || c === '\n') && !inQuotes) {
+        if (c === '\r' && next === '\n') {
+          i++;
+        }
+        parsedRows.push(row);
+        row = [''];
+      } else {
+        row[row.length - 1] += c;
+      }
+    }
+    if (row.length > 1 || row[0] !== '') {
+      parsedRows.push(row);
+    }
+
+    if (parsedRows.length <= 1) {
+      return res.status(400).json({ message: 'CSV file is empty or contains no book rows' });
+    }
+
+    const headers = parsedRows[0];
+    const cleanHeaders = headers.map(h => h.toLowerCase().trim());
+    const headerMap = {};
+
+    cleanHeaders.forEach((h, index) => {
+      if (h === 'title' || h === 'book title' || h === 'book_title' || h === 'පොත් නම' || h === 'නම') {
+        headerMap.title = index;
+      } else if (h === 'author' || h === 'author name' || h === 'writer' || h === 'කර්තෘ') {
+        headerMap.author = index;
+      } else if (h === 'category' || h === 'genre' || h === 'කාණ්ඩය') {
+        headerMap.category = index;
+      } else if (h === 'totalcopies' || h === 'copies' || h === 'total copies' || h === 'quantity' || h === 'පිටපත් ගණන') {
+        headerMap.totalCopies = index;
+      } else if (h === 'isbn' || h === 'barcode' || h === 'isbn අංකය') {
+        headerMap.isbn = index;
+      } else if (h === 'publisher' || h === 'ප්‍රකාශකයා') {
+        headerMap.publisher = index;
+      } else if (h === 'publishedyear' || h === 'published year' || h === 'year' || h === 'වසර') {
+        headerMap.publishedYear = index;
+      } else if (h === 'description' || h === 'summary' || h === 'විස්තරය') {
+        headerMap.description = index;
+      } else if (h === 'coverimageurl' || h === 'cover image' || h === 'image' || h === 'photo') {
+        headerMap.coverImageUrl = index;
+      }
+    });
+
+    if (headerMap.title === undefined || headerMap.author === undefined) {
+      return res.status(400).json({ message: 'Required headers (Title, Author) are missing from the CSV file' });
+    }
+
+    const booksToInsert = [];
+    const skippedDuplicates = [];
+    const existingIsbns = new Set(
+      (await Book.find({ isbn: { $exists: true, $ne: '' } }, 'isbn')).map(b => b.isbn)
+    );
+    const processedFileIsbns = new Set();
+
+    const BookCounter = mongoose.models.BookCounter || mongoose.model('BookCounter');
+    let currentSeq = 0;
+    const counterRecord = await BookCounter.findById('bookId');
+    if (counterRecord) {
+      currentSeq = counterRecord.seq;
+    }
+
+    for (let r = 1; r < parsedRows.length; r++) {
+      const rowData = parsedRows[r];
+      if (rowData.length === 0 || (rowData.length === 1 && rowData[0] === '')) continue;
+
+      const title = headerMap.title !== undefined ? rowData[headerMap.title]?.trim() : '';
+      const author = headerMap.author !== undefined ? rowData[headerMap.author]?.trim() : '';
+      const category = headerMap.category !== undefined ? rowData[headerMap.category]?.trim() : 'Fiction';
+
+      if (!title || !author) continue;
+
+      const rawIsbn = headerMap.isbn !== undefined ? rowData[headerMap.isbn]?.trim() : '';
+      const isbn = rawIsbn ? rawIsbn.replace(/[^0-9X]/gi, '') : undefined;
+
+      if (isbn) {
+        if (existingIsbns.has(isbn) || processedFileIsbns.has(isbn)) {
+          skippedDuplicates.push({ title, author, isbn });
+          continue;
+        }
+        processedFileIsbns.add(isbn);
+      }
+
+      const totalCopiesVal = headerMap.totalCopies !== undefined ? parseInt(rowData[headerMap.totalCopies], 10) : 1;
+      const totalCopies = isNaN(totalCopiesVal) ? 1 : totalCopiesVal;
+
+      const publisher = headerMap.publisher !== undefined ? rowData[headerMap.publisher]?.trim() : '';
+      const publishedYearVal = headerMap.publishedYear !== undefined ? parseInt(rowData[headerMap.publishedYear], 10) : undefined;
+      const publishedYear = isNaN(publishedYearVal) ? undefined : publishedYearVal;
+
+      const description = headerMap.description !== undefined ? rowData[headerMap.description]?.trim() : '';
+      const coverImageUrl = headerMap.coverImageUrl !== undefined ? rowData[headerMap.coverImageUrl]?.trim() : '';
+
+      currentSeq++;
+      const bookId = `BK${String(currentSeq).padStart(3, '0')}`;
+
+      booksToInsert.push({
+        bookId,
+        title,
+        author,
+        isbn,
+        category: category || 'Fiction',
+        description,
+        totalCopies,
+        availableCopies: totalCopies,
+        publisher,
+        publishedYear,
+        coverImageUrl,
+        status: 'Available',
+      });
+    }
+
+    if (booksToInsert.length > 0) {
+      await Book.insertMany(booksToInsert);
+      await BookCounter.findOneAndUpdate(
+        { _id: 'bookId' },
+        { seq: currentSeq },
+        { upsert: true, new: true }
+      );
+    }
+
+    res.status(201).json({
+      success: true,
+      importedCount: booksToInsert.length,
+      skippedCount: skippedDuplicates.length,
+      skipped: skippedDuplicates,
+    });
+  } catch (error) {
+    console.error('Import books error:', error.message);
+    res.status(500).json({ message: 'Server error during bulk import' });
   }
 });
 

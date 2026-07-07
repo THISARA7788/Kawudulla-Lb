@@ -76,10 +76,7 @@ export default function ProfileSettings() {
 
   return (
     <DashboardLayout style={{ background: '#0F1A33' }}>
-          <div className="mb-6">
-            <h1 className="text-3xl font-extrabold" style={{ color: '#ffffff', fontFamily: "'Manrope', sans-serif" }}>Profile & Settings</h1>
-            <p className="text-xs mt-1" style={{ color: '#5a6a8a' }}>Manage your account information and preferences.</p>
-          </div>
+
 
           {message && (
             <div className="mb-4 px-3 py-2 rounded-xl text-sm" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>{message}</div>

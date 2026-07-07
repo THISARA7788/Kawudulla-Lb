@@ -51,10 +51,7 @@ export default function CirculationRecord() {
 
   return (
     <DashboardLayout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Circulation Record</h1>
-        <p style={{ color: '#94a3b8' }}>Track all book issue and return transactions.</p>
-      </div>
+
 
       <div className="flex gap-3 mb-6">
             <div className="relative flex-1">

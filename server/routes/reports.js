@@ -15,22 +15,58 @@ router.get('/dashboard', async (req, res) => {
     const totalBooks = await Book.countDocuments();
     const totalMembers = await User.countDocuments({ status: 'active' });
     const totalTransactions = await Transaction.countDocuments();
-    const activeBorrows = await Transaction.countDocuments({ status: 'active' });
-    const overdueCount = await Transaction.countDocuments({ status: 'overdue' });
+    
+    const now = new Date();
+    // Overdue: status is not returned and dueDate is in the past
+    const overdueCount = await Transaction.countDocuments({
+      status: { $ne: 'returned' },
+      dueDate: { $lt: now }
+    });
+
+    // Currently Borrowed: all active and overdue/unreturned checkouts
+    const currentlyBorrowed = await Transaction.countDocuments({
+      status: { $ne: 'returned' }
+    });
+
     const pendingRegistrations = await User.countDocuments({ status: 'pending' });
 
     const availableBooks = await Book.aggregate([{ $group: { _id: null, total: { $sum: '$availableCopies' } } }]);
+    const totalCopies = await Book.aggregate([{ $group: { _id: null, total: { $sum: '$totalCopies' } } }]);
     const finesUnpaid = await Fine.aggregate([{ $match: { status: 'unpaid' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
+
+    // Calculate fines due today (unpaid fines created today)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const finesToday = await Fine.aggregate([
+      { $match: { status: 'unpaid', createdAt: { $gte: todayStart, $lte: todayEnd } } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+
+    // Calculate fines due this month (unpaid fines created this month)
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const finesMonth = await Fine.aggregate([
+      { $match: { status: 'unpaid', createdAt: { $gte: monthStart } } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
 
     res.json({
       totalBooks,
+      totalCopies: totalCopies[0]?.total || 0,
       totalMembers,
       totalTransactions,
-      activeBorrows,
+      currentlyBorrowed,
       overdueCount,
       pendingRegistrations,
       availableCopies: availableBooks[0]?.total || 0,
       unpaidFines: finesUnpaid[0]?.total || 0,
+      finesDueToday: finesToday[0]?.total || 0,
+      finesDueThisMonth: finesMonth[0]?.total || 0,
     });
   } catch (err) {
     console.error('Reports operation error:', err.message);

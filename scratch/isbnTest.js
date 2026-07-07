@@ -28,10 +28,7 @@ function getSriLankanISBNHyphenations(isbn) {
   return hyphenations;
 }
 
-// Simple HTML row parser using regex
 function parseIsbnLkHTML(html) {
-  // Look for result table rows
-  // Columns in order: Publisher Name, Title of the Book, Author Name, ISBN, Date of Issue, Book Type, Image
   const rows = [];
   const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let match;
@@ -43,35 +40,41 @@ function parseIsbnLkHTML(html) {
     let tdMatch;
     
     while ((tdMatch = tdRegex.exec(rowHtml)) !== null) {
-      // Strip html tags and trim
       const cellText = tdMatch[1].replace(/<[^>]*>/g, '').trim();
       tds.push(cellText);
     }
     
     if (tds.length >= 5) {
-      // Avoid table headers
-      if (tds[0].toLowerCase().includes('publisher name') || tds[1].toLowerCase().includes('title of the book')) {
+      const publisher = tds[0];
+      const title = tds[1];
+      const author = tds[2];
+      const isbn = tds[3];
+      const issueDate = tds[4];
+
+      if (!title || !author || title.toLowerCase().includes('title of the book')) {
         continue;
       }
+
       rows.push({
-        publisher: tds[0],
-        title: tds[1],
-        author: tds[2],
-        isbn: tds[3],
-        issueDate: tds[4],
-        publishedYear: tds[4] ? tds[4].split('-')[0] : ''
+        publisher: publisher || '',
+        title: title || '',
+        author: author || '',
+        isbn: isbn || '',
+        publishedYear: issueDate ? issueDate.split('-')[0] : ''
       });
     }
   }
   return rows;
 }
 
-async function runTest() {
-  const hyphenations = getSriLankanISBNHyphenations(cleanIsbn);
-  console.log('Testing patterns:', hyphenations);
+async function lookupSriLankanISBN(isbn) {
+  const hyphenations = getSriLankanISBNHyphenations(isbn);
+  if (hyphenations.length === 0) return null;
 
-  for (const hyp of hyphenations) {
-    console.log(`Querying pattern: ${hyp}...`);
+  console.log('Querying patterns in parallel:', hyphenations);
+  const startTime = Date.now();
+
+  const fetchPromises = hyphenations.map(async (hyp) => {
     try {
       const bodyParams = new URLSearchParams({
         publishername: '',
@@ -89,26 +92,33 @@ async function runTest() {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: bodyParams.toString()
+        body: bodyParams.toString(),
+        signal: AbortSignal.timeout(6000)
       });
 
+      if (!response.ok) return null;
+
       const html = await response.text();
-      
-      if (html.includes('Total Number of Results : 0')) {
-        console.log('-> No results found for this pattern.');
-        continue;
-      }
+      if (html.includes('Total Number of Results : 0')) return null;
 
       const results = parseIsbnLkHTML(html);
-      if (results.length > 0) {
-        console.log('-> Success! Found results:', results);
-        return;
-      }
+      return results.length > 0 ? results[0] : null;
     } catch (err) {
-      console.error(`Error querying ${hyp}:`, err.message);
+      console.warn(`Pattern check failed for ${hyp}:`, err.message);
+      return null;
     }
-  }
-  console.log('No results found for any pattern.');
+  });
+
+  const results = await Promise.all(fetchPromises);
+  const matched = results.find(res => res !== null) || null;
+
+  console.log(`Lookup finished in ${Date.now() - startTime}ms`);
+  return matched;
+}
+
+async function runTest() {
+  const res = await lookupSriLankanISBN(cleanIsbn);
+  console.log('Result:', res);
 }
 
 runTest();

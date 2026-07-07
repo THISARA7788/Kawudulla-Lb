@@ -94,11 +94,7 @@ const getGradeDisplay = (u) => {
 
   return (
     <DashboardLayout>
-          {/* Page header */}
-          <div className="mb-4">
-            <h1 className="text-3xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Pending Registration</h1>
-            <p className="text-xs" style={{ color: '#94a3b8' }}>Approve or reject new user registration requests.</p>
-          </div>
+
 
           {/* Content */}
           {error && (

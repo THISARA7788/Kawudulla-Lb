@@ -6,20 +6,21 @@
 // devices by sliding off-screen using open/close drawer states.
 // =========================================================================
 
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
+import api from '../../api/axios'
 
 const navItems = [
   { icon: "grid_view", label: "Dashboard", route: "/dashboard" },
-  { icon: "library_books", label: "Book Management", route: "/books" },
+  { icon: "library_books", label: "Books Catalog", route: "/books" },
   { icon: "book_5", label: "Issue Book", route: "/issue-book" },
   { icon: "assignment_return", label: "Return Book", route: "/return-book" },
   { icon: "person_check", label: "Pending Registration", route: "/pending-registration" },
   { icon: "group", label: "Members", route: "/members" },
-  { icon: "history_edu", label: "Circulation Record", route: "/circulation" },
-  { icon: "payments", label: "Fine Management", route: "/fines" },
+  { icon: "history_edu", label: "Circulation", route: "/circulation" },
+  { icon: "payments", label: "Fines", route: "/fines" },
   { icon: "assessment", label: "Reports", route: "/reports" },
-  { icon: "qr_code_scanner", label: "QR Scanner", route: "/qr-scanner" },
 ]
 
 const ms = {
@@ -34,6 +35,35 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [pendingCount, setPendingCount] = useState(0)
+
+  useEffect(() => {
+    if (user?.role !== 'librarian') return
+
+    const fetchPending = async () => {
+      try {
+        const res = await api.get('/auth/pending')
+        if (res.data && typeof res.data.count === 'number') {
+          setPendingCount(res.data.count)
+        }
+      } catch (err) {
+        console.error('Error fetching pending registrations:', err)
+      }
+    }
+
+    fetchPending()
+    const interval = setInterval(fetchPending, 30000)
+    return () => clearInterval(interval)
+  }, [user])
+
+  const getInitials = (name) => {
+    if (!name) return 'U'
+    const parts = name.trim().split(' ')
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    }
+    return name.slice(0, 2).toUpperCase()
+  }
 
   const handleNav = (route) => {
     if (route && route !== '#') {
@@ -60,7 +90,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             className="w-12 h-12 object-contain flex-shrink-0"
           />
           <div>
-            <h2 className="text-sm leading-tight" style={{ color: '#ffffff', fontFamily: "'Manrope', sans-serif", fontWeight: 800 }}>Kawudulla Maha Vidyalaya Library</h2>
+            <h2 className="text-[13px] leading-tight" style={{ color: '#ffffff', fontFamily: "'Manrope', sans-serif", fontWeight: 800 }}>Kawudulla Maha Vidyalaya Library</h2>
           </div>
         </div>
         {/* Close mobile drawer toggle */}
@@ -87,7 +117,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             return item.route === '/dashboard' || item.route === '/books';
           })
           .map((item) => {
-            const isActive = item.route !== '#' && location.pathname === item.route
+            const isActive = item.route !== '#' && (
+              location.pathname === item.route || 
+              (item.route !== '/dashboard' && location.pathname.startsWith(item.route))
+            )
           return (
             <button
               key={item.label}
@@ -98,8 +131,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 margin: '0',
                 color: isActive ? '#fff' : '#B0C4DE',
                 backgroundColor: isActive ? '#4062BB' : 'transparent',
-                borderRadius: isActive ? '9999px' : '12px',
-                fontWeight: 'bold',
+                borderRadius: '12px',
                 boxShadow: isActive ? '0 2px 8px rgba(64,98,187,0.4)' : 'none',
                 cursor: 'pointer',
               }}
@@ -115,33 +147,40 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 22, color: isActive ? '#fff' : '#B0C4DE', ...ms }}>{item.icon}</span>
-              <span>{item.label}</span>
+              <span className="flex-1 truncate">{item.label}</span>
+              {item.route === '/pending-registration' && pendingCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center flex-shrink-0 animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
             </button>
           )
         })}
 
-        {/* Settings */}
-        <div className="pt-3 mt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <button
-            onClick={() => handleNav('/profile')}
-            className="flex items-center gap-3 px-3 py-3 text-[13px] w-full transition-opacity hover:opacity-100"
-            style={{ color: '#B0C4DE', borderRadius: '12px', opacity: location.pathname === '/profile' ? 1 : 0.6, backgroundColor: location.pathname === '/profile' ? 'rgba(64,98,187,0.3)' : 'transparent', fontWeight: location.pathname === '/profile' ? 'bold' : 500 }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 20, color: location.pathname === '/profile' ? '#fff' : '#B0C4DE', ...msOutline }}>settings</span>
-            <span>Profile & Settings</span>
-          </button>
-        </div>
       </nav>
 
-      {/* Logout */}
-      <div className="mt-auto pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+      {/* User Info Profile Card & Logout */}
+      <div className="mt-auto pt-3 border-t border-white/10 flex items-center justify-between gap-2 px-1">
+        <div 
+          onClick={() => handleNav('/profile')}
+          className="flex items-center gap-3 cursor-pointer hover:bg-white/5 p-1 rounded-xl flex-1 min-w-0 transition-colors"
+        >
+          <div className="w-10 h-10 rounded-full bg-[#facc15] text-[#1e293b] flex items-center justify-center font-black text-sm flex-shrink-0">
+            {getInitials(user?.name)}
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-bold text-white truncate leading-tight">{user?.name || 'User'}</span>
+            <span className="text-[10px] text-slate-400 capitalize mt-0.5 leading-none">{user?.role || 'Member'}</span>
+          </div>
+        </div>
+        
+        {/* Logout button */}
         <button
           onClick={() => { logout(); navigate('/login', { replace: true }) }}
-          className="flex items-center gap-3 px-3 py-3 w-full opacity-60 hover:opacity-100 transition-opacity"
-          style={{ color: '#D9645E', fontSize: '13px', fontWeight: 500, borderRadius: '12px' }}
+          className="p-2 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex-shrink-0"
+          title="Logout"
         >
           <span className="material-symbols-outlined" style={{ fontSize: 20, ...msOutline }}>logout</span>
-          <span>Logout</span>
         </button>
       </div>
     </aside>

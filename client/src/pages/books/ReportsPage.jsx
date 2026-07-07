@@ -222,11 +222,7 @@ export default function ReportsPage() {
 
   return (
     <DashboardLayout>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Reports</h1>
-              <p className="text-xs" style={{ color: '#94a3b8' }}>Generate reports and export records as PDF.</p>
-            </div>
+          <div className="flex items-center justify-end mb-4">
             <button onClick={generatePDF} disabled={!reportData || pdfGenerating} className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2" style={{ backgroundColor: '#1a1245', color: '#fff', opacity: !reportData || pdfGenerating ? 0.5 : 1 }}>
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{pdfGenerating ? 'progress_activity' : 'picture_as_pdf'}</span>
               {pdfGenerating ? 'Generating...' : 'Print'}

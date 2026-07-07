@@ -8,13 +8,14 @@ const ms = {
 
 const pieColors = ['#A78BFA', '#60A5FA', '#F472B6', '#34D399', '#FBBF24', '#F87171', '#818CF8', '#2DD4BF']
 
-function PieChart({ data, size = 120 }) {
+function PieChart({ data, size = 120, centerText }) {
   const total = data.reduce((s, d) => s + d.value, 0)
   if (total === 0) return null
   const r = size / 2 - 5
   const cx = size / 2
   const cy = size / 2
   let cumulative = 0
+  
   const slices = data.map((d, i) => {
     const pct = d.value / total
     const startAngle = cumulative * 2 * Math.PI - Math.PI / 2
@@ -26,56 +27,84 @@ function PieChart({ data, size = 120 }) {
     const x2 = cx + r * Math.cos(endAngle)
     const y2 = cy + r * Math.sin(endAngle)
     const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`
-    return <path key={i} d={path} fill={pieColors[i % pieColors.length]} stroke="#fff" strokeWidth="1.5" />
+    return {
+      path,
+      color: pieColors[i % pieColors.length]
+    }
   })
+
   return (
-    <svg width={size} height={size} className="mx-auto my-2">
-      <circle cx={cx} cy={cy} r={r} fill="#f0f0f0" />
-      {slices}
+    <svg width={size} height={size + 8} className="mx-auto my-2" style={{ overflow: 'visible' }}>
+      {/* 1. Flat outer background shadow */}
+      <circle cx={cx} cy={cy + 5} r={r} fill="rgba(26, 18, 69, 0.08)" style={{ filter: 'blur(2.5px)' }} />
+      
+      {/* 2. 3D extrusion thickness side height */}
+      {slices.map((slice, i) => (
+        <path 
+          key={`bg-${i}`} 
+          d={slice.path} 
+          fill="rgba(26, 18, 69, 0.2)" 
+          transform="translate(0, 4.5)" 
+        />
+      ))}
+      
+      {/* 3. Top colored slices */}
+      {slices.map((slice, i) => (
+        <path 
+          key={`fg-${i}`} 
+          d={slice.path} 
+          fill={slice.color} 
+          stroke="#fff" 
+          strokeWidth="1.2" 
+        />
+      ))}
+      
+      {/* 4. 3D inner hole extrusion shadow */}
+      <circle cx={cx} cy={cy + 3.5} r={r * 0.5} fill="rgba(26, 18, 69, 0.15)" />
+      
+      {/* 5. Top inner hole cutout */}
       <circle cx={cx} cy={cy} r={r * 0.5} fill="#fff" />
-      <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" className="text-sm font-bold" fill="#1a1245">{total}</text>
+      
+      {/* 6. Center total text */}
+      <text 
+        x={cx} 
+        y={cy} 
+        textAnchor="middle" 
+        dominantBaseline="central" 
+        className="text-xl font-black" 
+        fill="#1a1245"
+        style={{ fontFamily: "'Manrope', sans-serif" }}
+      >
+        {centerText !== undefined ? centerText : total}
+      </text>
     </svg>
   )
 }
 
-function StatCard({ s }) {
-  return (
-    <div className="p-5 rounded-xl flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: s.bg, minHeight: 90 }}>
-      <span className="material-symbols-outlined absolute -right-4 -bottom-4 opacity-10" style={{ fontSize: 64 }}>{s.icon}</span>
-      <div>
-        <span className="font-semibold text-xs block mb-1" style={{ color: s.textColor }}>{s.label}</span>
-        <span className="text-2xl font-bold font-headline" style={{ color: s.textColor }}>{s.value}</span>
-      </div>
-      <div className="mt-3 flex items-center text-xs font-medium" style={{ color: s.textColor }}>
-        <span className="material-symbols-outlined text-xs mr-1" style={{ fontSize: 14 }}>{s.trendIcon}</span>
-        {s.trend}
-      </div>
-    </div>
-  )
-}
 
 const quickActionColors = {
   "Issue Book": { bg: '#DCFCE7', icon: '#166534' },
   "Return Book": { bg: '#DBEAFE', icon: '#1D4ED8' },
   "Add New Book": { bg: '#FFF3E0', icon: '#E65100' },
-  "Manage Books": { bg: '#F3E8FF', icon: '#7C3AED' },
+  "View Reports": { bg: '#F3E8FF', icon: '#7C3AED' },
 }
 
 function QuickAction({ icon, label, onClick }) {
-  const colors = quickActionColors[label] ?? { bg: '#f0f0f0', icon: '#4F5B7D' }
+  const colors = quickActionColors[label] ?? { bg: '#f1f5f9', icon: '#475569' }
+  
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center p-4 rounded-xl transition-all hover:shadow-lg group"
-      style={{ backgroundColor: colors.bg, border: `2px solid ${colors.icon}33` }}
+      className="flex items-center gap-2 py-1.5 px-2.5 rounded-xl border bg-transparent transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group w-full justify-center"
+      style={{ backgroundColor: colors.bg, borderColor: `${colors.icon}33` }}
     >
       <div
-        className="w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-transform group-hover:scale-110"
-        style={{ backgroundColor: 'rgba(255,255,255,0.6)' }}
+        className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 flex-shrink-0"
+        style={{ backgroundColor: 'rgba(255,255,255,0.75)' }}
       >
-        <span className="material-symbols-outlined" style={{ color: colors.icon, fontSize: 22 }}>{icon}</span>
+        <span className="material-symbols-outlined transition-transform duration-300" style={{ color: colors.icon, fontSize: 16 }}>{icon}</span>
       </div>
-      <span className="text-xs font-semibold" style={{ color: colors.icon }}>{label}</span>
+      <span className="text-[10px] font-extrabold uppercase tracking-wider transition-colors duration-300 whitespace-nowrap" style={{ color: colors.icon }}>{label}</span>
     </button>
   )
 }
@@ -84,174 +113,398 @@ function QuickAction({ icon, label, onClick }) {
 export default function LibrarianDashboardMain() {
   const navigate = useNavigate()
   const [books, setBooks] = useState([])
+  const [dashboardStats, setDashboardStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [categories, setCategories] = useState([])
   const [showAllCategories, setShowAllCategories] = useState(false)
+  const [pendingApprovals, setPendingApprovals] = useState([])
+  const [recentActivities, setRecentActivities] = useState([])
+  const [actionLoading, setActionLoading] = useState(null)
+
+  const fetchPendingAndActivities = async () => {
+    try {
+      const [pendingRes, txRes] = await Promise.all([
+        api.get('/auth/pending'),
+        api.get('/library/transactions?limit=10')
+      ])
+      setPendingApprovals((pendingRes.data.users || []).filter(u => u.role !== 'librarian'))
+      setRecentActivities(txRes.data.transactions || [])
+    } catch (err) {
+      console.error('Error fetching approvals/activities:', err)
+    }
+  }
+
+  const handleApprove = async (userId, userName) => {
+    if (!window.confirm(`Approve ${userName}? They will be able to log in.`)) return;
+
+    try {
+      setActionLoading(userId);
+      await api.put(`/auth/approve/${userId}`);
+      await fetchPendingAndActivities();
+      const statsRes = await api.get('/library/reports/dashboard');
+      setDashboardStats(statsRes.data);
+    } catch (err) {
+      console.error('Approve error:', err);
+      alert('Failed to approve: ' + (err.response?.data?.message || 'Server error'));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (userId, userName) => {
+    const reason = window.prompt('Enter reason for rejection (optional):');
+    if (reason === null) return;
+
+    try {
+      setActionLoading(userId);
+      await api.put(`/auth/reject/${userId}`, { reason });
+      await fetchPendingAndActivities();
+      const statsRes = await api.get('/library/reports/dashboard');
+      setDashboardStats(statsRes.data);
+    } catch (err) {
+      console.error('Reject error:', err);
+      alert('Failed to reject: ' + (err.response?.data?.message || 'Server error'));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+  };
+
+  const displayRoleAndGrade = (u) => {
+    if (!u) return '';
+    if (u.role === 'teacher') return 'Teacher';
+    if (u.role === 'student') {
+      if (u.grade) {
+        if (u.class) {
+          return `Student • ${u.grade}-${u.class}`;
+        }
+        return `Student • ${u.grade}`;
+      }
+      return 'Student';
+    }
+    return u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : 'Member';
+  };
+
+  const getAvatarColor = (name) => {
+    const colors = [
+      { bg: 'bg-indigo-50 text-indigo-600 border border-indigo-100/50' },
+      { bg: 'bg-emerald-50 text-emerald-600 border border-emerald-100/50' },
+      { bg: 'bg-blue-50 text-blue-600 border border-blue-100/50' },
+      { bg: 'bg-amber-50 text-amber-600 border border-amber-100/50' },
+      { bg: 'bg-rose-50 text-rose-600 border border-rose-100/50' },
+      { bg: 'bg-purple-50 text-purple-600 border border-purple-100/50' },
+    ];
+    if (!name) return colors[0];
+    const index = name.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
+  const getRelativeDate = (dateStr) => {
+    if (!dateStr) return '—';
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+  };
 
   useEffect(() => {
-    const fetchBooks = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const res = await api.get('/library/books')
-        setBooks(res.data.books || [])
-        const allBooks = res.data.books || []
+        setLoading(true)
+        const [booksRes, statsRes] = await Promise.all([
+          api.get('/library/books'),
+          api.get('/library/reports/dashboard')
+        ])
+
+        const allBooks = booksRes.data.books || []
+        setBooks(allBooks)
+
         const catMap = {}
         allBooks.forEach(b => {
           const cat = b.category && b.category.trim() ? b.category.trim() : 'Uncategorized'
           catMap[cat] = (catMap[cat] || 0) + (b.availableCopies || 0)
         })
         setCategories(catMap)
+
+        setDashboardStats(statsRes.data)
+        await fetchPendingAndActivities()
       } catch (err) {
-        console.error('Error fetching books:', err)
+        console.error('Error fetching dashboard data:', err)
       } finally {
         setLoading(false)
       }
     }
-    fetchBooks()
+    fetchDashboardData()
   }, [])
 
-  const totalBooks = books.length
-  const totalCopies = books.reduce((sum, b) => sum + (b.totalCopies || 0), 0)
-  const availableCopies = books.reduce((sum, b) => sum + (b.availableCopies || 0), 0)
-  const issuedCopies = totalCopies - availableCopies
+  const totalBooks = dashboardStats?.totalBooks ?? books.length
+  const totalCopies = dashboardStats?.totalCopies ?? books.reduce((sum, b) => sum + (b.totalCopies || 0), 0)
 
-  const stats = [
-    {
-      label: "Total Books",
-      value: loading ? '...' : totalBooks,
-      trend: `${totalCopies} total copies`,
-      trendIcon: "library_books",
-      bg: "#B4B8ED",
-      icon: "library_books",
-    },
-    {
-      label: "Issued",
-      value: loading ? '...' : issuedCopies,
-      trend: `${availableCopies} available`,
-      trendIcon: "output",
-      bg: "#C5D7EE",
-      icon: "output",
-    },
-    {
-      label: "Categories",
-      value: loading ? '...' : Object.keys(categories).length,
-      trend: "Genres available",
-      trendIcon: "category",
-      bg: "#E8A5A5",
-      icon: "category",
-    },
-    {
-      label: "New Additions",
-      value: loading ? '...' : books.filter(b => new Date(b.createdAt) > new Date(Date.now() - 7 * 86400000)).length,
-      trend: "This week",
-      trendIcon: "auto_awesome",
-      bg: "#E5E5E5",
-      icon: "person_add",
-    },
-  ]
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", color: '#2C2C3E' }}>
-      {/* ===== Page Header ===== */}
-      <header className="mb-3">
-        <h1 className="text-3xl font-extrabold tracking-tight mb-1" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
-          Librarian Dashboard
-        </h1>
-        <p className="text-xs" style={{ color: '#94a3b8' }}>
-          Manage the academic atelier's circulation and catalog records.
-        </p>
-      </header>
 
       {/* ===== Stats Bento Grid ===== */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        {stats.map((s, i) => <StatCard key={i} s={s} />)}
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
+        
+        {/* 1. Total Books */}
+        <div
+          onClick={() => navigate('/books')}
+          className="p-2.5 rounded-xl border bg-white cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between w-full relative"
+          style={{ borderColor: '#e2e8f0', minHeight: 114 }}
+        >
+          <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-indigo-600" style={{ fontSize: 16 }}>library_books</span>
+          </div>
+          <div>
+            <span 
+              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+              style={{ fontFamily: "'Manrope', sans-serif" }}
+            >
+              {loading ? '...' : totalBooks.toLocaleString('en-US')}
+            </span>
+            <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight">Total Books</span>
+          </div>
+          <span className="px-2 py-0.5 rounded-full text-[8.5px] font-semibold bg-slate-50 border border-slate-100 text-slate-500 block absolute right-2.5 top-2.5 whitespace-nowrap">
+            {loading ? '...' : totalCopies.toLocaleString('en-US')} copies
+          </span>
+        </div>
+
+        {/* 2. Available Books */}
+        <div
+          onClick={() => navigate('/books')}
+          className="p-2.5 rounded-xl border bg-white cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between w-full"
+          style={{ borderColor: '#e2e8f0', minHeight: 114 }}
+        >
+          <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-emerald-600" style={{ fontSize: 16 }}>check_circle</span>
+          </div>
+          <div>
+            <span 
+              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+              style={{ fontFamily: "'Manrope', sans-serif" }}
+            >
+              {loading ? '...' : (dashboardStats?.availableCopies ?? 0).toLocaleString('en-US')}
+            </span>
+            <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight">Available Books</span>
+          </div>
+        </div>
+
+        {/* 3. Currently Borrowed */}
+        <div
+          onClick={() => navigate('/circulation')}
+          className="p-2.5 rounded-xl border bg-white cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between w-full"
+          style={{ borderColor: '#e2e8f0', minHeight: 114 }}
+        >
+          <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-blue-600" style={{ fontSize: 16 }}>import_contacts</span>
+          </div>
+          <div>
+            <span 
+              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+              style={{ fontFamily: "'Manrope', sans-serif" }}
+            >
+              {loading ? '...' : (dashboardStats?.currentlyBorrowed ?? 0).toLocaleString('en-US')}
+            </span>
+            <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight">Currently Borrowed</span>
+          </div>
+        </div>
+
+        {/* 4. Overdue Books */}
+        <div
+          onClick={() => navigate('/circulation')}
+          className="p-2.5 rounded-xl border bg-white cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between w-full"
+          style={{ borderColor: '#e2e8f0', minHeight: 114 }}
+        >
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: (!loading && dashboardStats?.overdueCount > 0) ? '#fee2e2' : '#f1f5f9' }}>
+            <span className={`material-symbols-outlined ${(!loading && dashboardStats?.overdueCount > 0) ? 'text-red-500' : 'text-slate-500'}`} style={{ fontSize: 16 }}>warning</span>
+          </div>
+          <div>
+            <span 
+              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+              style={{ fontFamily: "'Manrope', sans-serif" }}
+            >
+              {loading ? '...' : (dashboardStats?.overdueCount ?? 0).toLocaleString('en-US')}
+            </span>
+            <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight">Overdue Books</span>
+          </div>
+        </div>
+
+        {/* 5. Pending Registrations */}
+        <div
+          onClick={() => navigate('/pending-registration')}
+          className="p-2.5 rounded-xl border bg-white cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between w-full"
+          style={{ borderColor: '#e2e8f0', minHeight: 114 }}
+        >
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: (!loading && dashboardStats?.pendingRegistrations > 0) ? '#fef3c7' : '#f1f5f9' }}>
+            <span className={`material-symbols-outlined ${(!loading && dashboardStats?.pendingRegistrations > 0) ? 'text-amber-600' : 'text-slate-500'}`} style={{ fontSize: 16 }}>person_add</span>
+          </div>
+          <div>
+            <span 
+              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+              style={{ fontFamily: "'Manrope', sans-serif" }}
+            >
+              {loading ? '...' : (dashboardStats?.pendingRegistrations ?? 0).toLocaleString('en-US')}
+            </span>
+            <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight whitespace-nowrap">Pending Registrations</span>
+          </div>
+        </div>
+
+        {/* 6. Total Fines Due */}
+        <div
+          onClick={() => navigate('/fines')}
+          className="p-2.5 rounded-xl border bg-white cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between w-full relative"
+          style={{ borderColor: '#e2e8f0', minHeight: 114 }}
+        >
+          <div className="w-7 h-7 rounded-lg bg-purple-50 flex-shrink-0 flex items-center justify-center">
+            <span className="material-symbols-outlined text-purple-600" style={{ fontSize: 16 }}>payments</span>
+          </div>
+          <div>
+            <span 
+              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+              style={{ fontFamily: "'Manrope', sans-serif" }}
+            >
+              {loading ? '...' : `Rs. ${(dashboardStats?.unpaidFines ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+            </span>
+            <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight">Total Fines Due</span>
+          </div>
+          <div className="absolute right-2.5 top-2.5 text-right text-[8px] text-slate-400 font-bold leading-tight">
+            <div className="text-purple-600/95">Today: Rs. {loading ? '...' : (dashboardStats?.finesDueToday ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+            <div className="text-slate-500">Month: Rs. {loading ? '...' : (dashboardStats?.finesDueThisMonth ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+          </div>
+        </div>
       </section>
 
       {/* ===== Main Content Area ===== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
 
-        {/* LEFT Column: Quick Actions + Last Added Books */}
-        <div className="lg:col-span-2 space-y-4">
+        {/* LEFT Column: Quick Actions + Recent Borrowing Activities */}
+        <div className="lg:col-span-6 flex flex-col gap-4">
 
           {/* Quick Actions */}
           <section>
             <h3 className="text-base font-bold mb-2" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Quick Actions</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <QuickAction icon="book_5" label="Issue Book" onClick={() => navigate('/issue-book')} />
               <QuickAction icon="assignment_return" label="Return Book" onClick={() => navigate('/return-book')} />
               <QuickAction icon="add_circle" label="Add New Book" onClick={() => navigate('/books')} />
-              <QuickAction icon="library_books" label="Manage Books" onClick={() => navigate('/books')} />
+              <QuickAction icon="bar_chart" label="View Reports" onClick={() => navigate('/reports')} />
             </div>
           </section>
 
-          {/* Last Added Books Table */}
-          <section className="rounded-xl p-4 border" style={{ backgroundColor: '#fff', borderColor: '#f0f0f0' }}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-bold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
-                Last Added Books
-              </h3>
-              <button onClick={() => navigate('/books')} className="text-xs font-semibold" style={{ color: '#4F5B7D' }}>Manage All</button>
+          {/* Recently Added Books */}
+          <section className="rounded-xl p-4 border bg-white flex-grow flex flex-col justify-between" style={{ borderColor: '#f0f0f0' }}>
+            <div>
+              <div className="flex items-center justify-between mb-3.5">
+                <h3 className="text-base font-bold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
+                  Recently Added Books
+                </h3>
+                <button 
+                  onClick={() => navigate('/books')} 
+                  className="text-xs font-semibold hover:underline"
+                  style={{ color: '#6366F1' }}
+                >
+                  View all
+                </button>
+              </div>
+              {loading ? (
+                <div className="flex items-center justify-center py-10 text-slate-400">
+                  <span className="material-symbols-outlined animate-spin mr-2" style={{ fontSize: 24 }}>progress_activity</span>
+                  Loading books...
+                </div>
+              ) : books.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+                  <span className="material-symbols-outlined mb-2 text-slate-300" style={{ fontSize: 40 }}>library_books</span>
+                  <p className="text-xs font-medium">No books in catalog yet</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs table-fixed">
+                    <thead>
+                      <tr className="border-b border-slate-100">
+                        <th className="pb-1.5 font-semibold text-slate-400 uppercase tracking-wider text-[10px] w-12">Cover</th>
+                        <th className="pb-1.5 font-semibold text-slate-400 uppercase tracking-wider text-[10px] pl-2 w-[40%]">Book Details</th>
+                        <th className="pb-1.5 font-semibold text-slate-400 uppercase tracking-wider text-[10px] px-2 w-[22%]">Category</th>
+                        <th className="pb-1.5 font-semibold text-slate-400 uppercase tracking-wider text-[10px] text-right px-2 w-[22%]">Date</th>
+                        <th className="pb-1.5 font-semibold text-slate-400 uppercase tracking-wider text-right text-[10px] pr-2 w-[16%]">Stock</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...books]
+                        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                        .slice(0, 3)
+                        .map((b) => (
+                          <tr key={b._id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/20 transition-colors">
+                            <td className="py-2.5 w-12">
+                              {b.coverImageUrl ? (
+                                <img 
+                                  src={b.coverImageUrl} 
+                                  alt={b.title} 
+                                  style={{ width: 30, height: 42 }}
+                                  className="object-cover rounded shadow-sm hover:scale-105 transition-transform" 
+                                />
+                              ) : (
+                                <div 
+                                  style={{ width: 30, height: 42 }}
+                                  className="bg-slate-50 border border-dashed border-slate-200 rounded flex flex-col items-center justify-center text-slate-400" 
+                                  title="No Cover Available"
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: 14 }}>book</span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-2.5 pl-2">
+                              <span className="font-bold text-slate-800 text-xs truncate block" title={b.title}>
+                                {b.title}
+                              </span>
+                              <span className="font-medium text-slate-500 text-[9px] truncate block mt-0.5" title={b.author}>
+                                by {b.author || 'Unknown'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-2">
+                              <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold border uppercase tracking-wider bg-indigo-50 text-indigo-700 border-indigo-100 truncate inline-block max-w-full" title={b.category || 'General'}>
+                                {b.category || 'General'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 text-right text-slate-500 font-medium whitespace-nowrap text-[10px] px-2">
+                              {getRelativeDate(b.createdAt)}
+                            </td>
+                            <td className="py-2.5 text-right font-bold text-slate-700 text-xs pr-2">
+                              {b.availableCopies}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-            {loading ? (
-              <div className="flex items-center justify-center py-10" style={{ color: '#94a3b8' }}>
-                <span className="material-symbols-outlined animate-spin mr-2" style={{ fontSize: 28 }}>progress_activity</span>
-                Loading books...
-              </div>
-            ) : books.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10" style={{ color: '#94a3b8' }}>
-                <span className="material-symbols-outlined mb-2" style={{ fontSize: 48, opacity: 0.3 }}>inventory_2</span>
-                <p className="text-sm font-medium">No books added yet</p>
-                <button onClick={() => navigate('/books')} className="text-xs mt-2 font-semibold" style={{ color: '#1a1245' }}>+ Add your first book</button>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr>
-                      {['Title', 'Author', 'Category', 'Available', ''].map((h) => (
-                        <th key={h} className="pb-3 text-xs text-slate-400 font-semibold">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody style={{ borderTop: '1px solid #f0f0f0' }}>
-                    {[...books].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 1).map((book) => {
-                      const hasCopies = (book.availableCopies || 0) > 0
-                      return (
-                        <tr key={book._id} style={{ borderBottom: '1px solid #f8f8f8' }}>
-                          <td className="py-3">
-                            <p className="font-semibold text-sm" style={{ color: '#2C2C3E' }}>{book.title}</p>
-                            {book.isbn && <p className="text-xs" style={{ color: '#94a3b8' }}>ISBN: {book.isbn}</p>}
-                          </td>
-                          <td className="py-3 text-sm" style={{ color: '#595c5e' }}>{book.author}</td>
-                          <td className="py-3">
-                            <span className="text-xs font-bold uppercase px-2 py-1 rounded-full" style={{ backgroundColor: '#CAD6FF', color: '#3E4A6C' }}>
-                              {book.category}
-                            </span>
-                          </td>
-                          <td className="py-3">
-                            <span className="text-xs font-bold" style={{ color: hasCopies ? '#166534' : '#b31b25' }}>
-                              {book.availableCopies} / {book.totalCopies}
-                            </span>
-                          </td>
-                          <td className="py-3 text-right">
-                            <span className="material-symbols-outlined" style={{ color: '#c8c4db', fontSize: 20 }}>more_vert</span>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </section>
         </div>
 
-        {/* RIGHT Column: Category Breakdown + Insights */}
-        <div className="space-y-5">
+        {/* RIGHT Column: Category Breakdown + Pending User Approvals */}
+        <div className="lg:col-span-6 flex flex-col gap-4">
 
           {/* Category Breakdown */}
-          <section className="rounded-xl p-5 border" style={{ backgroundColor: '#fff', borderColor: '#f0f0f0' }}>
+          <section className="rounded-xl p-4 border" style={{ backgroundColor: '#fff', borderColor: '#f0f0f0' }}>
             <h3 className="text-base font-bold mb-3" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
-              Categories
+              Book Categories
             </h3>
             {loading ? (
               <div className="py-4" style={{ color: '#94a3b8' }}>Loading...</div>
@@ -259,27 +512,33 @@ export default function LibrarianDashboardMain() {
               <p className="text-sm" style={{ color: '#94a3b8' }}>No data yet.</p>
             ) : (
               <div className="flex items-center justify-around">
-                <PieChart data={Object.entries(categories).map(([cat, count]) => ({
-                  label: cat,
-                  value: count,
-                }))} size={90} />
-                <div className="space-y-0.5 flex-1 ml-3">
+                <div className="pl-6 flex-shrink-0">
+                  <PieChart 
+                    data={Object.entries(categories).map(([cat, count]) => ({
+                      label: cat,
+                      value: count,
+                    }))} 
+                    size={125}
+                    centerText={Object.keys(categories).length}
+                  />
+                </div>
+                <div className="space-y-0.5 flex-1 ml-14">
                   {Object.entries(categories)
-                    .slice(0, showAllCategories ? undefined : 4)
+                    .slice(0, showAllCategories ? undefined : 6)
                     .map(([cat, catCopies], idx) => (
                       <div key={cat} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: pieColors[idx % pieColors.length] }} />
+                           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: pieColors[idx % pieColors.length] }} />
                           <span className="font-medium text-xs" style={{ color: '#2C2C3E' }}>{cat}</span>
                         </div>
-                        <span className="font-bold text-xs" style={{ color: catCopies > 0 ? '#166534' : '#b31b25' }}>
+                        <span className="font-bold text-xs pr-10" style={{ color: catCopies > 0 ? '#166534' : '#b31b25' }}>
                           {catCopies}
                         </span>
                       </div>
                     ))}
-                  {Object.keys(categories).length > 4 && (
+                  {Object.keys(categories).length > 6 && (
                     <button onClick={() => setShowAllCategories(s => !s)} className="text-xs font-semibold mt-1" style={{ color: '#6366F1' }}>
-                      {showAllCategories ? 'Show Less' : 'Show More'} ({Object.keys(categories).length - 4})
+                      {showAllCategories ? 'Show Less' : 'Show More'} ({Object.keys(categories).length - 6})
                     </button>
                   )}
                 </div>
@@ -287,31 +546,93 @@ export default function LibrarianDashboardMain() {
             )}
           </section>
 
-          {/* Weekly Insight Card */}
-          <section className="rounded-xl p-5 relative overflow-hidden" style={{ backgroundColor: '#1a1245', color: '#fff' }}>
-            <h4 className="text-xs font-semibold mb-1" style={{ color: '#A3B4F5' }}>Quick Tip</h4>
-            <p className="text-sm font-bold leading-tight mb-3" style={{ fontFamily: "'Manrope', sans-serif" }}>
-              Keep the catalog updated. Add new books and track circulation to keep the library running smoothly.
-            </p>
-            <div className="flex items-center gap-2" style={{ color: '#A3B4F5' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>library_books</span>
-              <span className="text-xs font-medium">Total inventory: {totalCopies} copies across {totalBooks} titles.</span>
+          {/* Pending User Approvals */}
+          <section className="rounded-xl p-4 border bg-white flex-grow flex flex-col" style={{ borderColor: '#f0f0f0' }}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-bold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
+                Pending User Approvals
+              </h3>
+              <button 
+                onClick={() => navigate('/pending-registration')} 
+                className="text-xs font-semibold hover:underline"
+                style={{ color: '#6366F1' }}
+              >
+                View all ({pendingApprovals.length})
+              </button>
             </div>
-            <div className="absolute -right-10 -bottom-10 w-40 h-40 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }} />
-            <div className="absolute right-4 top-4 w-12 h-12 rounded-full border" style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
+            {loading ? (
+              <div className="flex items-center justify-center py-10 text-slate-400 flex-1">
+                <span className="material-symbols-outlined animate-spin mr-2" style={{ fontSize: 24 }}>progress_activity</span>
+                Loading approvals...
+              </div>
+            ) : pendingApprovals.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-slate-400 flex-1">
+                <span className="material-symbols-outlined mb-2 text-slate-300" style={{ fontSize: 40 }}>person_check</span>
+                <p className="text-xs font-medium">No pending user registrations</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto flex-1 flex flex-col justify-center">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100">
+                      <th className="pb-1.5 font-semibold text-slate-400 uppercase tracking-wider text-[10px]">Name</th>
+                      <th className="pb-1.5 font-semibold text-slate-400 uppercase tracking-wider text-[10px]">Type</th>
+                      <th className="pb-1.5 font-semibold text-slate-400 uppercase tracking-wider text-[10px]">Grade</th>
+                      <th className="pb-1.5 font-semibold text-slate-400 uppercase tracking-wider text-right text-[10px]">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingApprovals.slice(0, 2).map((u) => {
+                      const avatar = getAvatarColor(u.name);
+                      return (
+                        <tr key={u._id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/20 transition-colors">
+                          <td className="py-2.5 flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] flex-shrink-0 ${avatar.bg}`}>
+                              {getInitials(u.name)}
+                            </div>
+                            <span className="font-bold text-slate-800 text-xs truncate max-w-[90px]" title={u.name}>{u.name}</span>
+                          </td>
+                          <td className="py-2.5">
+                            <span className={`px-2 py-0.5 rounded-full text-[8.5px] font-bold border uppercase tracking-wider ${
+                              u.role === 'student' 
+                                ? 'bg-blue-50 text-blue-700 border-blue-100' 
+                                : 'bg-amber-50 text-amber-700 border-amber-100'
+                            }`}>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td className="py-2.5">
+                            <span className="font-semibold text-slate-500 text-xs font-medium">
+                              {u.grade ? (u.class ? `${u.grade}-${u.class}` : u.grade) : '—'}
+                            </span>
+                          </td>
+                          <td className="py-2.5 text-right whitespace-nowrap">
+                            <button
+                              onClick={() => handleApprove(u._id, u.name)}
+                              disabled={actionLoading === u._id}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded-lg transition-colors mr-1 shadow-sm disabled:opacity-50"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleReject(u._id, u.name)}
+                              disabled={actionLoading === u._id}
+                              className="border border-red-200 hover:border-red-500 hover:bg-red-50 text-red-600 font-bold text-[10px] px-2 py-0.5 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              Deny
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
         </div>
       </div>
 
-      {/* Floating Action Button */}
-      <button
-        onClick={() => navigate('/books')}
-        title="Add New Book"
-        className="fixed bottom-8 right-8 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50"
-        style={{ backgroundColor: '#1a1245', color: '#fff' }}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: 24, fontVariationSettings: "'FILL' 1" }}>add</span>
-      </button>
     </div>
   )
 }

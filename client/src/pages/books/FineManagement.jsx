@@ -124,11 +124,7 @@ export default function FineManagement() {
 
   return (
     <DashboardLayout>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Fine Management</h1>
-              <p className="text-xs" style={{ color: '#94a3b8' }}>Calculate, collect, and manage overdue book fines.</p>
-            </div>
+          <div className="flex items-center justify-end mb-4">
             <div className="flex gap-2">
               <button onClick={openConfig} className="px-4 py-2 rounded-xl text-sm font-semibold" style={{ backgroundColor: '#4062BB', color: '#fff' }}>
                 <span className="material-symbols-outlined inline-block mr-1" style={{ fontSize: 16, verticalAlign: 'middle' }}>settings</span>

@@ -191,12 +191,7 @@ export default function MembersPage() {
 
   return (
     <DashboardLayout>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-extrabold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Members</h1>
-              <p className="text-xs" style={{ color: '#94a3b8' }}>Manage library members — edit details, change roles, and update status.</p>
-            </div>
-          </div>
+
 
           {/* Filters Row */}
           <div className="flex gap-3 mb-4 items-center">

@@ -79,7 +79,7 @@ function parseIsbnLkHTML(html) {
 }
 
 /**
- * Searches isbn.lk for the given ISBN by trying all hyphenation patterns.
+ * Searches isbn.lk for the given ISBN by trying all hyphenation patterns in parallel.
  */
 async function lookupSriLankanISBN(isbn) {
   const hyphenations = getSriLankanISBNHyphenations(isbn);
@@ -88,7 +88,8 @@ async function lookupSriLankanISBN(isbn) {
     return null;
   }
 
-  for (const hyp of hyphenations) {
+  // Query all hyphenation patterns at the same time to speed up lookup
+  const fetchPromises = hyphenations.map(async (hyp) => {
     try {
       const bodyParams = new URLSearchParams({
         publishername: '',
@@ -107,28 +108,28 @@ async function lookupSriLankanISBN(isbn) {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: bodyParams.toString(),
-        signal: AbortSignal.timeout(8000) // 8 seconds timeout
+        signal: AbortSignal.timeout(6000) // 6 seconds timeout per request
       });
 
-      if (!response.ok) {
-        continue;
-      }
+      if (!response.ok) return null;
 
       const html = await response.text();
       if (html.includes('Total Number of Results : 0')) {
-        continue;
+        return null;
       }
 
       const results = parseIsbnLkHTML(html);
-      if (results.length > 0) {
-        return results[0]; // Return the first matching record
-      }
+      return results.length > 0 ? results[0] : null;
     } catch (err) {
-      console.warn(`Error querying isbn.lk with pattern ${hyp}:`, err.message);
+      console.warn(`Parallel check failed for pattern ${hyp}:`, err.message);
+      return null;
     }
-  }
+  });
 
-  return null;
+  const results = await Promise.all(fetchPromises);
+  
+  // Return the first valid match we found
+  return results.find(res => res !== null) || null;
 }
 
 module.exports = {
