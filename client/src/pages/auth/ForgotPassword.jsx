@@ -21,9 +21,12 @@ const ForgotPassword = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otpStatus, setOtpStatus] = useState('idle'); // 'idle' | 'success' | 'error'
 
   const navigate = useNavigate();
   const formContainerRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
 
   // Handle OTP countdown timer
   useEffect(() => {
@@ -44,6 +47,52 @@ const ForgotPassword = () => {
       formContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [error]);
+
+  // Handle auto-focus based on step transitions
+  useEffect(() => {
+    if (step === 1 && emailInputRef.current) {
+      emailInputRef.current.focus();
+    } else if (step === 2 && otpInputsRef.current[0]) {
+      setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
+    } else if (step === 3 && passwordInputRef.current) {
+      setTimeout(() => passwordInputRef.current?.focus(), 100);
+    }
+  }, [step]);
+
+  // Automatically clear success message after 4 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // Handle auto-verification when OTP is fully filled (6 digits)
+  useEffect(() => {
+    const triggerAutoVerify = async () => {
+      if (otp.length === 6 && /^\d{6}$/.test(otp) && step === 2) {
+        setError('');
+        setSuccessMessage('');
+        setLoading(true);
+        try {
+          await api.post('/auth/verify-otp', { email, otp });
+          setOtpStatus('success');
+          setSuccessMessage('OTP code verified successfully! Enter your new password.');
+          setTimeout(() => {
+            setStep(3);
+          }, 800);
+        } catch (err) {
+          setOtpStatus('error');
+          setError(err.response?.data?.message || 'Invalid or expired OTP code.');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    triggerAutoVerify();
+  }, [otp, step, email]);
 
   // Calculate Password Strength rating
   const getPasswordStrength = (pass) => {
@@ -105,6 +154,8 @@ const ForgotPassword = () => {
     newOtpArray[index] = value;
     setOtpArray(newOtpArray);
     setOtp(newOtpArray.join(''));
+    setOtpStatus('idle');
+    setError('');
     if (value && index < 5) {
       otpInputsRef.current[index + 1].focus();
     }
@@ -112,6 +163,8 @@ const ForgotPassword = () => {
 
   const handleOtpKeyDown = (e, index) => {
     if (e.key === 'Backspace') {
+      setOtpStatus('idle');
+      setError('');
       if (!otpArray[index] && index > 0) {
         const newOtpArray = [...otpArray];
         newOtpArray[index - 1] = '';
@@ -138,6 +191,8 @@ const ForgotPassword = () => {
     const newOtpArray = pastedData.split('');
     setOtpArray(newOtpArray);
     setOtp(pastedData);
+    setOtpStatus('idle');
+    setError('');
     otpInputsRef.current[5].focus();
   };
 
@@ -149,9 +204,13 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       await api.post('/auth/verify-otp', { email, otp });
+      setOtpStatus('success');
       setSuccessMessage('OTP code verified successfully! Enter your new password.');
-      setStep(3);
+      setTimeout(() => {
+        setStep(3);
+      }, 800);
     } catch (err) {
+      setOtpStatus('error');
       setError(err.response?.data?.message || 'Invalid or expired OTP code.');
     } finally {
       setLoading(false);
@@ -380,6 +439,8 @@ const ForgotPassword = () => {
                     <span className="material-symbols-outlined text-[19px]">mail</span>
                   </div>
                   <input
+                    ref={emailInputRef}
+                    autoFocus
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -421,7 +482,13 @@ const ForgotPassword = () => {
                       onChange={(e) => handleOtpChange(e.target.value, index)}
                       onKeyDown={(e) => handleOtpKeyDown(e, index)}
                       onPaste={handleOtpPaste}
-                      className="w-10 h-10 text-center text-base font-bold text-slate-700 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 outline-none transition-all duration-200 shadow-sm"
+                      className={`w-10 h-10 text-center text-base font-bold text-slate-700 bg-slate-50 border rounded-lg outline-none transition-all duration-200 shadow-sm ${
+                        otpStatus === 'success'
+                          ? 'border-emerald-500 bg-emerald-50/10 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/10'
+                          : otpStatus === 'error'
+                          ? 'border-red-500 bg-red-50/10 focus:border-red-600 focus:ring-4 focus:ring-red-500/10'
+                          : 'border-slate-300 focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10'
+                      }`}
                       required
                     />
                   ))}
@@ -484,6 +551,7 @@ const ForgotPassword = () => {
                     <span className="material-symbols-outlined text-[19px]">lock</span>
                   </div>
                   <input
+                    ref={passwordInputRef}
                     type={showPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}

@@ -335,8 +335,8 @@ export default function BookManagement() {
 
   return (
     <DashboardLayout>
-      {/* Top Control Panel Header (Fixed below top navbar, no scrolling) */}
-      <div className="fixed top-16 left-0 lg:left-64 right-0 z-20 bg-[#F5F3FC] pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/30">
+      {/* Top Control Panel Header (Fixed below top navbar on desktop, relative flow on mobile) */}
+      <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-[#F5F3FC] pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/30">
         <div className="flex flex-col xl:flex-row gap-4 items-stretch xl:items-center justify-between" style={{ fontFamily: "'Inter', sans-serif" }}>
           {/* Search */}
           <div className="relative flex-1">
@@ -393,7 +393,7 @@ export default function BookManagement() {
             {/* Sort Direction Toggle Button */}
             <button
               onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              className="flex items-center justify-center bg-white border border-slate-205 hover:border-slate-350 hover:bg-slate-50/50 rounded-2xl p-1.5 shadow-sm text-slate-500 hover:text-slate-700 transition-all active:scale-95 cursor-pointer"
+              className="flex items-center justify-center bg-white border border-slate-205 hover:border-slate-350 hover:bg-slate-55 rounded-2xl p-1.5 shadow-sm text-slate-500 hover:text-slate-700 transition-all active:scale-95 cursor-pointer"
               title={sortOrder === 'asc' ? 'Ascending Order (Click for Descending)' : 'Descending Order (Click for Ascending)'}
             >
               <span 
@@ -414,7 +414,7 @@ export default function BookManagement() {
                 className={`p-1 rounded-xl transition-all flex items-center justify-center ${
                   viewMode === 'grid'
                     ? 'bg-white text-slate-800 shadow-sm font-bold'
-                    : 'text-slate-500 hover:text-slate-750'
+                    : 'text-slate-500 hover:text-slate-755'
                 }`}
                 style={{ color: viewMode === 'grid' ? '#1E2A4A' : undefined }}
                 title="Grid View"
@@ -426,7 +426,7 @@ export default function BookManagement() {
                 className={`p-1 rounded-xl transition-all flex items-center justify-center ${
                   viewMode === 'table'
                     ? 'bg-white text-slate-800 shadow-sm font-bold'
-                    : 'text-slate-500 hover:text-slate-750'
+                    : 'text-slate-500 hover:text-slate-755'
                 }`}
                 style={{ color: viewMode === 'table' ? '#1E2A4A' : undefined }}
                 title="Table List View"
@@ -450,8 +450,8 @@ export default function BookManagement() {
         </div>
       </div>
 
-      {/* Book List/Grid Container (Offset for the fixed control panel) */}
-      <div className="pt-16 pb-4">
+      {/* Book List/Grid Container (Offset for the fixed control panel on desktop) */}
+      <div className="pt-4 lg:pt-16 pb-4">
         {viewMode === 'grid' ? (
           <BookGrid
             loading={loading}
