@@ -34,8 +34,12 @@ export default function QrScannerPage() {
       const res = await api.get(`/library/quick-lookup/${trimmed}`, { headers: { Authorization: `Bearer ${token}` } });
       setResult(res.data);
       setHistory((prev) => [{ id: trimmed, type: res.data.type, timestamp: new Date().toLocaleTimeString(), data: res.data }, ...prev].slice(0, 10));
+      setQuery(''); // Clear the input field so the next scan is ready
     } catch (err) {
       setError(err.response?.data?.message || 'Not found');
+      setTimeout(() => {
+        if (inputRef.current) inputRef.current.select();
+      }, 50);
     } finally {
       setLoading(false);
     }
@@ -95,6 +99,8 @@ export default function QrScannerPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onFocus={(e) => e.target.select()}
+                onClick={(e) => e.target.select()}
                 placeholder={tab === 'member' ? 'Scan or enter Member ID (e.g. KMV-0001)...' : 'Scan or enter Book ID (e.g. BK001)...'}
                 className="w-full py-3 pl-10 pr-4 text-base rounded-xl outline-none"
                 style={{ backgroundColor: '#fff', border: '2px solid #1a1245', fontFamily: 'monospace', fontWeight: 'bold' }}

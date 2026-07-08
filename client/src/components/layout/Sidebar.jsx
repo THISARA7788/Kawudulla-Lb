@@ -73,6 +73,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       }
     }
   }
+  const isProfileActive = location.pathname === '/profile'
 
   return (
     <aside
@@ -87,10 +88,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           <img
             src="/images/logo.png"
             alt="School Logo"
-            className="w-12 h-12 object-contain flex-shrink-0"
+            className="w-10 h-10 object-contain flex-shrink-0 transition-transform duration-300 hover:scale-105"
           />
-          <div>
-            <h2 className="text-[13px] leading-tight" style={{ color: '#ffffff', fontFamily: "'Manrope', sans-serif", fontWeight: 800 }}>Kawudulla Maha Vidyalaya Library</h2>
+          <div className="flex flex-col select-none">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-white" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.05em' }}>
+              KAWUDULLA MV
+            </h2>
+            <span className="text-[10px] font-black text-sky-400 tracking-widest uppercase mt-0.5" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.15em' }}>
+              LIBRARY PORTAL
+            </span>
           </div>
         </div>
         {/* Close mobile drawer toggle */}
@@ -125,7 +131,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             <button
               key={item.label}
               onClick={() => handleNav(item.route)}
-              className="flex items-center gap-3 font-bold transition-all duration-300 text-base w-full text-left"
+              className={`flex items-center gap-3 transition-all duration-300 text-sm w-full text-left ${isActive ? 'font-semibold' : 'font-normal'}`}
               style={{
                 padding: '0.55rem 0.85rem',
                 margin: '0',
@@ -163,14 +169,24 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       <div className="mt-auto pt-3 border-t border-white/10 flex items-center justify-between gap-2 px-1">
         <div 
           onClick={() => handleNav('/profile')}
-          className="flex items-center gap-3 cursor-pointer hover:bg-white/5 p-1 rounded-xl flex-1 min-w-0 transition-colors"
+          className={`flex items-center gap-3 cursor-pointer p-1.5 rounded-xl flex-1 min-w-0 transition-all duration-300 ${
+            isProfileActive 
+              ? 'bg-[#4062BB] shadow-[0_2px_8px_rgba(64,98,187,0.4)]' 
+              : 'hover:bg-white/5'
+          }`}
         >
-          <div className="w-10 h-10 rounded-full bg-[#facc15] text-[#1e293b] flex items-center justify-center font-black text-sm flex-shrink-0">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 transition-all duration-300 ${
+            isProfileActive ? 'bg-white text-[#1E2A4A]' : 'bg-[#facc15] text-[#1e293b]'
+          }`}>
             {getInitials(user?.name)}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-white truncate leading-tight">{user?.name || 'User'}</span>
-            <span className="text-[10px] text-slate-400 capitalize mt-0.5 leading-none">{user?.role || 'Member'}</span>
+            <span className={`text-xs truncate leading-tight transition-all duration-300 ${isProfileActive ? 'font-semibold text-white' : 'text-slate-200 truncate leading-tight font-normal'}`}>
+              {user?.name || 'User'}
+            </span>
+            <span className={`text-[10px] capitalize mt-0.5 leading-none transition-all duration-300 ${isProfileActive ? 'text-white/85' : 'text-slate-400'}`}>
+              {user?.role || 'Member'}
+            </span>
           </div>
         </div>
         

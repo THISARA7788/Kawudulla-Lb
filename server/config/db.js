@@ -3,7 +3,10 @@ const User = require('../models/User');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds instead of hanging forever
+      socketTimeoutMS: 45000, // Close inactive sockets after 45 seconds
+    });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
 
     // Seed static librarian account if it doesn't exist

@@ -313,16 +313,6 @@ export default function ReturnBook() {
           }
           return;
         }
-
-        // Alphanumeric character indicating a new scan started
-        if (e.key.length === 1) {
-          setShowSuccessModal(false);
-          setReturnedDetails(null);
-          if (scannerRef.current) {
-            scannerRef.current.focus();
-          }
-          return; // Let character pass through to the now-focused input
-        }
       }
 
       if (e.altKey || e.ctrlKey || e.metaKey) return;
@@ -341,6 +331,14 @@ export default function ReturnBook() {
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [showSuccessModal]);
+
+  // Close success modal automatically when a new scan starts typing
+  useEffect(() => {
+    if (scanInput && showSuccessModal) {
+      setShowSuccessModal(false);
+      setReturnedDetails(null);
+    }
+  }, [scanInput, showSuccessModal]);
 
   // Autofocus scanner input on mount
   useEffect(() => {
@@ -471,8 +469,12 @@ export default function ReturnBook() {
                       type="text"
                       value={scanInput}
                       onChange={(e) => setScanInput(e.target.value)}
-                      onFocus={() => setScannerFocused(true)}
+                      onFocus={(e) => {
+                        setScannerFocused(true);
+                        e.target.select();
+                      }}
                       onBlur={() => setScannerFocused(false)}
+                      onClick={(e) => e.target.select()}
                       placeholder="Scan Book Barcode (BKXXX / ISBN)..."
                       className="w-full py-2.5 pl-10 pr-3 text-sm rounded-xl outline-none transition-all font-mono font-bold"
                       style={{ 

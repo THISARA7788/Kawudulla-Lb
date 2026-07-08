@@ -83,6 +83,9 @@ router.get('/check/:isbn', protect, authorize('librarian'), async (req, res) => 
 // @route   GET /api/books/lookup-srilanka/:isbn
 // @desc    Scrape details of a Sri Lankan book by ISBN
 // @access  Private (Librarian)
+// @route   GET /api/books/lookup-srilanka/:isbn
+// @desc    Scrape details of a Sri Lankan book by ISBN
+// @access  Private (Librarian)
 router.get('/lookup-srilanka/:isbn', protect, authorize('librarian'), async (req, res) => {
   try {
     const { isbn } = req.params;
@@ -94,6 +97,97 @@ router.get('/lookup-srilanka/:isbn', protect, authorize('librarian'), async (req
   } catch (error) {
     console.error('Sri Lankan ISBN lookup error:', error.message);
     res.status(500).json({ message: 'Server error during Sri Lankan ISBN lookup' });
+  }
+});
+
+// @route   GET /api/books/lookup-isbn/:isbn
+// @desc    Lookup book details by ISBN from Google Books, Open Library, or Sri Lankan Registry
+// @access  Private (Librarian)
+router.get('/lookup-isbn/:isbn', protect, authorize('librarian'), async (req, res) => {
+  try {
+    const { isbn } = req.params;
+    const cleanIsbn = isbn.trim().replace(/[-\s]/g, '');
+
+    let bookData = null;
+
+    // 1. Query Google Books API (uses API Key from environment if defined)
+    try {
+      const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
+      const url = apiKey 
+        ? `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&key=${apiKey}`
+        : `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`;
+      
+      const response = await fetch(url);
+      if (response.status === 200) {
+        const data = await response.json();
+        if (data.items && data.items.length > 0) {
+          const info = data.items[0].volumeInfo;
+          bookData = {
+            title: info.title || '',
+            author: info.authors ? info.authors.join(', ') : '',
+            publisher: info.publisher || '',
+            publishedYear: info.publishedDate ? info.publishedDate.split('-')[0] : '',
+            description: info.description || '',
+            coverImageUrl: info.imageLinks ? (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail) : '',
+          };
+        }
+      } else {
+        console.warn(`Google Books API returned status ${response.status} for ${cleanIsbn}`);
+      }
+    } catch (gErr) {
+      console.warn('Google Books API query failed, moving to fallbacks:', gErr.message);
+    }
+
+    // 2. Fallback to Open Library API
+    if (!bookData) {
+      try {
+        const olResponse = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`);
+        if (olResponse.ok) {
+          const olData = await olResponse.json();
+          const key = `ISBN:${cleanIsbn}`;
+          if (olData[key]) {
+            const info = olData[key];
+            bookData = {
+              title: info.title || '',
+              author: info.authors ? info.authors.map(a => a.name).join(', ') : '',
+              publisher: info.publishers ? info.publishers.map(p => p.name).join(', ') : '',
+              publishedYear: info.published_date ? info.published_date.split(' ').pop() : '',
+              description: typeof info.notes === 'string' ? info.notes : '',
+              coverImageUrl: info.cover ? (info.cover.large || info.cover.medium || info.cover.small) : '',
+            };
+          }
+        }
+      } catch (olErr) {
+        console.warn('Open Library fallback failed:', olErr.message);
+      }
+    }
+
+    // 3. Fallback to Sri Lankan National Registry (isbn.lk)
+    if (!bookData) {
+      try {
+        const slDetails = await lookupSriLankanISBN(cleanIsbn);
+        if (slDetails) {
+          bookData = {
+            title: slDetails.title || '',
+            author: slDetails.author || '',
+            publisher: slDetails.publisher || '',
+            publishedYear: slDetails.publishedYear || '',
+            description: '',
+            coverImageUrl: ''
+          };
+        }
+      } catch (slErr) {
+        console.warn('Sri Lankan registry lookup failed:', slErr.message);
+      }
+    }
+
+    if (bookData) {
+      return res.json({ success: true, book: bookData });
+    }
+    res.json({ success: false, message: 'ISBN code not found in databases. Please enter details manually.' });
+  } catch (error) {
+    console.error('ISBN lookup route error:', error.message);
+    res.status(500).json({ message: 'Server error during ISBN lookup' });
   }
 });
 

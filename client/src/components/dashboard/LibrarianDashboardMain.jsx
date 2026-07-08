@@ -6,7 +6,15 @@ const ms = {
   fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24",
 }
 
-const pieColors = ['#A78BFA', '#60A5FA', '#F472B6', '#34D399', '#FBBF24', '#F87171', '#818CF8', '#2DD4BF']
+const pieColors = [
+  '#A78BFA', '#60A5FA', '#F472B6', '#34D399', '#FBBF24', '#F87171', '#818CF8', '#2DD4BF',
+  '#A3E635', '#C084FC', '#FB923C', '#38BDF8', '#F0ABFC', '#4ADE80', '#FDE047', '#FDA4AF'
+]
+const pieColors3D = [
+  '#7C3AED', '#2563EB', '#DB2777', '#059669', '#D97706', '#DC2626', '#4F46E5', '#0D9488',
+  '#65A30D', '#9333EA', '#EA580C', '#0284C7', '#C026D3', '#16A34A', '#CA8A04', '#E11D48'
+]
+
 
 function PieChart({ data, size = 120, centerText }) {
   const total = data.reduce((s, d) => s + d.value, 0)
@@ -29,32 +37,54 @@ function PieChart({ data, size = 120, centerText }) {
     const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`
     return {
       path,
-      color: pieColors[i % pieColors.length]
+      color: pieColors[i % pieColors.length],
+      color3D: pieColors3D[i % pieColors3D.length]
     }
   })
 
   return (
     <svg width={size} height={size + 8} className="mx-auto my-2" style={{ overflow: 'visible' }}>
+      <defs>
+        {/* Realistic glossy glass gradients for top face */}
+        {slices.map((slice, i) => (
+          <linearGradient key={`glass-grad-${i}`} id={`glass-grad-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={slice.color} stopOpacity="0.95" />
+            <stop offset="35%" stopColor={slice.color} stopOpacity="0.6" />
+            <stop offset="70%" stopColor={slice.color3D} stopOpacity="0.4" />
+            <stop offset="100%" stopColor={slice.color3D} stopOpacity="0.8" />
+          </linearGradient>
+        ))}
+        {/* Realistic glassy gradients for 3D depth side face */}
+        {slices.map((slice, i) => (
+          <linearGradient key={`glass-grad3d-${i}`} id={`glass-grad3d-${i}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={slice.color3D} stopOpacity="0.9" />
+            <stop offset="100%" stopColor={slice.color3D} stopOpacity="0.45" />
+          </linearGradient>
+        ))}
+      </defs>
+
       {/* 1. Flat outer background shadow */}
-      <circle cx={cx} cy={cy + 5} r={r} fill="rgba(26, 18, 69, 0.08)" style={{ filter: 'blur(2.5px)' }} />
+      <circle cx={cx} cy={cy + 6} r={r} fill="rgba(26, 18, 69, 0.12)" style={{ filter: 'blur(3px)' }} />
       
-      {/* 2. 3D extrusion thickness side height */}
-      {slices.map((slice, i) => (
-        <path 
-          key={`bg-${i}`} 
-          d={slice.path} 
-          fill="rgba(26, 18, 69, 0.2)" 
-          transform="translate(0, 4.5)" 
-        />
-      ))}
+      {/* 2. 3D extrusion thickness side height (layered stacking for smooth solid 3D effect) */}
+      {[1, 2, 3, 4, 5].map((offset) => 
+        slices.map((slice, i) => (
+          <path 
+            key={`bg-${offset}-${i}`} 
+            d={slice.path} 
+            fill={`url(#glass-grad3d-${i})`} 
+            transform={`translate(0, ${offset})`} 
+          />
+        ))
+      )}
       
       {/* 3. Top colored slices */}
       {slices.map((slice, i) => (
         <path 
           key={`fg-${i}`} 
           d={slice.path} 
-          fill={slice.color} 
-          stroke="#fff" 
+          fill={`url(#glass-grad-${i})`} 
+          stroke="rgba(255, 255, 255, 0.85)" 
           strokeWidth="1.2" 
         />
       ))}
@@ -108,6 +138,27 @@ function QuickAction({ icon, label, onClick }) {
     </button>
   )
 }
+
+const getGradientForCategory = (category) => {
+  switch (category) {
+    case 'Fiction':
+      return 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)';
+    case 'Science':
+      return 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)';
+    case 'History':
+      return 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)';
+    case 'Math':
+      return 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+    case 'Reference':
+      return 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+    case 'Technology':
+      return 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
+    case 'Biography':
+      return 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)';
+    default:
+      return 'linear-gradient(135deg, #64748b 0%, #475569 100%)';
+  }
+};
 
 /* --- Main Component --- */
 export default function LibrarianDashboardMain() {
@@ -227,22 +278,13 @@ export default function LibrarianDashboardMain() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true)
-        const [booksRes, statsRes] = await Promise.all([
-          api.get('/library/books'),
-          api.get('/library/reports/dashboard')
-        ])
+        const statsRes = await api.get('/library/reports/dashboard')
+        const stats = statsRes.data
 
-        const allBooks = booksRes.data.books || []
-        setBooks(allBooks)
+        setDashboardStats(stats)
+        setCategories(stats.categoriesMap || {})
+        setBooks(stats.recentBooks || [])
 
-        const catMap = {}
-        allBooks.forEach(b => {
-          const cat = b.category && b.category.trim() ? b.category.trim() : 'Uncategorized'
-          catMap[cat] = (catMap[cat] || 0) + (b.availableCopies || 0)
-        })
-        setCategories(catMap)
-
-        setDashboardStats(statsRes.data)
         await fetchPendingAndActivities()
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
@@ -461,11 +503,11 @@ export default function LibrarianDashboardMain() {
                                 />
                               ) : (
                                 <div 
-                                  style={{ width: 30, height: 42 }}
-                                  className="bg-slate-50 border border-dashed border-slate-200 rounded flex flex-col items-center justify-center text-slate-400" 
-                                  title="No Cover Available"
+                                  style={{ width: 30, height: 42, background: getGradientForCategory(b.category) }}
+                                  className="rounded flex flex-col items-center justify-center text-white select-none text-[7px] font-bold overflow-hidden shadow-sm" 
+                                  title={b.title}
                                 >
-                                  <span className="material-symbols-outlined" style={{ fontSize: 14 }}>book</span>
+                                  <span className="material-symbols-outlined" style={{ fontSize: 13 }}>menu_book</span>
                                 </div>
                               )}
                             </td>
@@ -514,16 +556,19 @@ export default function LibrarianDashboardMain() {
               <div className="flex items-center justify-around">
                 <div className="pl-6 flex-shrink-0">
                   <PieChart 
-                    data={Object.entries(categories).map(([cat, count]) => ({
-                      label: cat,
-                      value: count,
-                    }))} 
+                    data={Object.entries(categories)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([cat, count]) => ({
+                        label: cat,
+                        value: count,
+                      }))} 
                     size={125}
                     centerText={Object.keys(categories).length}
                   />
                 </div>
                 <div className="space-y-0.5 flex-1 ml-14">
                   {Object.entries(categories)
+                    .sort((a, b) => b[1] - a[1])
                     .slice(0, showAllCategories ? undefined : 6)
                     .map(([cat, catCopies], idx) => (
                       <div key={cat} className="flex items-center justify-between text-sm">

@@ -13,8 +13,12 @@ function PendingRegistration() {
   const [actionLoading, setActionLoading] = useState(null); // userId of user being acted on
 
   useEffect(() => {
+    if (user && user.role !== 'librarian') {
+      navigate('/dashboard');
+      return;
+    }
     fetchPendingUsers();
-  }, []);
+  }, [user, navigate]);
 
   const fetchPendingUsers = async () => {
     try {
@@ -61,15 +65,13 @@ function PendingRegistration() {
     }
   };
 
-const getGradeDisplay = (u) => {
+  const getGradeDisplay = (u) => {
     if (!u.grade) return '-';
-    if (u.grade !== 'Grade 12' && u.grade !== 'Grade 13' && u.class) {
-      return `${u.grade}-${u.class}`;
+    if (u.grade !== 'Grade 12' && u.grade !== 'Grade 13') {
+      return u.class ? `${u.grade}-${u.class}` : u.grade;
     }
-    if ((u.grade === 'Grade 12' || u.grade === 'Grade 13') && u.class) {
-      return `${u.grade} – ${u.class}`;
-    }
-    return u.grade;
+    // Grade 12 & 13 use stream instead of class section
+    return u.stream ? `${u.grade} – ${u.stream}` : u.grade;
   };
 
   const formatDate = (dateStr) => {
@@ -94,35 +96,47 @@ const getGradeDisplay = (u) => {
 
   return (
     <DashboardLayout>
+      <div className="p-1">
+
+        {/* Content */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">error</span>
+            {error}
+          </div>
+        )}
 
 
-          {/* Content */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">{error}</div>
-          )}
-
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center">
-                <div
-                  className="inline-block w-10 h-10 border-4 border-t-[#1a1245] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mb-4"
-                ></div>
-                <p className="text-sm" style={{ color: '#94a3b8' }}>Loading pending registrations...</p>
-              </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div
+                className="inline-block w-10 h-10 border-4 border-t-[#1a1245] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mb-4"
+              ></div>
+              <p className="text-sm" style={{ color: '#94a3b8' }}>Loading pending registrations...</p>
             </div>
-          ) : pendingUsers.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-slate-100">
-              <span className="material-symbols-outlined text-6xl mb-4" style={{ color: '#94a3b8' }}>check_circle</span>
-              <h3 className="text-xl font-bold mb-2" style={{ color: '#1a1245' }}>All Caught Up!</h3>
-              <p style={{ color: '#64748b' }}>No pending registration requests at the moment.</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-              <table className="w-full">
+          </div>
+        ) : pendingUsers.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-slate-100">
+            <span className="material-symbols-outlined text-6xl mb-4" style={{ color: '#94a3b8' }}>check_circle</span>
+            <h3 className="text-xl font-bold mb-2" style={{ color: '#1a1245' }}>All Caught Up!</h3>
+            <p style={{ color: '#64748b' }}>No pending registration requests at the moment.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[800px]">
                 <thead style={{ background: '#F5F3FC' }}>
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#1a1245' }}>
-                      Name
+                      <div className="flex items-center gap-1.5">
+                        <span>Name</span>
+                        {pendingUsers.length > 0 && (
+                          <span className="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-black">
+                            {pendingUsers.length}
+                          </span>
+                        )}
+                      </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#1a1245' }}>
                       Email
@@ -152,23 +166,23 @@ const getGradeDisplay = (u) => {
                           >
                             {u.name?.charAt(0).toUpperCase() || '?'}
                           </div>
-                          <span className="font-semibold" style={{ color: '#1a1245' }}>{u.name}</span>
+                          <span className="font-semibold text-sm" style={{ color: '#1a1245' }}>{u.name}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4" style={{ color: '#64748b' }}>
+                      <td className="px-6 py-4 text-xs font-medium" style={{ color: '#64748b' }}>
                         {u.email}
                       </td>
-                      <td className="px-6 py-4 text-sm font-semibold" style={{ color: '#1a1245' }}>
+                      <td className="px-6 py-4 text-xs font-bold" style={{ color: '#1a1245' }}>
                         {getGradeDisplay(u)}
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold border ${getRoleBadgeClass(u.role)}`}
+                          className={`px-3 py-0.5 rounded-full text-[10px] font-bold border capitalize ${getRoleBadgeClass(u.role)}`}
                         >
                           {u.role}
                         </span>
                       </td>
-                      <td className="px-6 py-4" style={{ color: '#64748b' }}>
+                      <td className="px-6 py-4 text-xs font-medium" style={{ color: '#64748b' }}>
                         {formatDate(u.createdAt)}
                       </td>
                       <td className="px-6 py-4">
@@ -176,20 +190,13 @@ const getGradeDisplay = (u) => {
                           <button
                             onClick={() => handleApprove(u._id, u.name)}
                             disabled={actionLoading === u._id}
-                            className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white transition-all"
-                            style={{ background: '#1a1245' }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = '#4062BB';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = '#1a1245';
-                            }}
+                            className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-[#1a1245] hover:bg-[#4062BB] active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-50"
                           >
                             {actionLoading === u._id ? (
-                              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                             ) : (
                               <>
-                                <span className="material-symbols-outlined text-sm">check</span>
+                                <span className="material-symbols-outlined text-[12px] font-black">check</span>
                                 Approve
                               </>
                             )}
@@ -197,20 +204,13 @@ const getGradeDisplay = (u) => {
                           <button
                             onClick={() => handleReject(u._id, u.name)}
                             disabled={actionLoading === u._id}
-                            className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white transition-all"
-                            style={{ background: '#D9645E' }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = '#B84A45';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = '#D9645E';
-                            }}
+                            className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-[#D9645E] hover:bg-[#B84A45] active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-50"
                           >
                             {actionLoading === u._id ? (
-                              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                             ) : (
                               <>
-                                <span className="material-symbols-outlined text-sm">close</span>
+                                <span className="material-symbols-outlined text-[12px] font-black">close</span>
                                 Reject
                               </>
                             )}
@@ -222,7 +222,9 @@ const getGradeDisplay = (u) => {
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
+        )}
+      </div>
     </DashboardLayout>
   );
 }

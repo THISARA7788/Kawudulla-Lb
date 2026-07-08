@@ -9,7 +9,17 @@ import React from 'react';
  * @param {Function} handleDelete - Triggers when clicking delete button; requests API deletion
  * @param {Function} openAdd - Triggered when clicking 'Add first book' empty state link
  */
-export default function BookTable({ loading, filtered, openEdit, handleDelete, openAdd, role }) {
+export default function BookTable({ 
+  loading, 
+  filtered, 
+  openEdit, 
+  handleDelete, 
+  openAdd, 
+  role, 
+  onRowClick,
+  selectedBookIds = [],
+  isSelectionMode = false
+}) {
   
   if (loading) {
     return (
@@ -35,7 +45,11 @@ export default function BookTable({ loading, filtered, openEdit, handleDelete, o
   }
 
   // Setup table columns (incorporating Cover and Status)
-  const columns = ['Book ID', 'Cover', 'Title', 'Author', 'ISBN', 'Category', 'Copies', 'Status', 'Added'];
+  const columns = [];
+  if (isSelectionMode) {
+    columns.push('');
+  }
+  columns.push('Book ID', 'Cover', 'Title', 'Author', 'ISBN', 'Category', 'Copies', 'Status', 'Added');
   if (role === 'librarian') {
     columns.push(''); // For actions column
   }
@@ -112,107 +126,129 @@ export default function BookTable({ loading, filtered, openEdit, handleDelete, o
         </thead>
         
         <tbody>
-          {filtered.map((book) => (
-            <tr key={book._id} className="hover:bg-slate-50/60 transition-colors" style={{ borderBottom: '1px solid #f1f5f9' }}>
-              
-              {/* Unique Book Barcode/ID */}
-              <td className="py-3 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>
-                {book.bookId || '—'}
-              </td>
- 
-              {/* Book Cover Thumbnail */}
-              <td className="py-3 px-4">
-                {book.coverImageUrl ? (
-                  <img
-                    src={book.coverImageUrl}
-                    alt={book.title}
-                    className="w-9 h-12 object-cover rounded shadow-sm hover:scale-105 transition-transform duration-300"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = ''; // Clear source to fallback to visual representation
-                    }}
-                  />
-                ) : (
-                  <div
-                    className="w-9 h-12 rounded shadow-sm flex flex-col items-center justify-center text-white select-none text-[8px] font-bold overflow-hidden"
-                    style={{ background: getGradientForCategory(book.category) }}
-                    title={book.title}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 13 }}>menu_book</span>
-                    <span className="text-[6px] tracking-tighter truncate w-full px-0.5 text-center">{book.title.slice(0, 3).toUpperCase()}</span>
-                  </div>
+          {filtered.map((book) => {
+            const isSelected = selectedBookIds.includes(book._id);
+            return (
+              <tr 
+                key={book._id} 
+                onClick={() => onRowClick && onRowClick(book)}
+                className={`transition-colors cursor-pointer ${
+                  isSelected ? 'bg-indigo-50/20 hover:bg-indigo-50/30' : 'hover:bg-slate-50/60'
+                }`} 
+                style={{ borderBottom: '1px solid #f1f5f9' }}
+                title={isSelectionMode ? 'Click to select book' : 'Click to view full book details profile'}
+              >
+                {isSelectionMode && (
+                  <td className="py-3 px-4 select-none">
+                    <span className="material-symbols-outlined align-middle" style={{ 
+                      fontSize: 20, 
+                      color: isSelected ? '#16a34a' : '#94a3b8',
+                      fontVariationSettings: isSelected ? "'FILL' 1" : "'FILL' 0"
+                    }}>
+                      {isSelected ? 'check_box' : 'check_box_outline_blank'}
+                    </span>
+                  </td>
                 )}
-              </td>
-              
-              {/* Title */}
-              <td className="py-3 px-4 font-bold text-slate-800" style={{ maxWidth: 220 }}>
-                <div className="truncate" title={book.title}>{book.title}</div>
-              </td>
- 
-              {/* Author */}
-              <td className="py-3 px-4 text-slate-650 font-medium">
-                <div className="truncate" title={book.author} style={{ maxWidth: 150 }}>{book.author}</div>
-              </td>
-              
-              {/* Optional ISBN string */}
-              <td className="py-3 px-4 text-xs font-mono text-slate-400">{book.isbn || '—'}</td>
-              
-              {/* Categorization pill */}
-              <td className="py-3 px-4">
-                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded border" style={getCategoryStyle(book.category)}>
-                  {book.category}
-                </span>
-              </td>
-              
-              {/* Copy counts (Turns Red when copies are zero/fully checked out, else Green) */}
-              <td className="py-3 px-4 whitespace-nowrap">
-                <span className="inline-flex items-center px-2 py-1 bg-slate-50 text-[11px] font-extrabold border border-slate-100 rounded-lg text-slate-700 select-none whitespace-nowrap">
-                  <span style={{ color: (book.availableCopies ?? 0) > 0 ? '#15803d' : '#b91c1c' }}>{book.availableCopies ?? 0}</span>
-                  <span className="text-slate-400 font-semibold">&nbsp;/&nbsp;{book.totalCopies ?? 0}</span>
-                </span>
-              </td>
- 
-              {/* Book Circulation Status */}
-              <td className="py-3 px-4">
-                <span
-                  className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border shadow-sm"
-                  style={getStatusStyle(book.status || 'Available')}
-                >
-                  {book.status || 'Available'}
-                </span>
-              </td>
-              
-              {/* Book Added Date */}
-              <td className="py-3 px-4 text-xs font-semibold text-slate-500 whitespace-nowrap">
-                {book.createdAt ? new Date(book.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
-              </td>
-              
-              {/* Interactive buttons */}
-              {role === 'librarian' && (
-                <td className="py-3 px-4 text-right whitespace-nowrap">
-                  {/* Edit Button */}
-                  <button
-                    onClick={() => openEdit(book)}
-                    className="mr-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                    style={{ color: '#4F5B7D' }}
-                    title="Edit"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
-                  </button>
-                  
-                  {/* Delete Button */}
-                  <button
-                    onClick={() => handleDelete(book._id)}
-                    className="p-1.5 rounded-lg hover:bg-slate-100 hover:text-red-700 transition-colors"
-                    style={{ color: '#b91c1c' }}
-                    title="Delete"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
-                  </button>
+                
+                {/* Unique Book Barcode/ID */}
+                <td className="py-3 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>
+                  {book.bookId || '—'}
                 </td>
-              )}
-            </tr>
-          ))}
+   
+                {/* Book Cover Thumbnail */}
+                <td className="py-3 px-4">
+                  {book.coverImageUrl ? (
+                    <img
+                      src={book.coverImageUrl}
+                      alt={book.title}
+                      className="w-9 h-12 object-cover rounded shadow-sm hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = ''; // Clear source to fallback to visual representation
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="w-9 h-12 rounded shadow-sm flex flex-col items-center justify-center text-white select-none text-[8px] font-bold overflow-hidden"
+                      style={{ background: getGradientForCategory(book.category) }}
+                      title={book.title}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 13 }}>menu_book</span>
+                      <span className="text-[6px] tracking-tighter truncate w-full px-0.5 text-center">{book.title.slice(0, 3).toUpperCase()}</span>
+                    </div>
+                  )}
+                </td>
+                
+                {/* Title */}
+                <td className="py-3 px-4 font-bold text-slate-800" style={{ maxWidth: 220 }}>
+                  <div className="truncate" title={book.title}>{book.title}</div>
+                </td>
+   
+                {/* Author */}
+                <td className="py-3 px-4 text-slate-650 font-medium">
+                  <div className="truncate" title={book.author} style={{ maxWidth: 150 }}>{book.author}</div>
+                </td>
+                
+                {/* Optional ISBN string */}
+                <td className="py-3 px-4 text-xs font-mono text-slate-400">{book.isbn || '—'}</td>
+                
+                {/* Categorization pill */}
+                <td className="py-3 px-4">
+                  <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded border" style={getCategoryStyle(book.category)}>
+                    {book.category}
+                  </span>
+                </td>
+                
+                {/* Copy counts (Turns Red when copies are zero/fully checked out, else Green) */}
+                <td className="py-3 px-4 whitespace-nowrap">
+                  <span className="inline-flex items-center px-2 py-1 bg-slate-50 text-[11px] font-extrabold border border-slate-100 rounded-lg text-slate-700 select-none whitespace-nowrap">
+                    <span style={{ color: (book.availableCopies ?? 0) > 0 ? '#15803d' : '#b91c1c' }}>{book.availableCopies ?? 0}</span>
+                    <span className="text-slate-400 font-semibold">&nbsp;/&nbsp;{book.totalCopies ?? 0}</span>
+                  </span>
+                </td>
+   
+                {/* Book Circulation Status */}
+                <td className="py-3 px-4">
+                  <span
+                    className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border shadow-sm"
+                    style={getStatusStyle(book.status || 'Available')}
+                  >
+                    {book.status || 'Available'}
+                  </span>
+                </td>
+                
+                {/* Book Added Date */}
+                <td className="py-3 px-4 text-xs font-semibold text-slate-500 whitespace-nowrap">
+                  {book.createdAt ? new Date(book.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                </td>
+                
+                {/* Interactive buttons */}
+                {role === 'librarian' && (
+                  <td className="py-3 px-4 text-right whitespace-nowrap">
+                    {/* Edit Button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openEdit(book); }}
+                      className="mr-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                      style={{ color: '#4F5B7D' }}
+                      title="Edit"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
+                    </button>
+                    
+                    {/* Delete Button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDelete(book._id); }}
+                      className="p-1.5 rounded-lg hover:bg-slate-100 hover:text-red-700 transition-colors"
+                      style={{ color: '#b91c1c' }}
+                      title="Delete"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
+                    </button>
+                  </td>
+                )}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

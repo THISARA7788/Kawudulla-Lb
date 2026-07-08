@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import api from '../../api/axios';
 import XLSX from 'xlsx-js-style';
+import { compressImage } from '../../utils/imageCompressor';
 
 const STATUS_OPTIONS = ['Available', 'Borrowed', 'Reserved'];
 
@@ -34,6 +35,21 @@ export default function BookFormModal({
 
   const isbnInputRef = useRef(null);
 
+  // Auto-dismiss ISBN search warning after 5 seconds
+  useEffect(() => {
+    if (isbnSearchError) {
+      const timer = setTimeout(() => {
+        setIsbnSearchError('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isbnSearchError]);
+
+  // Clear ISBN search warning immediately when the user starts modifying the ISBN input
+  useEffect(() => {
+    setIsbnSearchError('');
+  }, [form.isbn]);
+
   const triggerIsbnSearch = useCallback(async (isbnVal) => {
     if (!isbnVal || !isbnVal.trim()) return;
     const cleanIsbn = isbnVal.trim().replace(/[-\s]/g, '');
@@ -51,72 +67,16 @@ export default function BookFormModal({
         playBeep('error');
         setDuplicateBook(checkRes.data.book);
         setSearchingIsbn(false);
+        setTimeout(() => {
+          if (isbnInputRef.current) isbnInputRef.current.select();
+        }, 50);
         return;
       }
 
-      // 2. Query Google Books API
-      let bookData = null;
-      try {
-        const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
-        const data = await response.json();
-        if (data.items && data.items.length > 0) {
-          const info = data.items[0].volumeInfo;
-          bookData = {
-            title: info.title || '',
-            author: info.authors ? info.authors.join(', ') : '',
-            publisher: info.publisher || '',
-            publishedYear: info.publishedDate ? info.publishedDate.split('-')[0] : '',
-            description: info.description || '',
-            coverImageUrl: info.imageLinks ? (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail) : '',
-          };
-        }
-      } catch (gErr) {
-        console.warn('Google Books query failed, attempting Open Library fallback...', gErr);
-      }
-
-      // 3. Fallback to Open Library API
-      if (!bookData) {
-        try {
-          const olResponse = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`);
-          const olData = await olResponse.json();
-          const key = `ISBN:${cleanIsbn}`;
-          if (olData[key]) {
-            const info = olData[key];
-            bookData = {
-              title: info.title || '',
-              author: info.authors ? info.authors.map(a => a.name).join(', ') : '',
-              publisher: info.publishers ? info.publishers.map(p => p.name).join(', ') : '',
-              publishedYear: info.published_date ? info.published_date.split(' ').pop() : '',
-              description: typeof info.notes === 'string' ? info.notes : '',
-              coverImageUrl: info.cover ? (info.cover.large || info.cover.medium || info.cover.small) : '',
-            };
-          }
-        } catch (olErr) {
-          console.warn('Open Library fallback failed:', olErr);
-        }
-      }
-
-      // 4. Fallback to Sri Lankan National Registry (isbn.lk)
-      if (!bookData) {
-        try {
-          const slResponse = await api.get(`/books/lookup-srilanka/${cleanIsbn}`);
-          if (slResponse.data && slResponse.data.success && slResponse.data.book) {
-            const info = slResponse.data.book;
-            bookData = {
-              title: info.title || '',
-              author: info.author || '',
-              publisher: info.publisher || '',
-              publishedYear: info.publishedYear || '',
-              description: '',
-              coverImageUrl: ''
-            };
-          }
-        } catch (slErr) {
-          console.warn('Sri Lankan registry lookup failed:', slErr);
-        }
-      }
-
-      if (bookData) {
+      // 2. Query Unified Backend Lookup API (Google Books + Open Library + Sri Lankan Registry)
+      const lookupRes = await api.get(`/books/lookup-isbn/${cleanIsbn}`);
+      if (lookupRes.data && lookupRes.data.success && lookupRes.data.book) {
+        const bookData = lookupRes.data.book;
         playBeep('success');
         // Auto populate fields by mimicking target changes
         Object.keys(bookData).forEach(key => {
@@ -124,12 +84,18 @@ export default function BookFormModal({
         });
       } else {
         playBeep('error');
-        setIsbnSearchError('ISBN code not found in databases. Please enter details manually.');
+        setIsbnSearchError(lookupRes.data.message || 'ISBN code not found in databases. Please enter details manually.');
       }
+      setTimeout(() => {
+        if (isbnInputRef.current) isbnInputRef.current.select();
+      }, 50);
     } catch (err) {
       playBeep('error');
       setIsbnSearchError('Network error while performing lookup.');
       console.error(err);
+      setTimeout(() => {
+        if (isbnInputRef.current) isbnInputRef.current.select();
+      }, 50);
     } finally {
       setSearchingIsbn(false);
     }
@@ -302,44 +268,16 @@ export default function BookFormModal({
     }
   };
 
-  const compressImage = (file) => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target.result;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_HEIGHT = 800; // Optimal height for high quality cover image thumbnails
-          let width = img.width;
-          let height = img.height;
-
-          if (height > MAX_HEIGHT) {
-            width = Math.round((width * MAX_HEIGHT) / height);
-            height = MAX_HEIGHT;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob(
-            (blob) => {
-              const compressedFile = new File([blob], file.name, {
-                type: 'image/jpeg',
-                lastModified: Date.now(),
-              });
-              resolve(compressedFile);
-            },
-            'image/jpeg',
-            0.82 // 82% quality compression
-          );
-        };
-      };
-    });
+  const dataURLtoFile = (dataurl, filename) => {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
   };
 
   const handleImageFile = async (file) => {
@@ -352,9 +290,13 @@ export default function BookFormModal({
     setUploadProgress(0);
 
     try {
-      const compressed = await compressImage(file);
+      // Compress image using client-side HTML5 Canvas utility (outputs base64 data url)
+      const compressedBase64 = await compressImage(file);
+      // Convert base64 data URL to a File object for standard multipart form-data upload
+      const compressedFile = dataURLtoFile(compressedBase64, file.name);
+
       const formData = new FormData();
-      formData.append('coverImage', compressed);
+      formData.append('coverImage', compressedFile);
 
       const response = await api.post('/books/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -698,6 +640,8 @@ export default function BookFormModal({
                             triggerIsbnSearch(form.isbn);
                           }
                         }}
+                        onFocus={(e) => e.target.select()}
+                        onClick={(e) => e.target.select()}
                         placeholder="Scan barcode or enter ISBN number..."
                         className="w-full pl-9 pr-4 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
                       />

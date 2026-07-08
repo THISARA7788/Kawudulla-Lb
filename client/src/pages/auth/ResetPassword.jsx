@@ -1,16 +1,44 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
 const ResetPassword = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const formContainerRef = useRef(null);
 
   const { token } = useParams();
+
+  useEffect(() => {
+    if (error && formContainerRef.current) {
+      formContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [error]);
+
+  const getPasswordStrength = (pass) => {
+    if (!pass) return { score: 0, text: '', color: 'bg-slate-200', width: '0%' };
+    let score = 0;
+    
+    // Length check
+    if (pass.length >= 8) score += 1;
+    if (pass.length >= 12) score += 1;
+    
+    // Complexity checks
+    if (/[A-Z]/.test(pass)) score += 1; // Has uppercase
+    if (/[a-z]/.test(pass)) score += 1; // Has lowercase
+    if (/[0-9]/.test(pass)) score += 1; // Has number
+    if (/[^A-Za-z0-9]/.test(pass)) score += 1; // Has special char
+    
+    if (score <= 2) return { score, text: 'Weak', color: 'bg-red-500', width: '33%' };
+    if (score <= 4) return { score, text: 'Medium', color: 'bg-amber-500', width: '66%' };
+    return { score, text: 'Strong', color: 'bg-emerald-500', width: '100%' };
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,8 +48,12 @@ const ResetPassword = () => {
       setError('Passwords do not match');
       return;
     }
-    if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+      setError('Password must contain uppercase, lowercase, numbers, and special symbols');
       return;
     }
     setLoading(true);
@@ -185,7 +217,7 @@ const ResetPassword = () => {
       </div>
 
       {/* ===== RIGHT FORM PANEL (Clean forms layout with card frame) ===== */}
-      <div className="flex-1 flex items-center justify-center bg-[#F8FAFC] px-4 sm:px-6 py-12 h-full overflow-hidden">
+      <div ref={formContainerRef} className="flex-1 flex items-center justify-center bg-[#F8FAFC] px-4 sm:px-6 py-12 h-full overflow-y-auto">
         <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100/50 p-8 sm:p-10">
 
           {/* Logo brand and greetings */}
@@ -217,30 +249,151 @@ const ResetPassword = () => {
 
           {!successMessage && (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* New Password field */}
               <div>
                 <label className="block text-xs font-bold text-[#1E2A4A] uppercase tracking-wider mb-2">New Password</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full py-3 px-4 rounded-xl text-sm border border-slate-200 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 bg-slate-50/50 transition-all"
-                  style={{ fontSize: '13px' }}
-                />
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors duration-200">
+                    <span className="material-symbols-outlined text-[19px]">lock</span>
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Create a strong password"
+                    required
+                    className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs font-semibold placeholder-slate-500 focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 outline-none transition-all duration-200"
+                    style={{ fontSize: '13px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-650 transition-colors"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <span className="material-symbols-outlined text-[19px]">
+                      {showPassword ? 'visibility' : 'visibility_off'}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Password Strength Indicator Bar */}
+                {newPassword && (
+                  <div className="mt-2.5 px-1 space-y-1.5 animate-fadeIn">
+                    <div className="flex justify-between items-center text-[10px] font-extrabold select-none">
+                      <span className="text-slate-400 uppercase tracking-wider">Password Security</span>
+                      <span 
+                        className="text-[8.5px] uppercase font-black px-2 py-0.5 rounded-full border shadow-sm transition-all duration-300"
+                        style={
+                          getPasswordStrength(newPassword).text === 'Weak' 
+                            ? { backgroundColor: 'rgba(239, 68, 68, 0.08)', color: '#dc2626', borderColor: 'rgba(239, 68, 68, 0.2)' }
+                            : getPasswordStrength(newPassword).text === 'Medium'
+                            ? { backgroundColor: 'rgba(245, 158, 11, 0.08)', color: '#d97706', borderColor: 'rgba(245, 158, 11, 0.2)' }
+                            : { backgroundColor: 'rgba(16, 185, 129, 0.08)', color: '#059669', borderColor: 'rgba(16, 185, 129, 0.2)' }
+                        }
+                      >
+                        {getPasswordStrength(newPassword).text}
+                      </span>
+                    </div>
+                    <div className="h-1 w-full bg-slate-200 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${getPasswordStrength(newPassword).color}`}
+                        style={{ width: getPasswordStrength(newPassword).width }}
+                      />
+                    </div>
+
+                    {/* Dynamic Password Suggestions Checklist */}
+                    {newPassword && !(newPassword.length >= 8 && /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword) && /[0-9]/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword)) && (
+                      <div className="mt-2.5 text-[10px] space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-100/50 select-none animate-fadeIn">
+                        <p className="font-extrabold text-[8.5px] uppercase tracking-wider text-slate-500 mb-0.5">Password Requirements:</p>
+                        <div className="space-y-1.5 font-semibold text-slate-500">
+                          {!(newPassword.length >= 8) && (
+                            <div className="flex items-center gap-1.5 animate-fadeIn">
+                              <span className="material-symbols-outlined text-[12px] font-bold text-slate-350">circle</span>
+                              <span>At least 8 characters</span>
+                            </div>
+                          )}
+                          
+                          {!/[A-Z]/.test(newPassword) && (
+                            <div className="flex items-center gap-1.5 animate-fadeIn">
+                              <span className="material-symbols-outlined text-[12px] font-bold text-slate-350">circle</span>
+                              <span>At least one uppercase letter (A-Z)</span>
+                            </div>
+                          )}
+
+                          {!/[a-z]/.test(newPassword) && (
+                            <div className="flex items-center gap-1.5 animate-fadeIn">
+                              <span className="material-symbols-outlined text-[12px] font-bold text-slate-350">circle</span>
+                              <span>At least one lowercase letter (a-z)</span>
+                            </div>
+                          )}
+
+                          {!/[0-9]/.test(newPassword) && (
+                            <div className="flex items-center gap-1.5 animate-fadeIn">
+                              <span className="material-symbols-outlined text-[12px] font-bold text-slate-350">circle</span>
+                              <span>At least one number (0-9)</span>
+                            </div>
+                          )}
+
+                          {!/[^A-Za-z0-9]/.test(newPassword) && (
+                            <div className="flex items-center gap-1.5 animate-fadeIn">
+                              <span className="material-symbols-outlined text-[12px] font-bold text-slate-350">circle</span>
+                              <span>At least one special symbol (e.g. @, #, $, %)</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
+              {/* Confirm Password field */}
               <div>
                 <label className="block text-xs font-bold text-[#1E2A4A] uppercase tracking-wider mb-2">Confirm New Password</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full py-3 px-4 rounded-xl text-sm border border-slate-200 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 bg-slate-50/50 transition-all"
-                  style={{ fontSize: '13px' }}
-                />
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors duration-200">
+                    <span className="material-symbols-outlined text-[19px]">lock</span>
+                  </div>
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    required
+                    className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs font-semibold placeholder-slate-500 focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 outline-none transition-all duration-200"
+                    style={{ fontSize: '13px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-650 transition-colors"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <span className="material-symbols-outlined text-[19px]">
+                      {showConfirmPassword ? 'visibility' : 'visibility_off'}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Confirm Password Verification Box */}
+                {confirmPassword && (
+                  <div className="mt-2 px-1">
+                    <div className="flex justify-between items-center text-[10px] font-extrabold select-none">
+                      <span className="text-slate-400 uppercase tracking-wider">Password Match</span>
+                      <span 
+                        className="text-[8.5px] uppercase font-black px-2 py-0.5 rounded-full border shadow-sm"
+                        style={
+                          newPassword !== confirmPassword 
+                            ? { backgroundColor: 'rgba(239, 68, 68, 0.08)', color: '#dc2626', borderColor: 'rgba(239, 68, 68, 0.2)' }
+                            : { backgroundColor: 'rgba(16, 185, 129, 0.08)', color: '#059669', borderColor: 'rgba(16, 185, 129, 0.2)' }
+                        }
+                      >
+                        {newPassword !== confirmPassword ? 'Mismatch' : 'Matched'}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button

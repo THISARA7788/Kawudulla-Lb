@@ -55,6 +55,22 @@ router.get('/dashboard', async (req, res) => {
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
 
+    // Calculate category breakdown directly on MongoDB server using aggregation (extremely fast)
+    const categoriesMap = {};
+    const categoriesData = await Book.aggregate([
+      { $group: { _id: '$category', count: { $sum: '$availableCopies' } } }
+    ]);
+    categoriesData.forEach(c => {
+      const catName = c._id && c._id.trim() ? c._id.trim() : 'Uncategorized';
+      categoriesMap[catName] = c.count;
+    });
+
+    // Fetch the top 3 most recently added books directly, requesting only needed fields
+    const recentBooks = await Book.find()
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .select('title author category coverImageUrl availableCopies totalCopies createdAt');
+
     res.json({
       totalBooks,
       totalCopies: totalCopies[0]?.total || 0,
@@ -67,6 +83,8 @@ router.get('/dashboard', async (req, res) => {
       unpaidFines: finesUnpaid[0]?.total || 0,
       finesDueToday: finesToday[0]?.total || 0,
       finesDueThisMonth: finesMonth[0]?.total || 0,
+      categoriesMap,
+      recentBooks,
     });
   } catch (err) {
     console.error('Reports operation error:', err.message);

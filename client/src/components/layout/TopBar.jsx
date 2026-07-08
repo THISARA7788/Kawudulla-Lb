@@ -87,7 +87,7 @@ export default function TopBar({ onMenuToggle }) {
   }
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 flex items-center justify-between px-4 lg:px-8 z-40" style={{ backgroundColor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #e2e8f0' }}>
+    <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 flex items-center justify-between px-4 lg:px-8 z-40" style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
       <div className="flex items-center gap-3">
         {/* Hamburger menu on Mobile / Tablets */}
         <button

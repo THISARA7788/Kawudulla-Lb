@@ -79,6 +79,14 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    resetOTP: {
+      type: String,
+      default: null,
+    },
+    resetOTPExpiry: {
+      type: Date,
+      default: null,
+    },
     // Borrowed books tracking
     borrowedBooks: [{
       book: {

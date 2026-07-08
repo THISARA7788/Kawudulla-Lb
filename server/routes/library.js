@@ -66,8 +66,9 @@ router.post('/books', protect, authorize('librarian'), async (req, res) => {
     if (!title || !author || !category) {
       return res.status(400).json({ message: 'Title, author, and category are required' });
     }
+    const cleanIsbn = (isbn && isbn.trim()) ? isbn.trim() : undefined;
     const book = await Book.create({
-      title, author, isbn, category, description,
+      title, author, isbn: cleanIsbn, category, description,
       totalCopies: totalCopies || 1,
       availableCopies: totalCopies || 1,
       publisher, publishedYear,
@@ -88,6 +89,14 @@ router.put('/books/:id', protect, authorize('librarian'), async (req, res) => {
       const newTotal = Number(req.body.totalCopies);
       const diff = newTotal - book.totalCopies;
       book.availableCopies = Math.max(0, book.availableCopies + diff);
+    }
+    if (req.body.hasOwnProperty('isbn')) {
+      if (!req.body.isbn || !req.body.isbn.trim()) {
+        book.isbn = undefined;
+        delete req.body.isbn;
+      } else {
+        req.body.isbn = req.body.isbn.trim();
+      }
     }
     Object.assign(book, req.body);
     await book.save();

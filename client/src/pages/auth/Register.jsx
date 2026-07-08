@@ -6,7 +6,7 @@
 // school grade, class sections, and streams fields.
 // =========================================================================
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
@@ -27,6 +27,8 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [grade, setGrade] = useState('');
   const [classSection, setClassSection] = useState('');
   const [activeRole, setActiveRole] = useState('student');
@@ -35,11 +37,37 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const formContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (error && formContainerRef.current) {
+      formContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [error]);
 
   const showGradeField = activeRole === 'student';
   const isALGrade = grade === 'Grade 12' || grade === 'Grade 13';
   const showClassSection = activeRole === 'student' && grade && !isALGrade;
   const showALStream = activeRole === 'student' && isALGrade;
+
+  const getPasswordStrength = (pass) => {
+    if (!pass) return { score: 0, text: '', color: 'bg-slate-200', width: '0%' };
+    let score = 0;
+    
+    // Length check
+    if (pass.length >= 6) score += 1;
+    if (pass.length >= 10) score += 1;
+    
+    // Complexity checks
+    if (/[A-Z]/.test(pass)) score += 1; // Has uppercase
+    if (/[a-z]/.test(pass)) score += 1; // Has lowercase
+    if (/[0-9]/.test(pass)) score += 1; // Has number
+    if (/[^A-Za-z0-9]/.test(pass)) score += 1; // Has special char
+    
+    if (score <= 2) return { score, text: 'Weak', color: 'bg-red-500', width: '33%' };
+    if (score <= 4) return { score, text: 'Medium', color: 'bg-amber-500', width: '66%' };
+    return { score, text: 'Strong', color: 'bg-emerald-500', width: '100%' };
+  };
 
   // Submits signup request to /auth/register
   const handleSubmit = async (e) => {
@@ -55,10 +83,17 @@ const Register = () => {
       setError('Passwords do not match');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    
+    // Password validation for all roles (students and teachers)
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
       return;
     }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      setError('Password must contain uppercase, lowercase, numbers, and special symbols');
+      return;
+    }
+
     if (showGradeField && !grade) {
       setError('Please select your grade');
       return;
@@ -240,7 +275,7 @@ const Register = () => {
       </div>
 
       {/* ===== RIGHT FORM PANEL (Clean forms layout with card frame) ===== */}
-      <div className="flex-1 flex items-start justify-center bg-[#F8FAFC] px-4 sm:px-6 py-8 h-full overflow-y-auto">
+      <div ref={formContainerRef} className="flex-1 flex items-start justify-center bg-[#F8FAFC] px-4 sm:px-6 py-8 h-full overflow-y-auto">
         
         {/* Balanced Form Card: strictly max-w-[440px] & reduced vertical padding */}
         <div className="w-full max-w-[440px] bg-white rounded-[28px] shadow-xl border border-slate-100 p-8 sm:p-9 my-4 transition-all duration-300">
@@ -281,7 +316,7 @@ const Register = () => {
                 <label className="block text-[11px] font-extrabold text-[#1E2A4A] uppercase tracking-wider mb-1.5" style={{ fontFamily: "'Manrope', sans-serif" }}>
                   I am a <span className="text-red-500">*</span>
                 </label>
-                <div className="relative flex p-1 bg-slate-100 rounded-xl select-none border border-slate-200/50">
+                <div className="relative flex p-1 bg-slate-100 rounded-2xl select-none border border-slate-200/50">
                   {['student', 'teacher'].map((role) => {
                     const isActive = activeRole === role;
                     return (
@@ -300,10 +335,10 @@ const Register = () => {
 
                   {/* Sliding indicator */}
                   <div
-                    className="absolute top-1 bottom-1 rounded-lg bg-white shadow-md transition-all duration-300 ease-out"
+                    className="absolute top-1 bottom-1 rounded-xl bg-white shadow-md transition-all duration-300 ease-out"
                     style={{
-                      width: 'calc(50% - 4px)',
-                      left: activeRole === 'student' ? '4px' : 'calc(50%)',
+                      width: 'calc(50% - 6px)',
+                      left: activeRole === 'student' ? '4px' : 'calc(50% + 2px)',
                     }}
                   />
                 </div>
@@ -434,14 +469,94 @@ const Register = () => {
                     <span className="material-symbols-outlined text-[19px]">lock</span>
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Create a password (min 6 chars)"
+                    placeholder="Create a strong password (min 8 chars)"
                     required
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl text-slate-700 text-xs font-semibold placeholder-slate-500 focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 outline-none transition-all duration-200"
+                    className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200/80 rounded-xl text-slate-700 text-xs font-semibold placeholder-slate-500 focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 outline-none transition-all duration-200"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <span className="material-symbols-outlined text-[19px]">
+                      {showPassword ? 'visibility' : 'visibility_off'}
+                    </span>
+                  </button>
                 </div>
+
+                {/* Password Strength Indicator Bar */}
+                {password && (
+                  <div className="mt-2.5 px-1 space-y-1.5 animate-fadeIn">
+                    <div className="flex justify-between items-center text-[10px] font-extrabold select-none">
+                      <span className="text-slate-400 uppercase tracking-wider">Password Security</span>
+                      <span 
+                        className="text-[8.5px] uppercase font-black px-2 py-0.5 rounded-full border shadow-sm transition-all duration-300"
+                        style={
+                          getPasswordStrength(password).text === 'Weak' 
+                            ? { backgroundColor: 'rgba(239, 68, 68, 0.08)', color: '#dc2626', borderColor: 'rgba(239, 68, 68, 0.2)' }
+                            : getPasswordStrength(password).text === 'Medium'
+                            ? { backgroundColor: 'rgba(245, 158, 11, 0.08)', color: '#d97706', borderColor: 'rgba(245, 158, 11, 0.2)' }
+                            : { backgroundColor: 'rgba(16, 185, 129, 0.08)', color: '#059669', borderColor: 'rgba(16, 185, 129, 0.2)' }
+                        }
+                      >
+                        {getPasswordStrength(password).text}
+                      </span>
+                    </div>
+                    <div className="h-1 w-full bg-slate-200 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${getPasswordStrength(password).color}`}
+                        style={{ width: getPasswordStrength(password).width }}
+                      />
+                    </div>
+                    {/* Dynamic Password Suggestions Checklist */}
+                    {password && !(password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) && (
+                      <div className="mt-2.5 text-[10px] space-y-1 bg-slate-50 p-2 rounded-xl border border-slate-100/50 select-none animate-fadeIn">
+                        <p className="font-extrabold text-[8.5px] uppercase tracking-wider text-slate-500 mb-0.5">Password Requirements:</p>
+                        
+                        <div className="space-y-1.5 font-semibold text-slate-500">
+                          {!(password.length >= 8) && (
+                            <div className="flex items-center gap-1.5 animate-fadeIn">
+                              <span className="material-symbols-outlined text-[12px] font-bold text-slate-350">circle</span>
+                              <span>At least 8 characters</span>
+                            </div>
+                          )}
+                          
+                          {!/[A-Z]/.test(password) && (
+                            <div className="flex items-center gap-1.5 animate-fadeIn">
+                              <span className="material-symbols-outlined text-[12px] font-bold text-slate-350">circle</span>
+                              <span>At least one uppercase letter (A-Z)</span>
+                            </div>
+                          )}
+
+                          {!/[a-z]/.test(password) && (
+                            <div className="flex items-center gap-1.5 animate-fadeIn">
+                              <span className="material-symbols-outlined text-[12px] font-bold text-slate-350">circle</span>
+                              <span>At least one lowercase letter (a-z)</span>
+                            </div>
+                          )}
+
+                          {!/[0-9]/.test(password) && (
+                            <div className="flex items-center gap-1.5 animate-fadeIn">
+                              <span className="material-symbols-outlined text-[12px] font-bold text-slate-350">circle</span>
+                              <span>At least one number (0-9)</span>
+                            </div>
+                          )}
+
+                          {!/[^A-Za-z0-9]/.test(password) && (
+                            <div className="flex items-center gap-1.5 animate-fadeIn">
+                              <span className="material-symbols-outlined text-[12px] font-bold text-slate-350">circle</span>
+                              <span>At least one special symbol (e.g. @, #, $, %)</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Confirm Password field */}
@@ -454,14 +569,43 @@ const Register = () => {
                     <span className="material-symbols-outlined text-[19px]">lock</span>
                   </div>
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm your password"
                     required
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200/80 rounded-xl text-slate-700 text-xs font-semibold placeholder-slate-500 focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 outline-none transition-all duration-200"
+                    className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-200/80 rounded-xl text-slate-700 text-xs font-semibold placeholder-slate-500 focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 outline-none transition-all duration-200"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <span className="material-symbols-outlined text-[19px]">
+                      {showConfirmPassword ? 'visibility' : 'visibility_off'}
+                    </span>
+                  </button>
                 </div>
+
+                {/* Confirm Password Verification Box */}
+                {confirmPassword && (
+                  <div className="mt-2 px-1">
+                    <div className="flex justify-between items-center text-[10px] font-extrabold select-none">
+                      <span className="text-slate-400 uppercase tracking-wider">Password Match</span>
+                      <span 
+                        className="text-[8.5px] uppercase font-black px-2 py-0.5 rounded-full border shadow-sm"
+                        style={
+                          password !== confirmPassword 
+                            ? { backgroundColor: 'rgba(239, 68, 68, 0.08)', color: '#dc2626', borderColor: 'rgba(239, 68, 68, 0.2)' }
+                            : { backgroundColor: 'rgba(16, 185, 129, 0.08)', color: '#059669', borderColor: 'rgba(16, 185, 129, 0.2)' }
+                        }
+                      >
+                        {password !== confirmPassword ? 'Mismatch' : 'Matched'}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Submission button */}

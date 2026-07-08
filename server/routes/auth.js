@@ -6,10 +6,12 @@ const User = require('../models/User');
 const { protect, authorize, checkRole } = require('../middleware/auth');
 
 // ------------------------------------------
-// Configure email transporter (Gmail)
+// Configure email transporter (Gmail / Mailtrap SMTP)
 // ------------------------------------------
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: process.env.EMAIL_HOST || 'sandbox.smtp.mailtrap.io',
+  port: parseInt(process.env.EMAIL_PORT) || 2525,
+  secure: parseInt(process.env.EMAIL_PORT) === 465, // true for port 465 SSL, false for other ports (TLS/unsecured)
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
@@ -40,6 +42,14 @@ router.post('/register', async (req, res) => {
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    // Unified password validation on the server layer for all registrations (students, teachers, etc.)
+    if (!password || password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain uppercase, lowercase, numeric, and special characters' });
     }
 
     const user = await User.create({
@@ -192,35 +202,109 @@ router.put('/me', protect, async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email address is required' });
+    }
+    
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'No account found with this email' });
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    user.resetToken = resetToken;
-    user.resetTokenExpiry = Date.now() + 3600000;
+    // Generate secure 6-digit numeric OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.resetOTP = otp;
+    user.resetOTPExpiry = Date.now() + 300000; // 5 minutes expiration
     await user.save();
 
-    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
-
     await transporter.sendMail({
-      from: `"School Library System" <${process.env.EMAIL_USER}>`,
+      from: `"School Library System" <${process.env.EMAIL_USER || 'no-reply@library.com'}>`,
       to: email,
-      subject: 'Password Reset Request',
-      html: `<div style="font-family:Arial,sans-serif;max-width:500px;margin:auto;">
-        <h2 style="color:#1a2744;">Password Reset</h2>
-        <p>Hello ${user.name},</p>
-        <p>Click below to reset your password:</p>
-        <a href="${resetLink}" style="display:inline-block;padding:12px 24px;background:#1a2744;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">Reset Password</a>
-        <p style="margin-top:20px;font-size:12px;color:#888;">Link expires in 1 hour.</p>
+      subject: 'Password Reset Verification Code',
+      html: `<div style="font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:20px;border:1px solid #e2e8f0;border-radius:12px;">
+        <h2 style="color:#1a2744;text-align:center;">Password Reset Verification</h2>
+        <p>Hello <strong>${user.name}</strong>,</p>
+        <p>You requested a password reset. Please use the following One-Time Password (OTP) to verify your request:</p>
+        <div style="text-align:center;margin:30px 0;">
+          <span style="font-size:32px;font-weight:bold;letter-spacing:6px;background:#f8fafc;padding:12px 24px;border:1px dashed #cbd5e1;border-radius:8px;color:#1e293b;">${otp}</span>
+        </div>
+        <p style="color:#64748b;font-size:12px;text-align:center;">This OTP code is valid for 5 minutes only. If you did not make this request, please ignore this email.</p>
       </div>`,
     });
 
-    res.json({ message: 'Reset link sent to your email' });
+    res.json({ message: 'Verification code sent to your email' });
   } catch (error) {
     console.error('Forgot password error:', error.message);
-    res.status(500).json({ message: 'Failed to send reset email' });
+    res.status(500).json({ message: 'Failed to send reset verification email' });
+  }
+});
+
+// ------------------------------------------
+// POST /api/auth/verify-otp
+// Verify 6-digit recovery OTP
+// ------------------------------------------
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP verification code are required' });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      resetOTP: otp.trim(),
+      resetOTPExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification code' });
+    }
+
+    res.json({ success: true, message: 'Verification code verified successfully' });
+  } catch (error) {
+    console.error('Verify OTP error:', error.message);
+    res.status(500).json({ message: 'Server error during verification' });
+  }
+});
+
+// ------------------------------------------
+// POST /api/auth/reset-password-otp
+// Reset password using OTP code verification
+// ------------------------------------------
+router.post('/reset-password-otp', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: 'Email, OTP, and new password are required' });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      resetOTP: otp.trim(),
+      resetOTPExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Session expired. Please request a new OTP code.' });
+    }
+
+    // Unified password validation rules
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+      return res.status(400).json({ message: 'Password must contain uppercase, lowercase, numbers, and special symbols' });
+    }
+
+    user.password = newPassword;
+    user.resetOTP = null;
+    user.resetOTPExpiry = null;
+    await user.save();
+
+    res.json({ success: true, message: 'Password reset successfully' });
+  } catch (error) {
+    console.error('Reset password OTP error:', error.message);
+    res.status(500).json({ message: 'Server error during password reset' });
   }
 });
 
@@ -377,8 +461,11 @@ router.put('/change-password', protect, async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ message: 'Current password and new password are required' });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'New password must be at least 8 characters long' });
+    }
+    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+      return res.status(400).json({ message: 'New password must contain uppercase, lowercase, numeric, and special characters' });
     }
 
     // Fetch user including password hash

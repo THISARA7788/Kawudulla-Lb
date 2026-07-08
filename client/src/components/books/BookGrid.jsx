@@ -3,7 +3,21 @@ import React from 'react';
 /**
  * Presentational component to render the grid view of books
  */
-export default function BookGrid({ loading, filtered, openEdit, handleDelete, openAdd, role }) {
+export default function BookGrid({ 
+  loading, 
+  filtered, 
+  openEdit, 
+  handleDelete, 
+  openAdd, 
+  role, 
+  onCardClick,
+  onCardMouseDown,
+  onCardMouseUp,
+  onCardTouchStart,
+  onCardTouchEnd,
+  selectedBookIds = [],
+  isSelectionMode = false
+}) {
   
   if (loading) {
     return (
@@ -65,14 +79,38 @@ export default function BookGrid({ loading, filtered, openEdit, handleDelete, op
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-4">
       {filtered.map((book) => {
+        const isSelected = selectedBookIds.includes(book._id);
         return (
           <div
             key={book._id}
-            className="group relative flex flex-col rounded-2xl bg-white border border-slate-100 p-4 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-100 hover:border-slate-200"
+            onMouseDown={() => onCardMouseDown && onCardMouseDown(book)}
+            onMouseUp={onCardMouseUp}
+            onTouchStart={() => onCardTouchStart && onCardTouchStart(book)}
+            onTouchEnd={onCardTouchEnd}
+            onClick={() => onCardClick && onCardClick(book)}
+            className={`group relative flex flex-col rounded-2xl bg-white border p-4 transition-all duration-300 ${
+              isSelected 
+                ? 'ring-2 ring-offset-2 ring-indigo-600 bg-indigo-50/20 shadow-md shadow-indigo-100/60' 
+                : 'border-slate-100 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-100 hover:border-slate-200'
+            } cursor-pointer`}
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
+            {/* Checkbox indicator for Selection Mode */}
+            {isSelectionMode && (
+              <div className="absolute top-2.5 left-2.5 z-30 select-none bg-white rounded-lg shadow-md border border-slate-200 flex items-center justify-center p-0.5 animate-fadeIn">
+                <span className="material-symbols-outlined font-black" style={{ 
+                  fontSize: 18, 
+                  color: isSelected ? '#16a34a' : '#94a3b8',
+                  fontVariationSettings: isSelected ? "'FILL' 1" : "'FILL' 0"
+                }}>
+                  {isSelected ? 'check_box' : 'check_box_outline_blank'}
+                </span>
+              </div>
+            )}
+
             {/* Cover Image Container */}
             <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden shadow-sm bg-slate-50 ring-1 ring-slate-100 flex items-center justify-center transform translate-z-0">
+
               {book.coverImageUrl ? (
                 <img
                   src={book.coverImageUrl}
@@ -104,24 +142,13 @@ export default function BookGrid({ loading, filtered, openEdit, handleDelete, op
                 </div>
               )}
 
-              {/* Action Overlay for Librarians */}
-              {role === 'librarian' && (
-                <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2.5 backdrop-blur-[2px] rounded-xl z-20">
-                  <button
-                    onClick={() => openEdit(book)}
-                    className="p-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 transition-all transform scale-90 group-hover:scale-100 hover:scale-105 shadow-md flex items-center justify-center"
-                    title="Edit Details"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>edit</span>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(book._id)}
-                    className="p-2 rounded-xl bg-white hover:bg-red-55 text-red-650 transition-all transform scale-90 group-hover:scale-100 hover:scale-105 shadow-md flex items-center justify-center"
-                    style={{ color: '#b91c1c' }}
-                    title="Delete Book"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>delete</span>
-                  </button>
+              {/* Action Hover Overlay */}
+              {!isSelectionMode && (
+                <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[1px] rounded-xl z-20">
+                  <div className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[#1a1245] text-[10px] font-black uppercase tracking-widest shadow-md flex items-center gap-1.5 transform translate-y-3 group-hover:translate-y-0 transition-all duration-300">
+                    <span className="material-symbols-outlined font-semibold" style={{ fontSize: 14 }}>visibility</span>
+                    <span>View</span>
+                  </div>
                 </div>
               )}
             </div>

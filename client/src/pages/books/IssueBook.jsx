@@ -192,6 +192,9 @@ export default function IssueBook() {
     setShowMemberSuggestions(false);
     setMemberError('');
     fetchBorrowingInfo(m._id);
+    setTimeout(() => {
+      if (memberInputRef.current) memberInputRef.current.select();
+    }, 50);
   };
 
   const handleSelectBook = (b) => {
@@ -199,6 +202,9 @@ export default function IssueBook() {
     setBookSearch(b.isbn || b.bookId || '');
     setShowBookSuggestions(false);
     setBookError('');
+    setTimeout(() => {
+      if (bookInputRef.current) bookInputRef.current.select();
+    }, 50);
   };
 
   const clearMember = () => {
@@ -344,18 +350,6 @@ export default function IssueBook() {
           }
           return;
         }
-
-        // Alphanumeric character indicating a new scan started
-        if (e.key.length === 1) {
-          setShowSuccessModal(false);
-          setIssuedDetails(null);
-          if (!selectedMember) {
-            if (memberInputRef.current) memberInputRef.current.focus();
-          } else {
-            if (bookInputRef.current) bookInputRef.current.focus();
-          }
-          return; // Let character pass through to the now-focused input
-        }
       }
 
       if (e.altKey || e.ctrlKey || e.metaKey) return;
@@ -383,6 +377,14 @@ export default function IssueBook() {
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [selectedMember, selectedBook, showSuccessModal]);
+
+  // Close success modal automatically when a new member scan or book scan starts
+  useEffect(() => {
+    if ((memberSearch || bookSearch) && showSuccessModal) {
+      setShowSuccessModal(false);
+      setIssuedDetails(null);
+    }
+  }, [memberSearch, bookSearch, showSuccessModal]);
 
   const canIssue = selectedMember && selectedBook && !saving;
 
@@ -538,8 +540,13 @@ export default function IssueBook() {
                       value={memberSearch}
                       onChange={(e) => { setMemberSearch(e.target.value); setMemberError(''); }}
                       onKeyDown={handleMemberSearchKeyDown}
-                      onFocus={() => { setMemberInputFocused(true); setShowMemberSuggestions(memberSearch.length === 0); }}
+                      onFocus={(e) => {
+                        setMemberInputFocused(true);
+                        setShowMemberSuggestions(memberSearch.length === 0);
+                        e.target.select();
+                      }}
                       onBlur={() => setMemberInputFocused(false)}
+                      onClick={(e) => e.target.select()}
                       placeholder="Type name, email, or member ID..."
                       className="w-full py-2 pl-10 pr-3 text-sm rounded-xl outline-none transition-all"
                       style={{ 
@@ -670,8 +677,13 @@ export default function IssueBook() {
                       type="text"
                       value={bookSearch}
                       onChange={(e) => { setBookSearch(e.target.value); setBookError(''); }}
-                      onFocus={() => { setBookInputFocused(true); setShowBookSuggestions(bookSearch.length === 0); }}
+                      onFocus={(e) => {
+                        setBookInputFocused(true);
+                        setShowBookSuggestions(bookSearch.length === 0);
+                        e.target.select();
+                      }}
                       onBlur={() => setBookInputFocused(false)}
+                      onClick={(e) => e.target.select()}
                       onKeyDown={handleBookSearchKeyDown}
                       placeholder="Scan book barcode / ISBN or type title, author..."
                       className="w-full py-2 pl-10 pr-3 text-sm rounded-xl outline-none transition-all font-medium"
