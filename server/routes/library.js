@@ -527,75 +527,209 @@ router.get('/users/:id/history', protect, authorize('librarian'), async (req, re
   }
 });
 
-// POST /api/library/books/import - Bulk import books via CSV text
-router.post('/books/import', protect, authorize('librarian'), async (req, res) => {
-  try {
-    const { csvText } = req.body;
-    if (!csvText) {
-      return res.status(400).json({ message: 'No CSV data provided' });
-    }
+// POST /api/library/books/import - Bulk import books via Excel file or CSV
+const multer = require('multer');
+const ExcelJS = require('exceljs');
+const { cloudinary } = require('../config/cloudinary');
 
-    // Native robust CSV Parser
-    const parsedRows = [];
-    let row = [''];
-    let inQuotes = false;
+const inMemoryStorage = multer.memoryStorage();
+const uploadFile = multer({ storage: inMemoryStorage });
 
-    for (let i = 0; i < csvText.length; i++) {
-      const c = csvText[i];
-      const next = csvText[i + 1];
+const parseCSVText = (csvText) => {
+  const parsedRows = [];
+  let row = [''];
+  let inQuotes = false;
 
-      if (c === '"') {
-        if (inQuotes && next === '"') {
-          row[row.length - 1] += '"';
-          i++; // skip double quote escape
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (c === ',' && !inQuotes) {
-        row.push('');
-      } else if ((c === '\r' || c === '\n') && !inQuotes) {
-        if (c === '\r' && next === '\n') {
-          i++;
-        }
-        parsedRows.push(row);
-        row = [''];
+  for (let i = 0; i < csvText.length; i++) {
+    const c = csvText[i];
+    const next = csvText[i + 1];
+
+    if (c === '"') {
+      if (inQuotes && next === '"') {
+        row[row.length - 1] += '"';
+        i++; // skip double quote escape
       } else {
-        row[row.length - 1] += c;
+        inQuotes = !inQuotes;
       }
-    }
-    if (row.length > 1 || row[0] !== '') {
+    } else if (c === ',' && !inQuotes) {
+      row.push('');
+    } else if ((c === '\r' || c === '\n') && !inQuotes) {
+      if (c === '\r' && next === '\n') {
+        i++;
+      }
       parsedRows.push(row);
+      row = [''];
+    } else {
+      row[row.length - 1] += c;
+    }
+  }
+  if (row.length > 1 || row[0] !== '') {
+    parsedRows.push(row);
+  }
+  return parsedRows;
+};
+
+router.post('/books/import', protect, authorize('librarian'), uploadFile.single('file'), async (req, res) => {
+  try {
+    let parsedRows = [];
+    const uploadedUrls = {}; // maps row index (0-based) to Cloudinary URL
+
+    // Helper to upload a buffer to Cloudinary
+    const uploadStream = (fileBuffer, options) => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
+          if (result) {
+            resolve(result);
+          } else {
+            reject(error);
+          }
+        });
+        stream.end(fileBuffer);
+      });
+    };
+
+    if (req.file) {
+      const isExcel = req.file.originalname.endsWith('.xlsx') || req.file.originalname.endsWith('.xls') || req.file.mimetype.includes('spreadsheet') || req.file.mimetype.includes('excel');
+
+      if (isExcel) {
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(req.file.buffer);
+        const worksheet = workbook.worksheets[0];
+
+        if (!worksheet) {
+          return res.status(400).json({ message: 'Spreadsheet contains no worksheets' });
+        }
+
+        // Helper to format values safely
+        const getCellValueText = (cell) => {
+          if (!cell || cell.value === null || cell.value === undefined) return "";
+          if (typeof cell.value === 'object') {
+            if (cell.value.text) return String(cell.value.text);
+            if (cell.value.result !== undefined) return String(cell.value.result);
+            if (cell.value.richText) {
+              return cell.value.richText.map(t => t.text || "").join("");
+            }
+            return JSON.stringify(cell.value);
+          }
+          return String(cell.value);
+        };
+
+        // 1. Read standard text rows from ExcelJS worksheet
+        worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+          const rowData = [];
+          for (let c = 1; c <= 10; c++) {
+            const cell = row.getCell(c);
+            rowData.push(getCellValueText(cell).trim());
+          }
+          parsedRows[rowNumber - 1] = rowData; // match 1-indexed to 0-indexed rows
+        });
+
+        // Fill in any gaps (empty rows) up to parsedRows.length
+        for (let i = 0; i < parsedRows.length; i++) {
+          if (!parsedRows[i]) {
+            parsedRows[i] = Array(10).fill("");
+          }
+        }
+
+        // 2. Extract inline pictures and upload to Cloudinary
+        const images = worksheet.getImages();
+        if (images && images.length > 0) {
+          const uploadPromises = [];
+          for (const imgInfo of images) {
+            const image = workbook.getImage(imgInfo.imageId);
+            const range = imgInfo.range;
+            if (!range || !range.tl) continue;
+
+            const colIndex = Math.floor(range.tl.col); // 0-indexed column
+            const rowIndex = Math.floor(range.tl.row); // 0-indexed row
+
+            // Column B (1) is "BOOK COVER"
+            if (colIndex === 1) {
+              const imgBuffer = image.buffer;
+              const extension = image.extension || 'png';
+              const mimeType = `image/${extension === 'jpg' ? 'jpeg' : extension}`;
+
+              const uploadPromise = (async () => {
+                try {
+                  const uploadOptions = {
+                    folder: 'library_covers',
+                    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+                    transformation: [{ width: 800, crop: 'limit' }]
+                  };
+                  const result = await uploadStream(imgBuffer, uploadOptions);
+                  if (result && result.secure_url) {
+                    uploadedUrls[rowIndex] = result.secure_url;
+                  }
+                } catch (uploadErr) {
+                  console.error(`Failed to upload inline image for row ${rowIndex}:`, uploadErr.message);
+                }
+              })();
+              uploadPromises.push(uploadPromise);
+            }
+          }
+
+          if (uploadPromises.length > 0) {
+            await Promise.all(uploadPromises);
+          }
+        }
+      } else {
+        // Native CSV Parser from Buffer
+        const csvText = req.file.buffer.toString('utf8');
+        parsedRows = parseCSVText(csvText);
+      }
+    } else if (req.body.csvText) {
+      parsedRows = parseCSVText(req.body.csvText);
     }
 
     if (parsedRows.length <= 1) {
-      return res.status(400).json({ message: 'CSV file is empty or contains no book rows' });
+      return res.status(400).json({ message: 'Spreadsheet is empty or contains no book rows' });
     }
 
-    const headers = parsedRows[0];
-    const cleanHeaders = headers.map(h => h.toLowerCase().trim());
-    const headerMap = {};
+    let headersIndex = 0;
+    let headers = parsedRows[headersIndex];
+    let cleanHeaders = headers.map(h => h.toLowerCase().replace(/\*/g, '').trim());
+    let headerMap = {};
 
-    cleanHeaders.forEach((h, index) => {
-      if (h === 'title' || h === 'book title' || h === 'book_title' || h === 'පොත් නම' || h === 'නම') {
-        headerMap.title = index;
-      } else if (h === 'author' || h === 'author name' || h === 'writer' || h === 'කර්තෘ') {
-        headerMap.author = index;
-      } else if (h === 'category' || h === 'genre' || h === 'කාණ්ඩය') {
-        headerMap.category = index;
-      } else if (h === 'totalcopies' || h === 'copies' || h === 'total copies' || h === 'quantity' || h === 'පිටපත් ගණන') {
-        headerMap.totalCopies = index;
-      } else if (h === 'isbn' || h === 'barcode' || h === 'isbn අංකය') {
-        headerMap.isbn = index;
-      } else if (h === 'publisher' || h === 'ප්‍රකාශකයා') {
-        headerMap.publisher = index;
-      } else if (h === 'publishedyear' || h === 'published year' || h === 'year' || h === 'වසර') {
-        headerMap.publishedYear = index;
-      } else if (h === 'description' || h === 'summary' || h === 'විස්තරය') {
-        headerMap.description = index;
-      } else if (h === 'coverimageurl' || h === 'cover image' || h === 'image' || h === 'photo') {
-        headerMap.coverImageUrl = index;
+    const mapHeaders = (cleanHdrs) => {
+      const map = {};
+      cleanHdrs.forEach((h, index) => {
+        if (h === 'title' || h === 'book title' || h === 'book_title' || h === 'පොත් නම' || h === 'නම') {
+          map.title = index;
+        } else if (h === 'author' || h === 'author name' || h === 'writer' || h === 'කර්තෘ') {
+          map.author = index;
+        } else if (h === 'category' || h === 'genre' || h === 'කාණ්ඩය') {
+          map.category = index;
+        } else if (h === 'totalcopies' || h === 'copies' || h === 'total copies' || h === 'quantity' || h === 'පිටපත් ගණන') {
+          map.totalCopies = index;
+        } else if (h === 'isbn' || h === 'barcode' || h === 'isbn අංකය') {
+          map.isbn = index;
+        } else if (h === 'publisher' || h === 'ප්‍රකාශකයා') {
+          map.publisher = index;
+        } else if (h === 'publishedyear' || h === 'published year' || h === 'year' || h === 'වසර') {
+          map.publishedYear = index;
+        } else if (h === 'description' || h === 'summary' || h === 'විස්තරය') {
+          map.description = index;
+        } else if (h === 'coverimageurl' || h === 'cover image' || h === 'book cover' || h === 'book_cover' || h === 'image' || h === 'photo') {
+          map.coverImageUrl = index;
+        }
+      });
+      return map;
+    };
+
+    headerMap = mapHeaders(cleanHeaders);
+
+    // If headers are not found in the first row, check the second row (e.g. if row 0 was a title instruction row)
+    if ((headerMap.title === undefined || headerMap.author === undefined) && parsedRows.length > 1) {
+      const secondHeaders = parsedRows[1];
+      const secondCleanHeaders = secondHeaders.map(h => h.toLowerCase().replace(/\*/g, '').trim());
+      const secondHeaderMap = mapHeaders(secondCleanHeaders);
+      if (secondHeaderMap.title !== undefined && secondHeaderMap.author !== undefined) {
+        headersIndex = 1;
+        headers = secondHeaders;
+        cleanHeaders = secondCleanHeaders;
+        headerMap = secondHeaderMap;
       }
-    });
+    }
 
     if (headerMap.title === undefined || headerMap.author === undefined) {
       return res.status(400).json({ message: 'Required headers (Title, Author) are missing from the CSV file' });
@@ -615,7 +749,7 @@ router.post('/books/import', protect, authorize('librarian'), async (req, res) =
       currentSeq = counterRecord.seq;
     }
 
-    for (let r = 1; r < parsedRows.length; r++) {
+    for (let r = headersIndex + 1; r < parsedRows.length; r++) {
       const rowData = parsedRows[r];
       if (rowData.length === 0 || (rowData.length === 1 && rowData[0] === '')) continue;
 
@@ -644,7 +778,17 @@ router.post('/books/import', protect, authorize('librarian'), async (req, res) =
       const publishedYear = isNaN(publishedYearVal) ? undefined : publishedYearVal;
 
       const description = headerMap.description !== undefined ? rowData[headerMap.description]?.trim() : '';
-      const coverImageUrl = headerMap.coverImageUrl !== undefined ? rowData[headerMap.coverImageUrl]?.trim() : '';
+      
+      // Use uploaded inline picture URL, or fallback to file name text in column
+      let coverImageUrl = uploadedUrls[r] || '';
+      if (!coverImageUrl) {
+        coverImageUrl = headerMap.coverImageUrl !== undefined ? rowData[headerMap.coverImageUrl]?.trim() : '';
+        if (coverImageUrl && !coverImageUrl.startsWith('http')) {
+          const publicId = coverImageUrl.replace(/\.[^/.]+$/, "");
+          const cloudName = process.env.CLOUDINARY_CLOUD_NAME || 'hekki8ae';
+          coverImageUrl = `https://res.cloudinary.com/${cloudName}/image/upload/library_covers/${publicId}`;
+        }
+      }
 
       currentSeq++;
       const bookId = `BK${String(currentSeq).padStart(3, '0')}`;

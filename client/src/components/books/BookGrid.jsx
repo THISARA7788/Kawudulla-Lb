@@ -148,8 +148,14 @@ export default function BookGrid({ loading, filtered, openEdit, handleDelete, op
                 by {book.author}
               </p>
 
+              {book.createdAt && (
+                <div className="text-[9px] text-slate-400 font-semibold select-none mt-0.5">
+                  {new Date(book.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                </div>
+              )}
+
               {/* Catalog Serial ID & Copies count */}
-              <div className="flex items-center justify-between mt-3.5 text-[10px] font-bold text-slate-400 font-mono select-none border-t border-slate-50 pt-2.5">
+              <div className="flex items-center justify-between mt-2 text-[10px] font-bold text-slate-400 font-mono select-none border-t border-slate-50 pt-1.5">
                 <div className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-[12px]" style={{ fontSize: 13 }}>tag</span>
                   <span>{book.bookId || '—'}</span>

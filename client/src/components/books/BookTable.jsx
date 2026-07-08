@@ -35,7 +35,7 @@ export default function BookTable({ loading, filtered, openEdit, handleDelete, o
   }
 
   // Setup table columns (incorporating Cover and Status)
-  const columns = ['Book ID', 'Cover', 'Title', 'Author', 'ISBN', 'Category', 'Copies', 'Status'];
+  const columns = ['Book ID', 'Cover', 'Title', 'Author', 'ISBN', 'Category', 'Copies', 'Status', 'Added'];
   if (role === 'librarian') {
     columns.push(''); // For actions column
   }
@@ -180,6 +180,11 @@ export default function BookTable({ loading, filtered, openEdit, handleDelete, o
                 >
                   {book.status || 'Available'}
                 </span>
+              </td>
+              
+              {/* Book Added Date */}
+              <td className="py-3 px-4 text-xs font-semibold text-slate-500 whitespace-nowrap">
+                {book.createdAt ? new Date(book.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
               </td>
               
               {/* Interactive buttons */}

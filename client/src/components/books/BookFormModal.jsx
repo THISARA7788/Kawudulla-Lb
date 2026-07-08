@@ -1,8 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import api from '../../api/axios';
+import XLSX from 'xlsx-js-style';
 
 const STATUS_OPTIONS = ['Available', 'Borrowed', 'Reserved'];
+
+// Audio Synth Beep Helper
+const playBeep = (type = 'success') => {
+  // Audio feedback disabled per user preference
+};
 
 export default function BookFormModal({
   showModal,
@@ -18,62 +24,17 @@ export default function BookFormModal({
   CATEGORIES,
   onImportComplete
 }) {
-  if (!showModal) return null;
-
-  // Audio Synth Beep Helper
-  const playBeep = (type = 'success') => {
-    // Audio feedback disabled per user preference
-  };
-
-  // Hardware Scanner USB Listening Buffer
-  useEffect(() => {
-    if (!showModal) return;
-
-    // Automatically focus the ISBN input field when the modal opens
-    setTimeout(() => {
-      if (isbnInputRef.current) {
-        isbnInputRef.current.focus();
-      }
-    }, 50);
-
-    let buffer = '';
-    let lastKeyTime = Date.now();
-
-    const handleKeyDown = (e) => {
-      const currentTime = Date.now();
-      const interval = currentTime - lastKeyTime;
-      lastKeyTime = currentTime;
-
-      // Hardware scanners type keys within < 45ms intervals
-      if (interval > 45) {
-        buffer = '';
-      }
-
-      if (e.key === 'Enter') {
-        const cleanBuffer = buffer.trim();
-        if (cleanBuffer.length >= 8 && /^\d+$/.test(cleanBuffer)) {
-          e.preventDefault();
-          e.stopPropagation();
-          triggerIsbnSearch(cleanBuffer);
-          buffer = '';
-        }
-      } else if (e.key && e.key.length === 1 && /^\d+$/.test(e.key)) {
-        buffer += e.key;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [showModal, form]);
-
   // ISBN Processing States
   const [searchingIsbn, setSearchingIsbn] = useState(false);
   const [isbnSearchError, setIsbnSearchError] = useState('');
   const [duplicateBook, setDuplicateBook] = useState(null);
 
-  const triggerIsbnSearch = async (isbnVal) => {
+  const handleChangeRef = useRef(handleChange);
+  handleChangeRef.current = handleChange;
+
+  const isbnInputRef = useRef(null);
+
+  const triggerIsbnSearch = useCallback(async (isbnVal) => {
     if (!isbnVal || !isbnVal.trim()) return;
     const cleanIsbn = isbnVal.trim().replace(/[-\s]/g, '');
     setSearchingIsbn(true);
@@ -81,7 +42,7 @@ export default function BookFormModal({
     setDuplicateBook(null);
 
     // Set ISBN value inside parent React form state
-    handleChange({ target: { name: 'isbn', value: cleanIsbn } });
+    handleChangeRef.current({ target: { name: 'isbn', value: cleanIsbn } });
 
     try {
       // 1. Check local catalog duplication
@@ -159,7 +120,7 @@ export default function BookFormModal({
         playBeep('success');
         // Auto populate fields by mimicking target changes
         Object.keys(bookData).forEach(key => {
-          handleChange({ target: { name: key, value: bookData[key] } });
+          handleChangeRef.current({ target: { name: key, value: bookData[key] } });
         });
       } else {
         playBeep('error');
@@ -172,7 +133,50 @@ export default function BookFormModal({
     } finally {
       setSearchingIsbn(false);
     }
-  };
+  }, []);
+
+  // Hardware Scanner USB Listening Buffer
+  useEffect(() => {
+    if (!showModal) return;
+
+    // Automatically focus the ISBN input field when the modal opens
+    setTimeout(() => {
+      if (isbnInputRef.current) {
+        isbnInputRef.current.focus();
+      }
+    }, 50);
+
+    let buffer = '';
+    let lastKeyTime = Date.now();
+
+    const handleKeyDown = (e) => {
+      const currentTime = Date.now();
+      const interval = currentTime - lastKeyTime;
+      lastKeyTime = currentTime;
+
+      // Hardware scanners type keys within < 45ms intervals
+      if (interval > 45) {
+        buffer = '';
+      }
+
+      if (e.key === 'Enter') {
+        const cleanBuffer = buffer.trim();
+        if (cleanBuffer.length >= 8 && /^\d+$/.test(cleanBuffer)) {
+          e.preventDefault();
+          e.stopPropagation();
+          triggerIsbnSearch(cleanBuffer);
+          buffer = '';
+        }
+      } else if (e.key && e.key.length === 1 && /^\d+$/.test(e.key)) {
+        buffer += e.key;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showModal, triggerIsbnSearch]);
 
   // HTML5-QRCode Camera Scanner States
   const [showCamera, setShowCamera] = useState(false);
@@ -180,7 +184,6 @@ export default function BookFormModal({
   const [cameras, setCameras] = useState([]);
   const [activeCameraId, setActiveCameraId] = useState('');
   const html5QrCodeRef = useRef(null);
-  const isbnInputRef = useRef(null);
 
   const startCamera = async () => {
     setCameraError('');
@@ -260,14 +263,9 @@ export default function BookFormModal({
   const [importResult, setImportResult] = useState(null);
 
   const downloadCSVTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + "title,author,isbn,category,totalCopies,publisher,publishedYear,description\n"
-      + "මැයි මාර ප්‍රසංගය,Mahinda Masimbula,9786245594252,Fiction,5,Liyanage,2022,A great Sinhala novel\n"
-      + "A Brief History of Time,Stephen Hawking,9780553380163,Science,3,Bantam Books,1998,Classic physics literature";
-    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "library_book_import_template.csv");
+    link.setAttribute("href", "/library_book_import_template.xlsx");
+    link.setAttribute("download", "library_book_import_template.xlsx");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -278,33 +276,30 @@ export default function BookFormModal({
     if (!file) return;
 
     e.target.value = null;
+    setImporting(true);
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const csvText = event.target.result;
-      if (!csvText.trim()) {
-        alert("CSV file is empty!");
-        return;
-      }
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
 
-      setImporting(true);
-      try {
-        const res = await api.post('/library/books/import', { csvText });
-        setImportResult({
-          success: true,
-          importedCount: res.data.importedCount,
-          skippedCount: res.data.skippedCount,
-        });
-        if (onImportComplete) {
-          onImportComplete();
-        }
-      } catch (err) {
-        alert(err.response?.data?.message || "Failed to import books. Please check column headers.");
-      } finally {
-        setImporting(false);
+      const res = await api.post('/library/books/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      setImportResult({
+        success: true,
+        importedCount: res.data.importedCount,
+        skippedCount: res.data.skippedCount,
+      });
+      if (onImportComplete) {
+        onImportComplete();
       }
-    };
-    reader.readAsText(file);
+    } catch (err) {
+      console.error('Spreadsheet import error:', err);
+      alert(err.response?.data?.message || "Failed to import books. Please check column headers.");
+    } finally {
+      setImporting(false);
+    }
   };
 
   const compressImage = (file) => {
@@ -406,6 +401,8 @@ export default function BookFormModal({
     (form.category !== 'Other' || customCategory?.trim())
   );
 
+  if (!showModal) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}>
       <div
@@ -419,7 +416,11 @@ export default function BookFormModal({
               <span className="material-symbols-outlined" style={{ fontSize: 24 }}>menu_book</span>
               {editingBook ? 'Edit Book Details' : 'Add New Book'}
             </h2>
-            <p className="text-slate-400 text-[10px] sm:text-xs mt-0.5">Fill details manually or use barcode lookup</p>
+            <p className="text-slate-400 text-[10px] sm:text-xs mt-0.5">
+              {editingBook && editingBook.createdAt 
+                ? `Added on ${new Date(editingBook.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}` 
+                : 'Fill details manually or use barcode lookup'}
+            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -431,7 +432,7 @@ export default function BookFormModal({
                   type="button"
                   onClick={downloadCSVTemplate}
                   className="flex items-center justify-center bg-white border border-slate-200 hover:border-slate-350 hover:bg-slate-55 rounded-xl p-2 shadow-sm text-slate-500 hover:text-slate-700 transition-all active:scale-95 cursor-pointer"
-                  title="Download CSV Import Template"
+                  title="Download Excel Import Template"
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>download</span>
                 </button>
@@ -449,7 +450,7 @@ export default function BookFormModal({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   onChange={handleCSVImport}
                   className="hidden"
                 />
