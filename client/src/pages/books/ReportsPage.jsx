@@ -7,6 +7,7 @@ import ReportSummaryCards from '../../components/reports/ReportSummaryCards';
 import ReportDetailsTable from '../../components/reports/ReportDetailsTable';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import XLSX from 'xlsx-js-style';
 
 /**
  * Add Sinhala font support to a jsPDF document.
@@ -21,6 +22,37 @@ async function addSinhalaFont(doc) {
   doc.addFileToVFS('NotoSansSinhala-Regular.ttf', base64);
   doc.addFont('NotoSansSinhala-Regular.ttf', 'NotoSansSinhala', 'normal');
   return 'NotoSansSinhala';
+}
+
+/**
+ * Preprocesses Sinhala Unicode text by swapping and decomposing left-combining
+ * vowel signs (like the kombuwa) so they render correctly in non-shaping PDF engines.
+ */
+function shapeSinhala(text) {
+  if (!text) return '';
+  let processed = text;
+  
+  // Decompose and reorder double/composite vowels containing kombuwa
+  // ේ (\u0DDA) -> ෙ (\u0DD9) + Consonant + ් (\u0DCA)
+  processed = processed.replace(/([\u0D9A-\u0DC6](?:\u0DCA[\u0D9A-\u0DC6])?)\u0DDA/g, '\u0DD9$1\u0DCA');
+  
+  // ො (\u0DDC) -> ෙ (\u0DD9) + Consonant + ා (\u0DCF)
+  processed = processed.replace(/([\u0D9A-\u0DC6](?:\u0DCA[\u0D9A-\u0DC6])?)\u0DDC/g, '\u0DD9$1\u0DCF');
+  
+  // ෝ (\u0DDD) -> ෙ (\u0DD9) + Consonant + ා (\u0DCF) + ් (\u0DCA)
+  processed = processed.replace(/([\u0D9A-\u0DC6](?:\u0DCA[\u0D9A-\u0DC6])?)\u0DDD/g, '\u0DD9$1\u0DCF\u0DCA');
+  
+  // ෞ (\u0DDE) -> ෙ (\u0DD9) + Consonant + ෟ (\u0DDF)
+  processed = processed.replace(/([\u0D9A-\u0DC6](?:\u0DCA[\u0D9A-\u0DC6])?)\u0DDE/g, '\u0DD9$1\u0DDF');
+  
+  // Swap simple left-combining vowels:
+  // ෙ (\u0DD9) -> ෙ (\u0DD9) + Consonant
+  processed = processed.replace(/([\u0D9A-\u0DC6](?:\u0DCA[\u0D9A-\u0DC6])?)\u0DD9/g, '\u0DD9$1');
+  
+  // ෛ (\u0DDB) -> ෛ (\u0DDB) + Consonant
+  processed = processed.replace(/([\u0D9A-\u0DC6](?:\u0DCA[\u0D9A-\u0DC6])?)\u0DDB/g, '\u0DDB$1');
+  
+  return processed;
 }
 
 const REPORT_TYPES = [
@@ -56,6 +88,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [excelGenerating, setExcelGenerating] = useState(false);
   const [toast, setToast] = useState(null);
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -143,9 +176,9 @@ export default function ReportsPage() {
           return [
             t.transactionId || '—',
             t.user?.memberId || '—',
-            t.user?.name || '—',
+            shapeSinhala(t.user?.name || '—'),
             t.book?.bookId || '—',
-            t.book?.title || '—',
+            shapeSinhala(t.book?.title || '—'),
             new Date(t.issueDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
             new Date(t.dueDate).toLocaleDateString(),
             statusText,
@@ -156,13 +189,13 @@ export default function ReportsPage() {
       const members = reportData.members || [];
       if (reportType === 'members') {
         columns = ['Member ID', 'Name', 'Email', 'Role', 'Grade', 'Active Borrows', 'Total Borrows'];
-        rows = members.map((m) => [m.memberId, m.name, m.email, m.role, m.grade || '—', m.activeBorrows?.toString() || '0', m.totalBorrows?.toString() || '0']);
+        rows = members.map((m) => [m.memberId, shapeSinhala(m.name), m.email, m.role, m.grade || '—', m.activeBorrows?.toString() || '0', m.totalBorrows?.toString() || '0']);
       }
 
       const popular = reportData.popular || [];
       if (reportType === 'popular-books') {
         columns = ['#', 'Book ID', 'Title', 'Author', 'Times Borrowed'];
-        rows = popular.map((p, i) => [(i + 1).toString(), p.book?.bookId || '', p.book?.title || '', p.book?.author || '', (p.count || 0).toString()]);
+        rows = popular.map((p, i) => [(i + 1).toString(), p.book?.bookId || '', shapeSinhala(p.book?.title || ''), shapeSinhala(p.book?.author || ''), (p.count || 0).toString()]);
       }
 
       const fineList = reportData.fines || [];
@@ -171,9 +204,9 @@ export default function ReportsPage() {
         rows = fineList.map((f) => [
           f.transaction?.transactionId || '',
           f.user?.memberId || '',
-          f.user?.name || '',
+          shapeSinhala(f.user?.name || ''),
           f.book?.bookId || '',
-          f.book?.title || '',
+          shapeSinhala(f.book?.title || ''),
           (f.amount || 0).toFixed(2),
           f.status,
           new Date(f.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
@@ -191,6 +224,16 @@ export default function ReportsPage() {
           alternateRowStyles: { fillColor: [245, 247, 250] },
           margin: { left: 14, right: 14 },
           styles: { cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.5 },
+          didParseCell: (data) => {
+            if (data.cell && data.cell.text) {
+              const val = data.cell.text.join(' ');
+              const hasSinhala = /[\u0D80-\u0DFF]/.test(val);
+              if (hasSinhala) {
+                data.cell.styles.font = 'NotoSansSinhala';
+                data.cell.styles.fontStyle = 'normal';
+              }
+            }
+          }
         });
       } else {
         doc.setFont('helvetica', 'normal');
@@ -203,6 +246,7 @@ export default function ReportsPage() {
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
+        doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text(`Page ${i} of ${pageCount} — Kawudulla Maha Vidyalaya Library`, 14, doc.internal.pageSize.height - 10);
@@ -217,6 +261,226 @@ export default function ReportsPage() {
     setPdfGenerating(false);
   };
 
+  // Excel Generation
+  const generateExcel = async () => {
+    if (!reportData) { showToast('Please generate a report first before exporting to Excel.', 'error'); return; }
+    setExcelGenerating(true);
+    try {
+      let columns = [];
+      let rows = [];
+
+      const transactions = reportData.transactions || [];
+      if (reportType === 'circulation') {
+        columns = ['TRX ID', 'Member ID', 'Member Name', 'Book ID', 'Book Title', 'Issue Date', 'Due Date', 'Status'];
+        rows = transactions.map((t) => {
+          const isOverdue = t.status === 'overdue' || (!t.returnDate && new Date(t.dueDate) < new Date());
+          const wasReturnedOverdue = t.returnDate && t.overdueDays > 0;
+          const daysOverdue = isOverdue
+            ? Math.floor((Date.now() - new Date(t.dueDate)) / 86400000)
+            : (wasReturnedOverdue ? t.overdueDays : 0);
+
+          let statusText = t.status;
+          if (isOverdue) statusText = `Overdue (${daysOverdue}d)`;
+          else if (wasReturnedOverdue) statusText = `Returned (Overdue ${daysOverdue}d)`;
+          else if (t.status === 'returned') statusText = 'Returned';
+          else statusText = 'Active';
+
+          return [
+            t.transactionId || '—',
+            t.user?.memberId || '—',
+            t.user?.name || '—',
+            t.book?.bookId || '—',
+            t.book?.title || '—',
+            new Date(t.issueDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
+            new Date(t.dueDate).toLocaleDateString(),
+            statusText,
+          ];
+        });
+      }
+
+      const members = reportData.members || [];
+      if (reportType === 'members') {
+        columns = ['Member ID', 'Name', 'Email', 'Role', 'Grade', 'Active Borrows', 'Total Borrows'];
+        rows = members.map((m) => [
+          m.memberId || '—',
+          m.name || '—',
+          m.email || '—',
+          m.role || '—',
+          m.grade || '—',
+          m.activeBorrows || 0,
+          m.totalBorrows || 0
+        ]);
+      }
+
+      const popular = reportData.popular || [];
+      if (reportType === 'popular-books') {
+        columns = ['Rank', 'Book ID', 'Title', 'Author', 'Times Borrowed'];
+        rows = popular.map((p, i) => [
+          i + 1,
+          p.book?.bookId || '—',
+          p.book?.title || '—',
+          p.book?.author || '—',
+          p.count || 0
+        ]);
+      }
+
+      const fineList = reportData.fines || [];
+      if (reportType === 'fines') {
+        columns = ['Transaction ID', 'Member ID', 'Member Name', 'Book ID', 'Book Title', 'Amount (LKR)', 'Status', 'Date'];
+        rows = fineList.map((f) => [
+          f.transaction?.transactionId || '—',
+          f.user?.memberId || '—',
+          f.user?.name || '—',
+          f.book?.bookId || '—',
+          f.book?.title || '—',
+          f.amount || 0,
+          f.status || '—',
+          new Date(f.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
+        ]);
+      }
+
+      if (rows.length === 0) {
+        showToast('No data available to export.', 'error');
+        setExcelGenerating(false);
+        return;
+      }
+
+      // Build Sheet Data Array with Title, Subtitle, Period and Summary Metrics at the top
+      const sheetData = [];
+
+      // Title & Header Information
+      sheetData.push(["Kawudulla Maha Vidyalaya Library"]);
+      sheetData.push([`${reportType.charAt(0).toUpperCase() + reportType.slice(1).replace('-', ' ')} Report`]);
+      
+      const rangeStr = dateRange.startDate ? `${dateRange.startDate} to ${dateRange.endDate || 'Now'}` : 'All Time';
+      const now = new Date().toLocaleDateString();
+      sheetData.push([`Period: ${rangeStr} | Generated: ${now}`]);
+
+      // Summary Metrics from reportData
+      const summary = reportData.summary || {};
+      Object.entries(summary).forEach(([key, val]) => {
+        const formattedKey = key.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
+        sheetData.push([`${formattedKey}: ${val}`]);
+      });
+
+      // Blank line spacer
+      sheetData.push([]);
+
+      // Record the starting row index of the table (0-indexed)
+      const tableStartRow = sheetData.length;
+
+      // Add columns header and rows
+      sheetData.push(columns);
+      rows.forEach(row => sheetData.push(row));
+
+      // Create Workbook and Worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+      // Auto-fit column widths (only scan from the table header downwards to avoid title length distortion)
+      const colWidths = columns.map((colName, cIndex) => {
+        let maxLen = colName.toString().length;
+        rows.forEach((row) => {
+          const val = row[cIndex];
+          if (val !== undefined && val !== null) {
+            const valStr = val.toString();
+            const hasSinhala = /[\u0D80-\u0DFF]/.test(valStr);
+            const stringLen = valStr.length;
+            const weightedLen = hasSinhala ? Math.ceil(stringLen * 1.3) : stringLen;
+            if (weightedLen > maxLen) {
+              maxLen = weightedLen;
+            }
+          }
+        });
+        return { wch: Math.max(maxLen + 4, 12) }; // Minimum width of 12 and padding of 4
+      });
+      ws['!cols'] = colWidths;
+
+      // Style Header, Metadata, Summary and Cells
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws[cellRef]) continue;
+
+          // 1. Style Header Metadata & Summaries at the top
+          if (R < tableStartRow) {
+            if (C === 0) {
+              if (R === 0) {
+                // Title
+                ws[cellRef].s = {
+                  font: { name: "Calibri", sz: 14, bold: true, color: { rgb: "1A1245" } },
+                  alignment: { vertical: "center", horizontal: "left" }
+                };
+              } else if (R === 1) {
+                // Subtitle
+                ws[cellRef].s = {
+                  font: { name: "Calibri", sz: 12, bold: true, color: { rgb: "1A1245" } },
+                  alignment: { vertical: "center", horizontal: "left" }
+                };
+              } else if (R === 2) {
+                // Period Date info
+                ws[cellRef].s = {
+                  font: { name: "Calibri", sz: 9, italic: true, color: { rgb: "595C5E" } },
+                  alignment: { vertical: "center", horizontal: "left" }
+                };
+              } else if (R < tableStartRow - 1) {
+                // Summary metrics
+                ws[cellRef].s = {
+                  font: { name: "Calibri", sz: 10, bold: true, color: { rgb: "1A1245" } },
+                  alignment: { vertical: "center", horizontal: "left" }
+                };
+              }
+            }
+            continue;
+          }
+
+          // 2. Style Table Header
+          if (R === tableStartRow) {
+            ws[cellRef].s = {
+              fill: { fgColor: { rgb: "1A1245" } }, // Dark violet background
+              font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFFFFF" } },
+              alignment: { vertical: "center", horizontal: "center", wrapText: true },
+              border: {
+                bottom: { style: "medium", color: { rgb: "000000" } },
+                right: { style: "thin", color: { rgb: "E0E0E0" } }
+              }
+            };
+          } 
+          // 3. Style Table Body Data Cells
+          else {
+            let alignHoriz = 'left';
+            const val = ws[cellRef].v;
+            if (typeof val === 'number') {
+              alignHoriz = 'center';
+            } else if (typeof val === 'string' && (val === 'Active' || val === 'Returned' || val.startsWith('Overdue') || val.startsWith('Returned (Overdue'))) {
+              alignHoriz = 'center';
+            }
+
+            ws[cellRef].s = {
+              font: { name: "Calibri", sz: 10 },
+              alignment: { vertical: "center", horizontal: alignHoriz },
+              border: {
+                bottom: { style: "thin", color: { rgb: "E5E7EB" } },
+                right: { style: "thin", color: { rgb: "E5E7EB" } }
+              }
+            };
+          }
+        }
+      }
+
+      XLSX.utils.book_append_sheet(wb, ws, "Report Data");
+      const reportName = `report-${reportType}-${new Date().toISOString().split('T')[0]}`;
+      XLSX.writeFile(wb, `${reportName}.xlsx`);
+      showToast('Excel report generated successfully!', 'success');
+    } catch (err) {
+      console.error('Excel generation error:', err);
+      showToast('Failed to generate Excel report.', 'error');
+    } finally {
+      setExcelGenerating(false);
+    }
+  };
+
   const renderBody = () => {
     if (!reportData) return null;
     return (
@@ -229,10 +493,14 @@ export default function ReportsPage() {
 
   return (
     <DashboardLayout>
-          <div className="flex items-center justify-end mb-4">
-            <button onClick={generatePDF} disabled={!reportData || pdfGenerating} className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2" style={{ backgroundColor: '#1a1245', color: '#fff', opacity: !reportData || pdfGenerating ? 0.5 : 1 }}>
+          <div className="flex items-center justify-end gap-3 mb-4">
+            <button onClick={generatePDF} disabled={!reportData || pdfGenerating || excelGenerating} className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2" style={{ backgroundColor: '#1a1245', color: '#fff', opacity: !reportData || pdfGenerating || excelGenerating ? 0.5 : 1 }}>
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{pdfGenerating ? 'progress_activity' : 'picture_as_pdf'}</span>
-              {pdfGenerating ? 'Generating...' : 'Print'}
+              {pdfGenerating ? 'Generating PDF...' : 'Print PDF'}
+            </button>
+            <button onClick={generateExcel} disabled={!reportData || pdfGenerating || excelGenerating} className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 text-white shadow-sm hover:shadow transition-all" style={{ backgroundColor: '#15803d', opacity: !reportData || pdfGenerating || excelGenerating ? 0.5 : 1 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{excelGenerating ? 'progress_activity' : 'table_view'}</span>
+              {excelGenerating ? 'Generating Excel...' : 'Export Excel'}
             </button>
           </div>
 

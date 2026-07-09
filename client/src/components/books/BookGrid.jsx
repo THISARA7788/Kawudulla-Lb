@@ -181,22 +181,15 @@ export default function BookGrid({
               <p className="text-xs text-slate-500 mt-0.5 truncate" title={book.author}>
                 by {book.author}
               </p>
-
-              {book.createdAt && (
-                <div className="text-[9px] text-slate-400 font-semibold select-none mt-0.5">
-                  {new Date(book.createdAt).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                </div>
-              )}
-
               {/* Catalog Serial ID & Copies count */}
-              <div className="flex items-center justify-between mt-2 text-[10px] font-bold text-slate-400 font-mono select-none border-t border-slate-50 pt-1.5">
+              <div className="flex items-center justify-between mt-2.5 text-xs font-bold text-slate-650 font-mono select-none border-t border-slate-100 pt-2">
                 <div className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[12px]" style={{ fontSize: 13 }}>tag</span>
-                  <span>{book.bookId || '—'}</span>
+                  <span className="material-symbols-outlined text-[#1a1245] font-black" style={{ fontSize: 15 }}>tag</span>
+                  <span className="text-[#1a1245] font-extrabold">{book.bookId || '—'}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[12px]" style={{ fontSize: 13 }}>import_contacts</span>
-                  <span style={{ color: (book.availableCopies ?? 0) > 0 ? '#166534' : '#b91c1c' }}>
+                  <span className="material-symbols-outlined text-slate-500" style={{ fontSize: 15 }}>import_contacts</span>
+                  <span className="font-extrabold" style={{ color: (book.availableCopies ?? 0) > 0 ? '#15803d' : '#ef4444' }}>
                     {book.availableCopies ?? 0} / {book.totalCopies ?? 0}
                   </span>
                 </div>

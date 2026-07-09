@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Transaction = require('../models/Transaction');
 const { protect, authorize } = require('../middleware/auth');
 
 /**
@@ -105,6 +106,19 @@ router.delete('/:id', protect, authorize('librarian'), async (req, res) => {
     // Prevent librarian from deleting themselves
     if (user._id.toString() === req.user._id.toString()) {
       return res.status(400).json({ message: 'You cannot delete yourself' });
+    }
+
+    // Check if the user has active checkouts
+    const activeTx = await Transaction.findOne({
+      user: user._id,
+      status: { $in: ['active', 'overdue'] },
+      returnDate: null
+    });
+
+    if (activeTx) {
+      return res.status(400).json({
+        message: 'Cannot delete user. Member currently has active or overdue book checkouts. Please return all books first.'
+      });
     }
 
     await user.deleteOne();

@@ -35,7 +35,25 @@ router.post('/', protect, authorize('librarian'), async (req, res) => {
     if (isbn && isbn.trim()) {
       const duplicate = await Book.findOne({ isbn: isbn.trim() });
       if (duplicate) {
-        return res.status(400).json({ message: 'A book with this ISBN already exists', existingBook: duplicate });
+        if (duplicate.isDeleted) {
+          // Reactivate/restore the soft-deleted book and update its fields
+          duplicate.isDeleted = false;
+          duplicate.title = title;
+          duplicate.author = author;
+          duplicate.category = category;
+          duplicate.description = description || '';
+          duplicate.totalCopies = Number(totalCopies) || 1;
+          duplicate.availableCopies = Number(totalCopies) || 1;
+          duplicate.publisher = publisher || '';
+          duplicate.publishedYear = publishedYear ? Number(publishedYear) : undefined;
+          duplicate.coverImageUrl = coverImageUrl || '';
+          duplicate.status = status || 'Available';
+          
+          await duplicate.save();
+          return res.status(201).json({ message: 'Book saved successfully (restored from archived)', book: duplicate });
+        } else {
+          return res.status(400).json({ message: 'A book with this ISBN already exists', existingBook: duplicate });
+        }
       }
     }
 
@@ -68,7 +86,7 @@ const { lookupSriLankanISBN } = require('../utils/isbnLkpHelper');
 router.get('/check/:isbn', protect, authorize('librarian'), async (req, res) => {
   try {
     const { isbn } = req.params;
-    const book = await Book.findOne({ isbn: isbn.trim() });
+    const book = await Book.findOne({ isbn: isbn.trim(), isDeleted: { $ne: true } });
     
     if (book) {
       return res.json({ exists: true, book });
@@ -110,35 +128,60 @@ router.get('/lookup-isbn/:isbn', protect, authorize('librarian'), async (req, re
 
     let bookData = null;
 
-    // 1. Query Google Books API (uses API Key from environment if defined)
-    try {
-      const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
-      const url = apiKey 
-        ? `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&key=${apiKey}`
-        : `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`;
-      
-      const response = await fetch(url);
-      if (response.status === 200) {
-        const data = await response.json();
-        if (data.items && data.items.length > 0) {
-          const info = data.items[0].volumeInfo;
+    // Determine if it is a Sri Lankan ISBN
+    const isSriLankan = (cleanIsbn.length === 13 && (cleanIsbn.startsWith('978955') || cleanIsbn.startsWith('978624')))
+      || (cleanIsbn.length === 10 && cleanIsbn.startsWith('955'));
+
+    // 1. If it's a Sri Lankan ISBN, query the Sri Lankan Registry FIRST to get the native Sinhala titles
+    if (isSriLankan) {
+      try {
+        const slDetails = await lookupSriLankanISBN(cleanIsbn);
+        if (slDetails) {
           bookData = {
-            title: info.title || '',
-            author: info.authors ? info.authors.join(', ') : '',
-            publisher: info.publisher || '',
-            publishedYear: info.publishedDate ? info.publishedDate.split('-')[0] : '',
-            description: info.description || '',
-            coverImageUrl: info.imageLinks ? (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail) : '',
+            title: slDetails.title || '',
+            author: slDetails.author || '',
+            publisher: slDetails.publisher || '',
+            publishedYear: slDetails.publishedYear || '',
+            description: '',
+            coverImageUrl: ''
           };
         }
-      } else {
-        console.warn(`Google Books API returned status ${response.status} for ${cleanIsbn}`);
+      } catch (slErr) {
+        console.warn('Sri Lankan Registry lookup failed, falling back to Google Books:', slErr.message);
       }
-    } catch (gErr) {
-      console.warn('Google Books API query failed, moving to fallbacks:', gErr.message);
     }
 
-    // 2. Fallback to Open Library API
+    // 2. Query Google Books API (uses API Key from environment if defined)
+    if (!bookData) {
+      try {
+        const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
+        const url = apiKey 
+          ? `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&key=${apiKey}`
+          : `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`;
+        
+        const response = await fetch(url);
+        if (response.status === 200) {
+          const data = await response.json();
+          if (data.items && data.items.length > 0) {
+            const info = data.items[0].volumeInfo;
+            bookData = {
+              title: info.title || '',
+              author: info.authors ? info.authors.join(', ') : '',
+              publisher: info.publisher || '',
+              publishedYear: info.publishedDate ? info.publishedDate.split('-')[0] : '',
+              description: info.description || '',
+              coverImageUrl: info.imageLinks ? (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail) : '',
+            };
+          }
+        } else {
+          console.warn(`Google Books API returned status ${response.status} for ${cleanIsbn}`);
+        }
+      } catch (gErr) {
+        console.warn('Google Books API query failed, moving to fallbacks:', gErr.message);
+      }
+    }
+
+    // 3. Fallback to Open Library API
     if (!bookData) {
       try {
         const olResponse = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`);
@@ -162,8 +205,8 @@ router.get('/lookup-isbn/:isbn', protect, authorize('librarian'), async (req, re
       }
     }
 
-    // 3. Fallback to Sri Lankan National Registry (isbn.lk)
-    if (!bookData) {
+    // 4. Fallback to Sri Lankan National Registry if it wasn't queried first
+    if (!bookData && !isSriLankan) {
       try {
         const slDetails = await lookupSriLankanISBN(cleanIsbn);
         if (slDetails) {

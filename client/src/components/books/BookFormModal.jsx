@@ -609,7 +609,7 @@ export default function BookFormModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Description / Synopsis <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Book Description <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
                 <textarea name="description" value={form.description || ''} onChange={handleChange} rows="2"
                   className="w-full px-3 py-2 text-sm rounded-xl outline-none resize-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
                   placeholder="Brief summary or description..."

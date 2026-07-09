@@ -387,15 +387,18 @@ export default function BookManagement() {
                 className="text-xs font-bold outline-none bg-transparent text-slate-750 cursor-pointer pr-2"
                 style={{ minWidth: 140 }}
               >
-                {/* Statuses first and bold */}
+                {/* All Books on the very top and bold */}
+                <option value="All" style={{ fontWeight: 'bold' }}>All Books ({countTotal})</option>
+                <option disabled>──────────</option>
+                {/* Statuses and bold */}
                 <option value="Available" style={{ fontWeight: 'bold' }}>Available ({countAvailable})</option>
                 <option value="Borrowed" style={{ fontWeight: 'bold' }}>Borrowed ({countBorrowed})</option>
                 <option value="Overdue" style={{ fontWeight: 'bold' }}>Overdue ({countOverdue})</option>
                 <option disabled>──────────</option>
                 {/* Categories */}
-                {categories.map((c) => (
+                {categories.filter(c => c !== 'All').map((c) => (
                   <option key={c} value={c}>
-                    {c === 'All' ? `All Books (${countTotal})` : c}
+                    {c}
                   </option>
                 ))}
               </select>
@@ -716,6 +719,12 @@ export default function BookManagement() {
                     <span className="block text-[10px] text-slate-400 font-extrabold uppercase">Published Year</span>
                     <span className="font-bold text-slate-700">{selectedBookProfile.publishedYear || 'N/A'}</span>
                   </div>
+                  <div className="col-span-2">
+                    <span className="block text-[10px] text-slate-400 font-extrabold uppercase">Date Added</span>
+                    <span className="font-bold text-slate-700">
+                      {selectedBookProfile.createdAt ? new Date(selectedBookProfile.createdAt).toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Stock Progress Bar */}
@@ -739,9 +748,9 @@ export default function BookManagement() {
 
                 {/* Description */}
                 <div>
-                  <span className="block text-[10px] text-slate-400 font-extrabold uppercase mb-1">Book Description / Synopsis</span>
+                  <span className="block text-[10px] text-slate-400 font-extrabold uppercase mb-1">Book Description</span>
                   <p className="text-xs text-slate-600 leading-relaxed font-normal bg-slate-50/50 border border-slate-100 p-3 rounded-xl max-h-[140px] overflow-y-auto no-scrollbar">
-                    {selectedBookProfile.description || 'No detailed description or synopsis is available for this book in the catalog database.'}
+                    {selectedBookProfile.description || 'No detailed description is available for this book in the catalog database.'}
                   </p>
                 </div>
               </div>
