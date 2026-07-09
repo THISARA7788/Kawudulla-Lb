@@ -77,7 +77,7 @@ const ForgotPassword = () => {
         setSuccessMessage('');
         setLoading(true);
         try {
-          await api.post('/auth/verify-otp', { email, otp });
+          await api.post('/auth/verify-otp', { email: email.trim().toLowerCase(), otp });
           setOtpStatus('success');
           setSuccessMessage('OTP code verified successfully! Enter your new password.');
           setTimeout(() => {
@@ -121,7 +121,7 @@ const ForgotPassword = () => {
     setSuccessMessage('');
     setLoading(true);
     try {
-      const res = await api.post('/auth/forgot-password', { email });
+      const res = await api.post('/auth/forgot-password', { email: email.trim().toLowerCase() });
       setSuccessMessage(res.data.message || 'OTP verification code sent to your email.');
       setStep(2);
       setCountdown(15);
@@ -138,7 +138,7 @@ const ForgotPassword = () => {
     setSuccessMessage('');
     setResendLoading(true);
     try {
-      const res = await api.post('/auth/forgot-password', { email });
+      const res = await api.post('/auth/forgot-password', { email: email.trim().toLowerCase() });
       setSuccessMessage(res.data.message || 'A new OTP verification code has been sent to your email.');
       setCountdown(15);
     } catch (err) {
@@ -203,7 +203,7 @@ const ForgotPassword = () => {
     setSuccessMessage('');
     setLoading(true);
     try {
-      await api.post('/auth/verify-otp', { email, otp });
+      await api.post('/auth/verify-otp', { email: email.trim().toLowerCase(), otp });
       setOtpStatus('success');
       setSuccessMessage('OTP code verified successfully! Enter your new password.');
       setTimeout(() => {
@@ -238,7 +238,7 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      await api.post('/auth/reset-password-otp', { email, otp, newPassword });
+      await api.post('/auth/reset-password-otp', { email: email.trim().toLowerCase(), otp, newPassword });
       setSuccessMessage('Password changed successfully! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {

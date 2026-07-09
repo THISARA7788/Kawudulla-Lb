@@ -39,7 +39,8 @@ router.post('/register', async (req, res) => {
       return res.status(403).json({ message: 'Librarian accounts cannot be created through registration. Contact system administrator.' });
     }
 
-    const userExists = await User.findOne({ email });
+    const sanitizedEmail = email ? email.trim().toLowerCase() : '';
+    const userExists = await User.findOne({ email: sanitizedEmail });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
@@ -54,7 +55,7 @@ router.post('/register', async (req, res) => {
 
     const user = await User.create({
       name,
-      email,
+      email: sanitizedEmail,
       password,
       role: userRole,
       grade: grade || '',
@@ -90,7 +91,8 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Email/Username and password are required' });
     }
 
-    const user = await User.findOne({ email });
+    const sanitizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: sanitizedEmail });
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
@@ -206,7 +208,10 @@ router.post('/forgot-password', async (req, res) => {
       return res.status(400).json({ message: 'Email address is required' });
     }
     
-    const user = await User.findOne({ email });
+    const sanitizedEmail = email.trim().toLowerCase();
+    console.log(`Forgot password requested for email: "${sanitizedEmail}"`);
+
+    const user = await User.findOne({ email: sanitizedEmail });
     if (!user) {
       return res.status(404).json({ message: 'No account found with this email' });
     }
@@ -217,9 +222,11 @@ router.post('/forgot-password', async (req, res) => {
     user.resetOTPExpiry = Date.now() + 300000; // 5 minutes expiration
     await user.save();
 
+    console.log(`Sending recovery OTP code "${otp}" to "${user.email}"`);
+
     await transporter.sendMail({
       from: `"School Library System" <${process.env.EMAIL_USER || 'no-reply@library.com'}>`,
-      to: email,
+      to: user.email,
       subject: 'Password Reset Verification Code',
       html: `<div style="font-family:Arial,sans-serif;max-width:500px;margin:auto;padding:20px;border:1px solid #e2e8f0;border-radius:12px;">
         <h2 style="color:#1a2744;text-align:center;">Password Reset Verification</h2>
@@ -250,8 +257,9 @@ router.post('/verify-otp', async (req, res) => {
       return res.status(400).json({ message: 'Email and OTP verification code are required' });
     }
 
+    const sanitizedEmail = email.trim().toLowerCase();
     const user = await User.findOne({
-      email: email.toLowerCase(),
+      email: sanitizedEmail,
       resetOTP: otp.trim(),
       resetOTPExpiry: { $gt: Date.now() }
     });
@@ -278,8 +286,9 @@ router.post('/reset-password-otp', async (req, res) => {
       return res.status(400).json({ message: 'Email, OTP, and new password are required' });
     }
 
+    const sanitizedEmail = email.trim().toLowerCase();
     const user = await User.findOne({
-      email: email.toLowerCase(),
+      email: sanitizedEmail,
       resetOTP: otp.trim(),
       resetOTPExpiry: { $gt: Date.now() }
     });
