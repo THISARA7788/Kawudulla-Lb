@@ -18,7 +18,8 @@ export default function BookTable({
   role, 
   onRowClick,
   selectedBookIds = [],
-  isSelectionMode = false
+  isSelectionMode = false,
+  overdueBookIds = []
 }) {
   
   if (loading) {
@@ -56,6 +57,8 @@ export default function BookTable({
 
   const getStatusStyle = (status) => {
     switch (status) {
+      case 'Overdue':
+        return { backgroundColor: 'rgba(244, 63, 94, 0.12)', color: '#e11d48', border: '1px solid rgba(244, 63, 94, 0.25)' };
       case 'Borrowed':
         return { backgroundColor: 'rgba(251, 146, 60, 0.12)', color: '#ea580c', border: '1px solid rgba(251, 146, 60, 0.25)' };
       case 'Reserved':
@@ -128,6 +131,10 @@ export default function BookTable({
         <tbody>
           {filtered.map((book) => {
             const isSelected = selectedBookIds.includes(book._id);
+            const isOverdue = overdueBookIds.includes(book._id);
+            const dynamicStatus = isOverdue
+              ? 'Overdue'
+              : (book.status === 'Reserved' ? 'Reserved' : (book.availableCopies === 0 ? 'Borrowed' : 'Available'));
             return (
               <tr 
                 key={book._id} 
@@ -211,9 +218,9 @@ export default function BookTable({
                 <td className="py-3 px-4">
                   <span
                     className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border shadow-sm"
-                    style={getStatusStyle(book.status || 'Available')}
+                    style={getStatusStyle(dynamicStatus)}
                   >
-                    {book.status || 'Available'}
+                    {dynamicStatus}
                   </span>
                 </td>
                 
