@@ -348,11 +348,11 @@ export default function BookFormModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}>
       <div
-        className="rounded-2xl p-6 w-full max-w-5xl mx-4 shadow-2xl transition-all"
-        style={{ backgroundColor: '#fff', maxHeight: '94vh', overflowY: 'auto' }}
+        className="rounded-2xl p-5 w-full max-w-4xl mx-4 shadow-2xl transition-all"
+        style={{ backgroundColor: '#fff', maxHeight: '96vh', overflowY: 'auto' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 border-b pb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div className="flex items-center justify-between mb-3 border-b pb-2" style={{ fontFamily: "'Inter', sans-serif" }}>
           <div>
             <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
               <span className="material-symbols-outlined" style={{ fontSize: 24 }}>menu_book</span>
@@ -520,17 +520,17 @@ export default function BookFormModal({
           </div>
         )}
 
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        <form onSubmit={handleSave} className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             
             {/* Left Column: General Book Information */}
-            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-3.5">
+            <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 space-y-2.5">
               <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none flex items-center gap-1.5 mb-1">
                 <span className="material-symbols-outlined text-slate-400" style={{ fontSize: 16 }}>info</span>
                 General Book Information
               </h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Title <span className="text-red-500 font-bold">*</span></label>
                   <input name="title" value={form.title || ''} onChange={handleChange} required
@@ -548,7 +548,7 @@ export default function BookFormModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Category <span className="text-red-500 font-bold">*</span></label>
                   <select name="category" value={CATEGORIES.includes(form.category) ? form.category : 'Other'} onChange={handleChange}
@@ -574,7 +574,7 @@ export default function BookFormModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Published Year <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
                   <input name="publishedYear" type="number" value={form.publishedYear || ''} onChange={handleChange}
@@ -594,6 +594,18 @@ export default function BookFormModal({
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">ISBN Code <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
+                  <input name="isbn" value={form.isbn || ''} onChange={handleChange}
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                    placeholder="e.g. 9780123456789"
+                  />
+                </div>
+                <div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">Description / Synopsis <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
                 <textarea name="description" value={form.description || ''} onChange={handleChange} rows="2"
@@ -604,9 +616,9 @@ export default function BookFormModal({
             </div>
 
             {/* Right Column: Smart Scanning, Inventory, Cover Art */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Section: Barcode & ISBN Auto-Fill */}
-              <div className="bg-indigo-50/30 p-3 rounded-2xl border-l-4 border-l-indigo-500 border border-indigo-100/50 flex flex-col gap-2.5 shadow-sm">
+              <div className="bg-indigo-50/30 p-2.5 rounded-2xl border-l-4 border-l-indigo-500 border border-indigo-100/50 flex flex-col gap-2 shadow-sm">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1.5 select-none">
                     <span className="material-symbols-outlined text-indigo-500" style={{ fontSize: 16 }}>qr_code_scanner</span>
@@ -664,7 +676,7 @@ export default function BookFormModal({
               </div>
 
               {/* Section: Cover Art & Inventory */}
-              <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 space-y-3">
+              <div className="bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100 space-y-2.5">
                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none flex items-center gap-1.5 mb-1">
                   <span className="material-symbols-outlined text-slate-400" style={{ fontSize: 16 }}>palette</span>
                   Cover Art & Inventory <span className="text-slate-400 text-[10px] font-normal normal-case ml-1">(Optional)</span>
@@ -776,7 +788,7 @@ export default function BookFormModal({
           </div>
 
           {/* Form Actions */}
-          <div className="flex gap-3 border-t border-slate-100 pt-4 mt-6">
+          <div className="flex gap-3 border-t border-slate-100 pt-3 mt-4">
             <button
               type="submit"
               disabled={!isFormValid || saving || uploadingImage}

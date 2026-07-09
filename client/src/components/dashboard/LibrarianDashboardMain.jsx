@@ -15,6 +15,34 @@ const pieColors3D = [
   '#65A30D', '#9333EA', '#EA580C', '#0284C7', '#C026D3', '#16A34A', '#CA8A04', '#E11D48'
 ]
 
+const getCategoryColor = (category) => {
+  const categoryColors = {
+    'Fiction': { color: '#A78BFA', color3D: '#7C3AED' },
+    'Science': { color: '#60A5FA', color3D: '#2563EB' },
+    'History': { color: '#FB923C', color3D: '#EA580C' },
+    'Math': { color: '#38BDF8', color3D: '#0284C7' },
+    'Reference': { color: '#34D399', color3D: '#059669' },
+    'Technology': { color: '#C084FC', color3D: '#9333EA' },
+    'Biography': { color: '#F472B6', color3D: '#DB2777' },
+  };
+  
+  const normalized = category ? category.trim() : 'General';
+  if (categoryColors[normalized]) {
+    return categoryColors[normalized];
+  }
+  
+  // Fallback: Deterministic assignment using hash code of string
+  let hash = 0;
+  for (let i = 0; i < normalized.length; i++) {
+    hash = normalized.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % pieColors.length;
+  return {
+    color: pieColors[index],
+    color3D: pieColors3D[index]
+  };
+};
+
 
 function PieChart({ data, size = 120, centerText }) {
   const total = data.reduce((s, d) => s + d.value, 0)
@@ -35,10 +63,11 @@ function PieChart({ data, size = 120, centerText }) {
     const x2 = cx + r * Math.cos(endAngle)
     const y2 = cy + r * Math.sin(endAngle)
     const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`
+    const catColors = getCategoryColor(d.label)
     return {
       path,
-      color: pieColors[i % pieColors.length],
-      color3D: pieColors3D[i % pieColors3D.length]
+      color: catColors.color,
+      color3D: catColors.color3D
     }
   })
 
@@ -573,7 +602,7 @@ export default function LibrarianDashboardMain() {
                     .map(([cat, catCopies], idx) => (
                       <div key={cat} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: pieColors[idx % pieColors.length] }} />
+                           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getCategoryColor(cat).color }} />
                           <span className="font-medium text-xs" style={{ color: '#2C2C3E' }}>{cat}</span>
                         </div>
                         <span className="font-bold text-xs pr-10" style={{ color: catCopies > 0 ? '#166534' : '#b31b25' }}>
