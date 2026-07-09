@@ -39,7 +39,7 @@ export default function RecentTransactionsList({
               </div>
               <div className="flex items-center justify-between mt-0.5">
                 <span className="text-[10px]" style={{ color: '#9CA3AF' }}>
-                  Due: {new Date(tx.dueDate).toLocaleDateString()}
+                  Issued: {new Date(tx.issueDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })} • Due: {new Date(tx.dueDate).toLocaleDateString()}
                 </span>
                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
                   isOverdue ? 'text-red-600 bg-red-100' :
@@ -74,7 +74,7 @@ export default function RecentTransactionsList({
             </div>
             <div className="flex items-center justify-between mt-0.5">
               <span className="text-[10px]" style={{ color: '#9CA3AF' }}>
-                Returned: {tx.returnDate ? new Date(tx.returnDate).toLocaleDateString() : '—'}
+                Returned: {tx.returnDate ? new Date(tx.returnDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
               </span>
               <div className="flex items-center gap-1">
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-green-700 bg-green-100">

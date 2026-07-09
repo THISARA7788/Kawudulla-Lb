@@ -189,7 +189,7 @@ export default function StudentDashboardMain() {
                           <p className="text-[10px] text-slate-400">{tx.book?.author} • {tx.book?.bookId}</p>
                         </td>
                         <td className="py-3 text-slate-500 font-medium">
-                          {new Date(tx.issueDate).toLocaleDateString()}
+                          {new Date(tx.issueDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
                         </td>
                         <td className="py-3 text-slate-500 font-medium">
                           {new Date(tx.dueDate).toLocaleDateString()}

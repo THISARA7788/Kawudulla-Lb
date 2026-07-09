@@ -779,7 +779,7 @@ export default function ReturnBook() {
                           </div>
                           <div className="flex items-center gap-3 mt-1">
                             <span className="text-[11px]" style={{ color: '#9CA3AF' }}>
-                              Borrowed: <span className="font-semibold" style={{ color: '#374151' }}>{new Date(selectedBorrow.borrowDate).toLocaleDateString()}</span>
+                              Borrowed: <span className="font-semibold" style={{ color: '#374151' }}>{new Date(selectedBorrow.borrowDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                             </span>
                             <span className="text-[11px]" style={{ color: '#9CA3AF' }}>
                               Due: <span className={`font-semibold ${new Date(selectedBorrow.dueDate) < new Date() ? 'text-red-600' : 'text-green-600'}`}>{new Date(selectedBorrow.dueDate).toLocaleDateString()}</span>
@@ -968,7 +968,7 @@ export default function ReturnBook() {
                     <div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date Returned</div>
                       <div className="font-semibold text-slate-800 mt-0.5">
-                        {new Date(returnedDetails.returnDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        {new Date(returnedDetails.returnDate).toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
                   </div>

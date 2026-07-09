@@ -48,7 +48,7 @@ export default function ReportDetailsTable({ reportType, reportData }) {
                       <td className="py-2 px-4 text-xs font-semibold" style={{ color: '#2C2C3E' }}>{t.user?.name || '—'}</td>
                       <td className="py-2 px-4 text-xs font-mono font-bold" style={{ color: '#166534' }}>{t.book?.bookId || '—'}</td>
                       <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{t.book?.title || '—'}</td>
-                      <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(t.issueDate).toLocaleDateString()}</td>
+                      <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(t.issueDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}</td>
                       <td className="py-2 px-4 text-xs font-semibold" style={{ color: (isOverdue || wasReturnedOverdue) ? '#b31b25' : '#595c5e' }}>
                         {new Date(t.dueDate).toLocaleDateString()}
                       </td>
@@ -175,7 +175,7 @@ export default function ReportDetailsTable({ reportType, reportData }) {
                       <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{f.book?.title || ''}</td>
                       <td className="py-2 px-4 text-xs font-bold" style={{ color: '#1a1245' }}>{f.amount.toFixed(2)}</td>
                       <td className="py-2 px-4"><span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: sBadge.bg, color: sBadge.c }}>{f.status}</span></td>
-                      <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(f.createdAt).toLocaleDateString()}</td>
+                      <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(f.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}</td>
                     </tr>
                   );
                 })}

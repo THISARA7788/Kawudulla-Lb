@@ -70,11 +70,18 @@ const bookSchema = new mongoose.Schema(
       enum: ['Available', 'Borrowed', 'Reserved'],
       default: 'Available',
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+bookSchema.index({ category: 1 });
+bookSchema.index({ isDeleted: 1 });
 
 // Auto-generate bookId on new book creation
 bookSchema.pre('save', async function (next) {

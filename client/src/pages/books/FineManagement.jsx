@@ -30,6 +30,13 @@ export default function FineManagement() {
   const [newGrace, setNewGrace] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 2800);
+  };
 
   const fetchData = async () => {
     try { setLoading(true); await Promise.all([fetchFines(), fetchPending(), fetchStats(), fetchConfig()]); } finally { setLoading(false); }
@@ -83,7 +90,14 @@ export default function FineManagement() {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this fine record?')) return;
-    try { await api.delete(`/library/fines/${id}`, { headers: { Authorization: `Bearer ${token}` } }); setFines((p) => p.filter((f) => f._id !== id)); fetchStats(); } catch (err) { alert('Failed'); }
+    try { 
+      await api.delete(`/library/fines/${id}`, { headers: { Authorization: `Bearer ${token}` } }); 
+      setFines((p) => p.filter((f) => f._id !== id)); 
+      fetchStats(); 
+      showToast('Fine record deleted successfully!', 'delete');
+    } catch (err) { 
+      showToast('Failed to delete fine record.', 'error'); 
+    }
   };
 
   const handleDeletePending = async (pf) => {
@@ -93,21 +107,26 @@ export default function FineManagement() {
       await api.delete(`/library/transactions/${pf.transaction._id}`, { headers: { Authorization: `Bearer ${token}` } });
       setPendingFines((p) => p.filter((item) => item !== pf));
       fetchData();
+      showToast('Pending fine transaction deleted.', 'delete');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete transaction');
+      showToast(err.response?.data?.message || 'Failed to delete transaction', 'error');
     } finally {
       setSaving(false);
     }
   };
 
   const createFine = async (pf) => {
-    if (!window.confirm(`Create fine of &#8360; ${pf.amount} for ${pf.transaction?.user?.name}? (${pf.daysOverdue} days overdue)`)) return;
+    if (!window.confirm(`Create fine of Rs. ${pf.amount} for ${pf.transaction?.user?.name}? (${pf.daysOverdue} days overdue)`)) return;
     setSaving(true);
     try {
       await api.post('/library/fines', { transactionId: pf.transaction._id, amount: pf.amount, daysOverdue: pf.daysOverdue, ratePerDay: pf.ratePerDay }, { headers: { Authorization: `Bearer ${token}` } });
       fetchData();
-    } catch (err) { alert(err.response?.data?.message || 'Failed to create fine.'); }
-    finally { setSaving(false); }
+      showToast('Fine successfully created!', 'success');
+    } catch (err) { 
+      showToast(err.response?.data?.message || 'Failed to create fine.', 'error'); 
+    } finally { 
+      setSaving(false); 
+    }
   };
 
   const saveConfig = async () => {
@@ -116,8 +135,12 @@ export default function FineManagement() {
       await api.put('/library/fines/config', { fineRatePerDay: Number(newRate) || config.fineRatePerDay, gracePeriodDays: Number(newGrace) ?? config.gracePeriodDays }, { headers: { Authorization: `Bearer ${token}` } });
       setConfig({ ...config, fineRatePerDay: Number(newRate) || config.fineRatePerDay, gracePeriodDays: Number(newGrace) ?? config.gracePeriodDays });
       setModal(null);
-    } catch (err) { alert('Failed to update configuration.'); }
-    finally { setSaving(false); }
+      showToast('Configuration updated successfully!', 'success');
+    } catch (err) { 
+      showToast('Failed to update configuration.', 'error'); 
+    } finally { 
+      setSaving(false); 
+    }
   };
 
   const openConfig = () => { setNewRate(config.fineRatePerDay.toString()); setNewGrace(config.gracePeriodDays.toString()); setModal('config'); };
@@ -271,6 +294,32 @@ export default function FineManagement() {
         newGrace={newGrace}
         setNewGrace={setNewGrace}
       />
+
+      {toast && (
+        <div className="fixed top-3 left-0 lg:left-64 right-0 z-[9999] flex justify-center pointer-events-none">
+          <style>{`
+            @keyframes toast-enter {
+              from { transform: translateY(-15px); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
+            }
+            .toast-popup {
+              animation: toast-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+          `}</style>
+          <div className={`toast-popup pointer-events-auto flex items-center gap-2.5 px-4 py-2 rounded-xl text-white shadow-lg border ${
+            toast.type === 'error'
+              ? 'bg-amber-600 border-amber-500/50'
+              : toast.type === 'delete' 
+                ? 'bg-rose-600 border-rose-500/50' 
+                : 'bg-emerald-600 border-emerald-500/50'
+          }`}>
+            <span className="material-symbols-outlined text-white font-bold" style={{ fontSize: 18 }}>
+              {toast.type === 'error' ? 'warning' : toast.type === 'delete' ? 'delete_forever' : 'check_circle'}
+            </span>
+            <span className="text-xs font-bold">{toast.message}</span>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

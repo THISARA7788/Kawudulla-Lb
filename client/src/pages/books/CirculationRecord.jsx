@@ -127,12 +127,12 @@ export default function CirculationRecord() {
                             <div className="text-sm font-semibold" style={{ color: '#2C2C3E' }}>{t.book?.title || '—'}</div>
                             <div className="text-[11px] font-mono" style={{ color: '#94a3b8' }}>{t.book?.bookId || ''}</div>
                           </td>
-                          <td className="py-3 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(t.issueDate).toLocaleDateString()}</td>
+                          <td className="py-3 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(t.issueDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</td>
                           <td className="py-3 px-4 text-xs font-semibold" style={{ color: showRedDueDate ? '#b31b25' : '#595c5e' }}>
                             {new Date(t.dueDate).toLocaleDateString()}
                           </td>
                           <td className="py-3 px-4 text-xs" style={{ color: t.returnDate ? '#166534' : '#94a3b8' }}>
-                            {t.returnDate ? new Date(t.returnDate).toLocaleDateString() : '—'}
+                            {t.returnDate ? new Date(t.returnDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
                           </td>
                           <td className="py-3 px-4">
                             <span className="text-[11px] font-bold px-2 py-1 rounded-full" style={{ backgroundColor: badge.bg, color: badge.color }}>

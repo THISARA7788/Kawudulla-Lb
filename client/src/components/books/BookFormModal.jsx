@@ -23,7 +23,8 @@ export default function BookFormModal({
   handleSave,
   setShowModal,
   CATEGORIES,
-  onImportComplete
+  onImportComplete,
+  showToast
 }) {
   // ISBN Processing States
   const [searchingIsbn, setSearchingIsbn] = useState(false);
@@ -262,7 +263,7 @@ export default function BookFormModal({
       }
     } catch (err) {
       console.error('Spreadsheet import error:', err);
-      alert(err.response?.data?.message || "Failed to import books. Please check column headers.");
+      showToast(err.response?.data?.message || "Failed to import books. Please check column headers.", 'error');
     } finally {
       setImporting(false);
     }
@@ -282,7 +283,7 @@ export default function BookFormModal({
 
   const handleImageFile = async (file) => {
     if (!file || !file.type.startsWith('image/')) {
-      alert('Please provide a valid image cover file (JPEG/PNG/WEBP).');
+      showToast('Please provide a valid image cover file (JPEG/PNG/WEBP).', 'error');
       return;
     }
 
@@ -311,7 +312,7 @@ export default function BookFormModal({
       }
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Failed to upload image. Verify Cloudinary variables.');
+      showToast(err.response?.data?.message || 'Failed to upload image. Verify Cloudinary variables.', 'error');
     } finally {
       setUploadingImage(false);
       setUploadProgress(0);
@@ -360,7 +361,7 @@ export default function BookFormModal({
             </h2>
             <p className="text-slate-400 text-[10px] sm:text-xs mt-0.5">
               {editingBook && editingBook.createdAt 
-                ? `Added on ${new Date(editingBook.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}` 
+                ? `Added on ${new Date(editingBook.createdAt).toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` 
                 : 'Fill details manually or use barcode lookup'}
             </p>
           </div>
@@ -442,11 +443,12 @@ export default function BookFormModal({
                     const newTotal = (duplicateBook.totalCopies || 0) + 1;
                     await api.put(`/library/books/${duplicateBook._id}`, { totalCopies: newTotal });
                     playBeep('success');
-                    alert(`Successfully increased copies of "${duplicateBook.title}" to ${newTotal}.`);
+                    showToast(`Successfully increased copies of "${duplicateBook.title}" to ${newTotal}.`, 'success');
                     setShowModal(false);
-                    window.location.reload();
+                    // Give toast time to show before reload
+                    setTimeout(() => window.location.reload(), 1500);
                   } catch (e) {
-                    alert('Failed to increment copies.');
+                    showToast('Failed to increment copies.', 'error');
                   }
                 }}
                 className="px-3.5 py-2 rounded-lg text-xs font-semibold text-white transition-all shadow-sm hover:shadow"

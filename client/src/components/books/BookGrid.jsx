@@ -184,7 +184,7 @@ export default function BookGrid({
 
               {book.createdAt && (
                 <div className="text-[9px] text-slate-400 font-semibold select-none mt-0.5">
-                  {new Date(book.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  {new Date(book.createdAt).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </div>
               )}
 

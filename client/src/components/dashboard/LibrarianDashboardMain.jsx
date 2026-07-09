@@ -198,6 +198,13 @@ export default function LibrarianDashboardMain() {
   const [categories, setCategories] = useState([])
   const [showAllCategories, setShowAllCategories] = useState(false)
   const [pendingApprovals, setPendingApprovals] = useState([])
+  const [toast, setToast] = useState(null)
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 2800);
+  };
   const [recentActivities, setRecentActivities] = useState([])
   const [actionLoading, setActionLoading] = useState(null)
 
@@ -223,9 +230,10 @@ export default function LibrarianDashboardMain() {
       await fetchPendingAndActivities();
       const statsRes = await api.get('/library/reports/dashboard');
       setDashboardStats(statsRes.data);
+      showToast(`Approved ${userName}!`, 'success');
     } catch (err) {
       console.error('Approve error:', err);
-      alert('Failed to approve: ' + (err.response?.data?.message || 'Server error'));
+      showToast('Failed to approve: ' + (err.response?.data?.message || 'Server error'), 'error');
     } finally {
       setActionLoading(null);
     }
@@ -241,9 +249,10 @@ export default function LibrarianDashboardMain() {
       await fetchPendingAndActivities();
       const statsRes = await api.get('/library/reports/dashboard');
       setDashboardStats(statsRes.data);
+      showToast(`Rejected ${userName}.`, 'delete');
     } catch (err) {
       console.error('Reject error:', err);
-      alert('Failed to reject: ' + (err.response?.data?.message || 'Server error'));
+      showToast('Failed to reject: ' + (err.response?.data?.message || 'Server error'), 'error');
     } finally {
       setActionLoading(null);
     }
@@ -294,12 +303,15 @@ export default function LibrarianDashboardMain() {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
+    const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
     if (date.toDateString() === today.toDateString()) {
-      return 'Today';
+      return `Today at ${timeStr}`;
     } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
+      return `Yesterday at ${timeStr}`;
     } else {
-      return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const datePart = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return `${datePart} at ${timeStr}`;
     }
   };
 
@@ -707,6 +719,31 @@ export default function LibrarianDashboardMain() {
         </div>
       </div>
 
+      {toast && (
+        <div className="fixed top-3 left-0 lg:left-64 right-0 z-[9999] flex justify-center pointer-events-none">
+          <style>{`
+            @keyframes toast-enter {
+              from { transform: translateY(-15px); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
+            }
+            .toast-popup {
+              animation: toast-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+          `}</style>
+          <div className={`toast-popup pointer-events-auto flex items-center gap-2.5 px-4 py-2 rounded-xl text-white shadow-lg border ${
+            toast.type === 'error'
+              ? 'bg-amber-600 border-amber-500/50'
+              : toast.type === 'delete' 
+                ? 'bg-rose-600 border-rose-500/50' 
+                : 'bg-emerald-600 border-emerald-500/50'
+          }`}>
+            <span className="material-symbols-outlined text-white font-bold" style={{ fontSize: 18 }}>
+              {toast.type === 'error' ? 'warning' : toast.type === 'delete' ? 'delete_forever' : 'check_circle'}
+            </span>
+            <span className="text-xs font-bold">{toast.message}</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

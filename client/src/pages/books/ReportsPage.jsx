@@ -56,6 +56,13 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 2800);
+  };
 
   useEffect(() => { if (user && user.role !== 'librarian') navigate('/dashboard', { replace: true }); }, [user, navigate]);
 
@@ -65,7 +72,7 @@ export default function ReportsPage() {
       const params = { ...dateRange };
       const res = await api.get(`/library/reports/${reportType}`, { params, headers: { Authorization: `Bearer ${token}` } });
       setReportData(res.data);
-    } catch (err) { console.error(err); alert('Failed to generate report.'); }
+    } catch (err) { console.error(err); showToast('Failed to generate report.', 'error'); }
     finally { setLoading(false); }
   };
 
@@ -75,7 +82,7 @@ export default function ReportsPage() {
 
   // PDF Generation
   const generatePDF = async () => {
-    if (!reportData) { alert('Please generate a report first before downloading PDF.'); return; }
+    if (!reportData) { showToast('Please generate a report first before downloading PDF.', 'error'); return; }
     setPdfGenerating(true);
     try {
       const doc = new jsPDF();
@@ -139,7 +146,7 @@ export default function ReportsPage() {
             t.user?.name || '—',
             t.book?.bookId || '—',
             t.book?.title || '—',
-            new Date(t.issueDate).toLocaleDateString(),
+            new Date(t.issueDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
             new Date(t.dueDate).toLocaleDateString(),
             statusText,
           ];
@@ -169,7 +176,7 @@ export default function ReportsPage() {
           f.book?.title || '',
           (f.amount || 0).toFixed(2),
           f.status,
-          new Date(f.createdAt).toLocaleDateString(),
+          new Date(f.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
         ]);
       }
 
@@ -205,7 +212,7 @@ export default function ReportsPage() {
       doc.save(`${fileName}.pdf`);
     } catch (err) {
       console.error('PDF generation error:', err);
-      alert('Failed to generate PDF: ' + err.message);
+      showToast('Failed to generate PDF: ' + err.message, 'error');
     }
     setPdfGenerating(false);
   };
@@ -271,6 +278,32 @@ export default function ReportsPage() {
           ) : (
             renderBody()
           )}
+
+      {toast && (
+        <div className="fixed top-3 left-0 lg:left-64 right-0 z-[9999] flex justify-center pointer-events-none">
+          <style>{`
+            @keyframes toast-enter {
+              from { transform: translateY(-15px); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
+            }
+            .toast-popup {
+              animation: toast-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+          `}</style>
+          <div className={`toast-popup pointer-events-auto flex items-center gap-2.5 px-4 py-2 rounded-xl text-white shadow-lg border ${
+            toast.type === 'error'
+              ? 'bg-amber-600 border-amber-500/50'
+              : toast.type === 'delete' 
+                ? 'bg-rose-600 border-rose-500/50' 
+                : 'bg-emerald-600 border-emerald-500/50'
+          }`}>
+            <span className="material-symbols-outlined text-white font-bold" style={{ fontSize: 18 }}>
+              {toast.type === 'error' ? 'warning' : toast.type === 'delete' ? 'delete_forever' : 'check_circle'}
+            </span>
+            <span className="text-xs font-bold">{toast.message}</span>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

@@ -83,6 +83,13 @@ export default function MembersPage() {
   // History state
   const [historyData, setHistoryData] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 2800);
+  };
 
   // Derived: what grades are currently in the data
   const availableGrades = Array.from(new Set(members.filter((m) => m.grade).map((m) => m.grade))).sort();
@@ -148,7 +155,7 @@ export default function MembersPage() {
 
   const formatDateTime = (dateStr) => {
     if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(dateStr).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const handleSave = async (e) => {
@@ -177,15 +184,23 @@ export default function MembersPage() {
   const handleDelete = async (member) => {
     if (!window.confirm(`Delete ${member.name} (${member.memberId})?`)) return;
     setActionLoading(true);
-    try { await api.delete(`/users/${member._id}`, { headers: { Authorization: `Bearer ${token}` } }); setMembers((prev) => prev.filter((m) => m._id !== member._id)); }
-    catch (err) { alert(err.response?.data?.message || 'Failed to delete.'); }
+    try { 
+      await api.delete(`/users/${member._id}`, { headers: { Authorization: `Bearer ${token}` } }); 
+      setMembers((prev) => prev.filter((m) => m._id !== member._id)); 
+      showToast('Member deleted successfully!', 'delete');
+    }
+    catch (err) { showToast(err.response?.data?.message || 'Failed to delete.', 'error'); }
     finally { setActionLoading(false); }
   };
 
   const handleStatusToggle = async (member, newStatus) => {
     setActionLoading(true);
-    try { const res = await api.put(`/users/${member._id}`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } }); setMembers((prev) => prev.map((m) => (m._id === member._id ? { ...m, ...res.data.user } : m))); }
-    catch (err) { alert(err.response?.data?.message || 'Failed to update status.'); }
+    try { 
+      const res = await api.put(`/users/${member._id}`, { status: newStatus }, { headers: { Authorization: `Bearer ${token}` } }); 
+      setMembers((prev) => prev.map((m) => (m._id === member._id ? { ...m, ...res.data.user } : m))); 
+      showToast(`Member status updated to ${newStatus}!`, 'success');
+    }
+    catch (err) { showToast(err.response?.data?.message || 'Failed to update status.', 'error'); }
     finally { setActionLoading(false); }
   };
 
@@ -272,6 +287,32 @@ export default function MembersPage() {
             CLASS_SECTIONS={CLASS_SECTIONS}
             AL_STREAMS={AL_STREAMS}
           />
+
+      {toast && (
+        <div className="fixed top-3 left-0 lg:left-64 right-0 z-[9999] flex justify-center pointer-events-none">
+          <style>{`
+            @keyframes toast-enter {
+              from { transform: translateY(-15px); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
+            }
+            .toast-popup {
+              animation: toast-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+          `}</style>
+          <div className={`toast-popup pointer-events-auto flex items-center gap-2.5 px-4 py-2 rounded-xl text-white shadow-lg border ${
+            toast.type === 'error'
+              ? 'bg-amber-600 border-amber-500/50'
+              : toast.type === 'delete' 
+                ? 'bg-rose-600 border-rose-500/50' 
+                : 'bg-emerald-600 border-emerald-500/50'
+          }`}>
+            <span className="material-symbols-outlined text-white font-bold" style={{ fontSize: 18 }}>
+              {toast.type === 'error' ? 'warning' : toast.type === 'delete' ? 'delete_forever' : 'check_circle'}
+            </span>
+            <span className="text-xs font-bold">{toast.message}</span>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

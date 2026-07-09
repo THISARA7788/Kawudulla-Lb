@@ -226,7 +226,7 @@ export default function BookTable({
                 
                 {/* Book Added Date */}
                 <td className="py-3 px-4 text-xs font-semibold text-slate-500 whitespace-nowrap">
-                  {book.createdAt ? new Date(book.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                  {book.createdAt ? new Date(book.createdAt).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                 </td>
                 
                 {/* Interactive buttons */}

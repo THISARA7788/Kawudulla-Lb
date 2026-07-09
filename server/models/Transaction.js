@@ -59,6 +59,10 @@ const transactionSchema = new mongoose.Schema(
   }
 );
 
+transactionSchema.index({ status: 1, dueDate: 1 });
+transactionSchema.index({ user: 1, status: 1 });
+transactionSchema.index({ book: 1, status: 1 });
+
 // Auto-generate transaction ID on creation
 transactionSchema.pre('save', async function (next) {
   if (this.isNew && !this.transactionId) {

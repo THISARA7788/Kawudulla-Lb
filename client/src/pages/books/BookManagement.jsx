@@ -145,7 +145,8 @@ export default function BookManagement() {
       setIsSelectionMode(false);
       setBulkDeleteConfirm(false);
     } catch (err) {
-      alert('Failed to delete some selected books.');
+      const errMsg = err.response?.data?.message || 'Failed to delete some selected books.';
+      showToast(errMsg, 'error');
     } finally {
       setSaving(false);
     }
@@ -296,7 +297,8 @@ export default function BookManagement() {
       setBookToDelete(null);
       showToast(`Book "${bookToDelete.title}" deleted successfully!`, 'delete');
     } catch (err) {
-      alert('Failed to delete book.');
+      const errMsg = err.response?.data?.message || 'Failed to delete book.';
+      showToast(errMsg, 'error');
     }
   };
 
@@ -564,12 +566,14 @@ export default function BookManagement() {
             }
           `}</style>
           <div className={`toast-popup pointer-events-auto flex items-center gap-2.5 px-4 py-2 rounded-xl text-white shadow-lg border ${
-            toast.type === 'delete' 
-              ? 'bg-rose-600 border-rose-500/50' 
-              : 'bg-emerald-600 border-emerald-500/50'
+            toast.type === 'error'
+              ? 'bg-amber-600 border-amber-500/50'
+              : toast.type === 'delete' 
+                ? 'bg-rose-600 border-rose-500/50' 
+                : 'bg-emerald-600 border-emerald-500/50'
           }`}>
             <span className="material-symbols-outlined text-white font-bold" style={{ fontSize: 18 }}>
-              {toast.type === 'delete' ? 'delete_forever' : 'check_circle'}
+              {toast.type === 'error' ? 'warning' : toast.type === 'delete' ? 'delete_forever' : 'check_circle'}
             </span>
             <span className="text-xs font-bold">{toast.message}</span>
           </div>
@@ -589,6 +593,7 @@ export default function BookManagement() {
         setShowModal={setShowModal}
         CATEGORIES={CATEGORIES}
         onImportComplete={fetchBooks}
+        showToast={showToast}
       />
 
       {/* Custom Delete Confirmation Modal */}

@@ -11,6 +11,13 @@ function PendingRegistration() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(null); // userId of user being acted on
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 2800);
+  };
 
   useEffect(() => {
     if (user && user.role !== 'librarian') {
@@ -41,9 +48,10 @@ function PendingRegistration() {
       setActionLoading(userId);
       await api.put(`/auth/approve/${userId}`);
       fetchPendingUsers();
+      showToast(`Approved ${userName}!`, 'success');
     } catch (err) {
       console.error('Approve error:', err.response?.data || err.message);
-      alert('Failed to approve: ' + (err.response?.data?.message || 'Server error'));
+      showToast('Failed to approve: ' + (err.response?.data?.message || 'Server error'), 'error');
     } finally {
       setActionLoading(null);
     }
@@ -57,9 +65,10 @@ function PendingRegistration() {
       setActionLoading(userId);
       await api.put(`/auth/reject/${userId}`, { reason });
       fetchPendingUsers();
+      showToast(`Rejected ${userName}.`, 'delete');
     } catch (err) {
       console.error('Reject error:', err.response?.data || err.message);
-      alert('Failed to reject: ' + (err.response?.data?.message || 'Server error'));
+      showToast('Failed to reject: ' + (err.response?.data?.message || 'Server error'), 'error');
     } finally {
       setActionLoading(null);
     }
@@ -76,7 +85,7 @@ function PendingRegistration() {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return new Date(dateStr).toLocaleString('en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -225,6 +234,32 @@ function PendingRegistration() {
           </div>
         )}
       </div>
+
+      {toast && (
+        <div className="fixed top-3 left-0 lg:left-64 right-0 z-[9999] flex justify-center pointer-events-none">
+          <style>{`
+            @keyframes toast-enter {
+              from { transform: translateY(-15px); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
+            }
+            .toast-popup {
+              animation: toast-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+          `}</style>
+          <div className={`toast-popup pointer-events-auto flex items-center gap-2.5 px-4 py-2 rounded-xl text-white shadow-lg border ${
+            toast.type === 'error'
+              ? 'bg-amber-600 border-amber-500/50'
+              : toast.type === 'delete' 
+                ? 'bg-rose-600 border-rose-500/50' 
+                : 'bg-emerald-600 border-emerald-500/50'
+          }`}>
+            <span className="material-symbols-outlined text-white font-bold" style={{ fontSize: 18 }}>
+              {toast.type === 'error' ? 'warning' : toast.type === 'delete' ? 'delete_forever' : 'check_circle'}
+            </span>
+            <span className="text-xs font-bold">{toast.message}</span>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

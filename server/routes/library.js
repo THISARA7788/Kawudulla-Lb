@@ -27,17 +27,15 @@ const BORROW_LIMIT = { student: 5, teacher: 10, librarian: 1 };
 router.get('/books', protect, async (req, res) => {
   try {
     const { search } = req.query;
-    let query = {};
+    let query = { isDeleted: { $ne: true } };
     if (search) {
-      query = {
-        $or: [
-          { title: { $regex: search, $options: 'i' } },
-          { author: { $regex: search, $options: 'i' } },
-          { isbn: { $regex: search, $options: 'i' } },
-          { bookId: { $regex: search, $options: 'i' } },
-          { category: { $regex: search, $options: 'i' } },
-        ],
-      };
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { author: { $regex: search, $options: 'i' } },
+        { isbn: { $regex: search, $options: 'i' } },
+        { bookId: { $regex: search, $options: 'i' } },
+        { category: { $regex: search, $options: 'i' } },
+      ];
     }
     const books = await Book.find(query).sort({ createdAt: -1 });
 
@@ -114,13 +112,30 @@ router.put('/books/:id', protect, authorize('librarian'), async (req, res) => {
   }
 });
 
-// DELETE /api/library/books/:id - Only librarian can delete a book
+// DELETE /api/library/books/:id - Only librarian can delete a book (soft delete)
 router.delete('/books/:id', protect, authorize('librarian'), async (req, res) => {
   try {
     const book = await Book.findById(req.params.id);
     if (!book) return res.status(404).json({ message: 'Book not found' });
-    await book.deleteOne();
-    res.json({ message: 'Book deleted' });
+
+    // Check if there are active checkouts for this book
+    const activeTx = await Transaction.findOne({
+      book: book._id,
+      status: { $in: ['active', 'overdue'] },
+      returnDate: null
+    });
+
+    if (activeTx) {
+      return res.status(400).json({ 
+        message: 'Cannot delete book. It is currently borrowed/checked out by a student or teacher.' 
+      });
+    }
+
+    // Perform soft delete
+    book.isDeleted = true;
+    await book.save();
+
+    res.json({ message: 'Book deleted successfully (archived)' });
   } catch (error) {
     console.error('Delete book error:', error.message);
     res.status(500).json({ message: 'Server error' });
@@ -134,8 +149,23 @@ router.delete('/books/:id', protect, authorize('librarian'), async (req, res) =>
 // GET /api/library/borrowed - All roles can view their own borrowed books
 router.get('/borrowed', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('borrowedBooks.book', 'title author isbn category');
-    const borrowedBooks = user.borrowedBooks || [];
+    const activeTx = await Transaction.find({
+      user: req.user._id,
+      status: { $in: ['active', 'overdue'] },
+      returnDate: null
+    }).populate('book', 'title author isbn category bookId');
+
+    const borrowedBooks = activeTx.map(tx => {
+      if (!tx.book) return null;
+      return {
+        _id: tx._id,
+        book: tx.book,
+        borrowDate: tx.issueDate,
+        dueDate: tx.dueDate,
+        returnDate: tx.returnDate
+      };
+    }).filter(Boolean);
+
     res.json({ borrowedBooks, count: borrowedBooks.length });
   } catch (error) {
     console.error('Get borrowed error:', error.message);
@@ -152,10 +182,12 @@ router.post('/borrow/:bookId', protect, async (req, res) => {
       return res.status(400).json({ message: 'No copies available for borrowing' });
     }
 
-    const user = await User.findById(req.user._id);
-    if (!user.borrowedBooks) user.borrowedBooks = [];
-
-    const alreadyBorrowed = user.borrowedBooks.some(b => b.book.toString() === req.params.bookId && !b.returnDate);
+    const alreadyBorrowed = await Transaction.findOne({
+      user: req.user._id,
+      book: req.params.bookId,
+      status: { $in: ['active', 'overdue'] },
+      returnDate: null
+    });
     if (alreadyBorrowed) {
       return res.status(400).json({ message: 'You already have this book borrowed' });
     }
@@ -163,12 +195,16 @@ router.post('/borrow/:bookId', protect, async (req, res) => {
     book.availableCopies -= 1;
     await book.save();
 
-    user.borrowedBooks.push({
+    // Create transaction record
+    const dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    const transaction = await Transaction.create({
+      user: req.user._id,
       book: book._id,
-      borrowDate: new Date(),
-      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      issueDate: new Date(),
+      dueDate: dueDate,
+      status: 'active',
+      issuedBy: req.user._id
     });
-    await user.save();
 
     // Notify user
     const { createNotification } = require('../utils/notificationsHelper');
@@ -177,6 +213,7 @@ router.post('/borrow/:bookId', protect, async (req, res) => {
       type: 'book_borrowed',
       message: `You borrowed "${book.title}"`,
       relatedBook: book._id,
+      relatedTransaction: transaction._id
     });
 
     res.json({ message: 'Book borrowed successfully', book });
@@ -207,7 +244,11 @@ router.post('/issue', protect, authorize('librarian'), async (req, res) => {
     }
 
     // Check borrowing limit
-    const activeCount = user.borrowedBooks ? user.borrowedBooks.filter(b => !b.returnDate).length : 0;
+    const activeCount = await Transaction.countDocuments({
+      user: userId,
+      status: { $in: ['active', 'overdue'] },
+      returnDate: null
+    });
     const limit = BORROW_LIMIT[user.role] || 5;
     if (activeCount >= limit) {
       return res.status(400).json({ message: `${user.name} has reached the borrowing limit (${limit} books)` });
@@ -221,7 +262,12 @@ router.post('/issue', protect, authorize('librarian'), async (req, res) => {
     }
 
     // Check if user already has this book
-    const alreadyBorrowed = user.borrowedBooks && user.borrowedBooks.some(b => b.book.toString() === bookId && !b.returnDate);
+    const alreadyBorrowed = await Transaction.findOne({
+      user: userId,
+      book: bookId,
+      status: { $in: ['active', 'overdue'] },
+      returnDate: null
+    });
     if (alreadyBorrowed) {
       return res.status(400).json({ message: `${user.name} already has "${book.title}" borrowed` });
     }
@@ -230,16 +276,8 @@ router.post('/issue', protect, authorize('librarian'), async (req, res) => {
     book.availableCopies -= 1;
     await book.save();
 
-    // Add to user's borrowed books
     const normalizedIssueDate = issueDate ? new Date(issueDate) : new Date();
     const normalizedDueDate = new Date(dueDate);
-
-    user.borrowedBooks.push({
-      book: bookId,
-      borrowDate: normalizedIssueDate,
-      dueDate: normalizedDueDate,
-    });
-    await user.save();
 
     // Create transaction record
     const transaction = await Transaction.create({
@@ -249,6 +287,7 @@ router.post('/issue', protect, authorize('librarian'), async (req, res) => {
       dueDate: normalizedDueDate,
       notes: notes || '',
       issuedBy: req.user._id,
+      status: 'active',
     });
 
     // Notify user and librarian
@@ -270,13 +309,22 @@ router.post('/issue', protect, authorize('librarian'), async (req, res) => {
       }),
     ]);
 
-    // Populate for response
-    await user.populate('borrowedBooks.book', 'title author isbn category bookId');
+    // Populate borrowedBooks dynamically on user response object for frontend compatibility
+    const userObj = user.toObject();
+    const activeTxForUser = await Transaction.find({ user: user._id, status: { $in: ['active', 'overdue'] }, returnDate: null })
+      .populate('book', 'title author isbn category bookId');
+    userObj.borrowedBooks = activeTxForUser.map(tx => ({
+      _id: tx._id,
+      book: tx.book,
+      borrowDate: tx.issueDate,
+      dueDate: tx.dueDate,
+      returnDate: tx.returnDate
+    })).filter(b => b.book);
 
     res.status(201).json({
       message: 'Book issued successfully',
       transaction,
-      user,
+      user: userObj,
       book,
     });
   } catch (error) {
@@ -297,31 +345,27 @@ router.post('/return', protect, authorize('librarian'), async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const borrowEntry = user.borrowedBooks.find(b => b.book.toString() === bookId && !b.returnDate);
-    if (!borrowEntry) {
+    // Find the active transaction
+    const transaction = await Transaction.findOne({
+      user: userId,
+      book: bookId,
+      status: { $in: ['active', 'overdue'] },
+      returnDate: null
+    });
+    if (!transaction) {
       return res.status(400).json({ message: 'No active borrowing found for this book' });
     }
 
     const normalizedReturnDate = returnDate ? new Date(returnDate) : new Date();
-    borrowEntry.returnDate = normalizedReturnDate;
-    await user.save();
+    transaction.returnDate = normalizedReturnDate;
+    transaction.status = 'returned';
+    await transaction.save();
 
     // Increment available copies
     const book = await Book.findByIdAndUpdate(bookId, { $inc: { availableCopies: 1 } }, { new: true });
 
-    // Find and update transaction (match 'active' or 'overdue' in case it was flagged)
-    const transaction = await Transaction.findOneAndUpdate(
-      { user: userId, book: bookId, status: { $in: ['active', 'overdue'] } },
-      { returnDate: normalizedReturnDate, status: 'returned' },
-      { new: true }
-    );
-
-    if (!transaction) {
-      return res.status(404).json({ message: 'Transaction record not found for this borrowing' });
-    }
-
     // Calculate overdue days and auto-generate fine if applicable
-    const dueDate = new Date(borrowEntry.dueDate);
+    const dueDate = new Date(transaction.dueDate);
     const daysOverdue = Math.max(0, Math.floor((normalizedReturnDate - dueDate) / (1000 * 60 * 60 * 24)));
 
     if (daysOverdue > 0) {
@@ -370,13 +414,22 @@ router.post('/return', protect, authorize('librarian'), async (req, res) => {
       }),
     ]);
 
-    // Populate for response
-    await user.populate('borrowedBooks.book', 'title author isbn category bookId');
+    // Populate borrowedBooks dynamically on user response object for frontend compatibility
+    const userObj = user.toObject();
+    const activeTxForUser = await Transaction.find({ user: user._id, status: { $in: ['active', 'overdue'] }, returnDate: null })
+      .populate('book', 'title author isbn category bookId');
+    userObj.borrowedBooks = activeTxForUser.map(tx => ({
+      _id: tx._id,
+      book: tx.book,
+      borrowDate: tx.issueDate,
+      dueDate: tx.dueDate,
+      returnDate: tx.returnDate
+    })).filter(b => b.book);
 
     res.json({
       message: 'Book returned successfully',
       transaction,
-      user,
+      user: userObj,
       book,
     });
   } catch (error) {
@@ -454,30 +507,33 @@ router.get('/transactions', protect, async (req, res) => {
 router.get('/users/:id/borrowing-info', protect, async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .populate('borrowedBooks.book', 'title author isbn bookId category')
-      .select('name email role borrowedBooks grade class');
+      .select('name email role grade class');
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const activeBorrows = (user.borrowedBooks || []).filter(b => !b.returnDate);
-    
-    // Fetch active transactions to retrieve notes
-    const transactions = await Transaction.find({ user: user._id, status: { $in: ['active', 'overdue'] } });
+    // Fetch active transactions to retrieve notes and book details
+    const transactions = await Transaction.find({ 
+      user: user._id, 
+      status: { $in: ['active', 'overdue'] },
+      returnDate: null
+    }).populate('book', 'title author isbn bookId category');
 
     // Map borrowed books to append notes (safeguarded against deleted books / null population)
-    const activeBorrowsWithNotes = activeBorrows
-      .map(b => {
-        const doc = b.toObject ? b.toObject() : b;
-        if (!doc.book || !doc.book._id) return null;
-        const tx = transactions.find(t => t.book && t.book.toString() === doc.book._id.toString());
+    const activeBorrowsWithNotes = transactions
+      .map(tx => {
+        if (!tx.book || !tx.book._id) return null;
         return {
-          ...doc,
-          notes: tx ? tx.notes : '',
+          _id: tx._id,
+          book: tx.book,
+          borrowDate: tx.issueDate,
+          dueDate: tx.dueDate,
+          returnDate: tx.returnDate,
+          notes: tx.notes || '',
         };
       })
       .filter(Boolean);
 
-    const overdueBorrows = activeBorrows.filter(b => new Date(b.dueDate) < new Date());
+    const overdueBorrows = activeBorrowsWithNotes.filter(b => new Date(b.dueDate) < new Date());
     const limit = BORROW_LIMIT[user.role] || 5;
 
     res.json({
@@ -489,11 +545,11 @@ router.get('/users/:id/borrowing-info', protect, async (req, res) => {
         grade: user.grade,
         class: user.class,
       },
-      activeCount: activeBorrows.length,
+      activeCount: activeBorrowsWithNotes.length,
       overdueCount: overdueBorrows.length,
       limit,
       borrowedBooks: activeBorrowsWithNotes,
-      allBorrows: user.borrowedBooks,
+      allBorrows: activeBorrowsWithNotes,
     });
   } catch (error) {
     console.error('Get borrowing info error:', error.message);
