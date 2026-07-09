@@ -16,7 +16,8 @@ export default function BookGrid({
   onCardTouchStart,
   onCardTouchEnd,
   selectedBookIds = [],
-  isSelectionMode = false
+  isSelectionMode = false,
+  overdueBookIds = []
 }) {
   
   if (loading) {
@@ -66,6 +67,8 @@ export default function BookGrid({
 
   const getStatusBadgeStyle = (status) => {
     switch (status) {
+      case 'Overdue':
+        return { backgroundColor: 'rgba(244, 63, 94, 0.15)', color: '#e11d48', border: '1px solid rgba(244, 63, 94, 0.3)' };
       case 'Borrowed':
         return { backgroundColor: 'rgba(251, 146, 60, 0.15)', color: '#ea580c', border: '1px solid rgba(251, 146, 60, 0.3)' };
       case 'Reserved':
@@ -80,6 +83,10 @@ export default function BookGrid({
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-4">
       {filtered.map((book) => {
         const isSelected = selectedBookIds.includes(book._id);
+        const isOverdue = overdueBookIds.includes(book._id);
+        const dynamicStatus = isOverdue
+          ? 'Overdue'
+          : (book.status === 'Reserved' ? 'Reserved' : (book.availableCopies === 0 ? 'Borrowed' : 'Available'));
         return (
           <div
             key={book._id}
@@ -161,9 +168,9 @@ export default function BookGrid({
                 </span>
                 <span
                   className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border shadow-sm"
-                  style={getStatusBadgeStyle(book.status || 'Available')}
+                  style={getStatusBadgeStyle(dynamicStatus)}
                 >
-                  {book.status || 'Available'}
+                  {dynamicStatus}
                 </span>
               </div>
               

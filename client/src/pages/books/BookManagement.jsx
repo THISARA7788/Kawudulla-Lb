@@ -60,6 +60,7 @@ export default function BookManagement() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [overdueBookIds, setOverdueBookIds] = useState([]);
   const [sortBy, setSortBy] = useState('bookId');
   const [sortOrder, setSortOrder] = useState('desc');
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('book_catalog_view_mode') || 'table');
@@ -162,9 +163,11 @@ export default function BookManagement() {
       setLoading(true);
       const res = await api.get('/library/books', { params: { search: q || undefined } });
       setBooks(res.data.books || []);
+      setOverdueBookIds(res.data.overdueBookIds || []);
     } catch (err) {
       console.error('Fetch books error:', err);
       setBooks([]);
+      setOverdueBookIds([]);
     } finally {
       setLoading(false);
     }
@@ -215,8 +218,19 @@ export default function BookManagement() {
       b.author.toLowerCase().includes(search.toLowerCase()) ||
       (b.isbn && b.isbn.toLowerCase().includes(search.toLowerCase())) ||
       (b.bookId && b.bookId.toLowerCase().includes(search.toLowerCase()));
-    const matchCat = categoryFilter === 'All' || b.category === categoryFilter;
-    return matchSearch && matchCat;
+
+    let matchFilter = true;
+    if (categoryFilter === 'Available') {
+      matchFilter = b.availableCopies > 0;
+    } else if (categoryFilter === 'Borrowed') {
+      matchFilter = b.availableCopies < b.totalCopies;
+    } else if (categoryFilter === 'Overdue') {
+      matchFilter = overdueBookIds.includes(b._id);
+    } else if (categoryFilter !== 'All') {
+      matchFilter = b.category === categoryFilter;
+    }
+
+    return matchSearch && matchFilter;
   });
 
   const sortedAndFiltered = [...filtered].sort((a, b) => {
@@ -333,6 +347,11 @@ export default function BookManagement() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const countTotal = books.length;
+  const countAvailable = books.filter(b => b.availableCopies > 0).length;
+  const countBorrowed = books.filter(b => b.availableCopies < b.totalCopies).length;
+  const countOverdue = books.filter(b => overdueBookIds.includes(b._id)).length;
+
   return (
     <DashboardLayout>
       {/* Top Control Panel Header (Fixed below top navbar on desktop, relative flow on mobile) */}
@@ -357,18 +376,24 @@ export default function BookManagement() {
           
           {/* Dropdowns, toggle and Add button */}
           <div className="flex flex-wrap xl:flex-nowrap gap-3 items-center justify-end">
-            {/* Category Filter */}
-            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-2xl py-1 px-3 shadow-sm">
-              <span className="material-symbols-outlined text-slate-400 text-sm" style={{ fontSize: 18 }}>filter_list</span>
+            {/* Category / Status Filter */}
+            <div className="flex items-center bg-white border border-slate-200 rounded-2xl py-1 px-3 shadow-sm">
+              <span className="material-symbols-outlined text-slate-400 text-sm mr-1" style={{ fontSize: 18 }}>filter_list</span>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="text-xs font-bold outline-none bg-transparent text-slate-700 cursor-pointer pr-4"
-                style={{ minWidth: 100 }}
+                className="text-xs font-bold outline-none bg-transparent text-slate-750 cursor-pointer pr-2"
+                style={{ minWidth: 140 }}
               >
+                {/* Statuses first and bold */}
+                <option value="Available" style={{ fontWeight: 'bold' }}>Available ({countAvailable})</option>
+                <option value="Borrowed" style={{ fontWeight: 'bold' }}>Borrowed ({countBorrowed})</option>
+                <option value="Overdue" style={{ fontWeight: 'bold' }}>Overdue ({countOverdue})</option>
+                <option disabled>──────────</option>
+                {/* Categories */}
                 {categories.map((c) => (
                   <option key={c} value={c}>
-                    {c}
+                    {c === 'All' ? `All Books (${countTotal})` : c}
                   </option>
                 ))}
               </select>
@@ -467,6 +492,7 @@ export default function BookManagement() {
             onCardTouchEnd={handleCardTouchEnd}
             selectedBookIds={selectedBookIds}
             isSelectionMode={isSelectionMode}
+            overdueBookIds={overdueBookIds}
           />
         ) : (
           <div className="rounded-2xl border overflow-hidden bg-white shadow-sm border-slate-100 animate-fadeIn">
@@ -480,6 +506,7 @@ export default function BookManagement() {
               onRowClick={handleCardClick}
               selectedBookIds={selectedBookIds}
               isSelectionMode={isSelectionMode}
+              overdueBookIds={overdueBookIds}
             />
           </div>
         )}

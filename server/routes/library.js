@@ -40,7 +40,14 @@ router.get('/books', protect, async (req, res) => {
       };
     }
     const books = await Book.find(query).sort({ createdAt: -1 });
-    res.json({ books, count: books.length });
+
+    // Retrieve unique book IDs that have active unreturned and overdue transactions
+    const overdueBookIds = await Transaction.find({
+      returnDate: null,
+      dueDate: { $lt: new Date() }
+    }).distinct('book');
+
+    res.json({ books, count: books.length, overdueBookIds });
   } catch (error) {
     console.error('Get books error:', error.message);
     res.status(500).json({ message: 'Server error' });
