@@ -333,6 +333,132 @@ router.post('/issue', protect, authorize('librarian'), async (req, res) => {
   }
 });
 
+// POST /api/library/issue/bulk - Librarian issues multiple books to a specific user
+router.post('/issue/bulk', protect, authorize('librarian'), async (req, res) => {
+  try {
+    const { userId, issues } = req.body; // issues is an array of { bookId, dueDate, notes, issueDate }
+
+    if (!userId || !Array.isArray(issues) || issues.length === 0) {
+      return res.status(400).json({ message: 'userId and issues (non-empty array) are required' });
+    }
+
+    // Check user exists
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.status !== 'active') {
+      return res.status(400).json({ message: `Cannot issue books. Member is currently "${user.status}" (must be "active").` });
+    }
+
+    // Check borrowing limit
+    const activeCount = await Transaction.countDocuments({
+      user: userId,
+      status: { $in: ['active', 'overdue'] },
+      returnDate: null
+    });
+    const limit = BORROW_LIMIT[user.role] || 5;
+    if (activeCount + issues.length > limit) {
+      return res.status(400).json({ 
+        message: `${user.name} already has ${activeCount} active borrows. Issuing ${issues.length} more would exceed their limit of ${limit} books.` 
+      });
+    }
+
+    const results = [];
+    const { createNotification } = require('../utils/notificationsHelper');
+
+    for (const item of issues) {
+      const { bookId, dueDate, notes, issueDate } = item;
+      if (!bookId || !dueDate) {
+        return res.status(400).json({ message: 'Each issue item must contain bookId and dueDate' });
+      }
+
+      // Check book availability
+      const book = await Book.findById(bookId);
+      if (!book) {
+        return res.status(404).json({ message: `Book not found (ID: ${bookId})` });
+      }
+      if (book.availableCopies <= 0) {
+        return res.status(400).json({ message: `No copies available for "${book.title}"` });
+      }
+
+      // Check if user already has this book
+      const alreadyBorrowed = await Transaction.findOne({
+        user: userId,
+        book: bookId,
+        status: { $in: ['active', 'overdue'] },
+        returnDate: null
+      });
+      if (alreadyBorrowed) {
+        return res.status(400).json({ message: `${user.name} already has "${book.title}" borrowed` });
+      }
+
+      // Decrement available copies
+      book.availableCopies -= 1;
+      await book.save();
+
+      const normalizedIssueDate = issueDate ? new Date(issueDate) : new Date();
+      const normalizedDueDate = new Date(dueDate);
+
+      // Create transaction record
+      const transaction = await Transaction.create({
+        user: userId,
+        book: bookId,
+        issueDate: normalizedIssueDate,
+        dueDate: normalizedDueDate,
+        notes: notes || '',
+        issuedBy: req.user._id,
+        status: 'active',
+      });
+
+      // Notify user and librarian
+      await Promise.all([
+        createNotification({
+          recipient: userId,
+          type: 'book_borrowed',
+          message: `You borrowed "${book.title}" (library staff: ${req.user.name})`,
+          relatedBook: book._id,
+          relatedTransaction: transaction._id
+        }),
+        createNotification({
+          recipient: req.user._id,
+          type: 'book_borrowed',
+          message: `Issued "${book.title}" to ${user.name}`,
+          relatedBook: book._id,
+          relatedTransaction: transaction._id
+        })
+      ]).catch(err => console.error('Notification error in bulk issue:', err.message));
+
+      results.push({
+        transactionId: transaction._id,
+        bookId: book._id,
+        title: book.title,
+        dueDate: transaction.dueDate
+      });
+    }
+
+    // Populate borrowedBooks dynamically on user response object for frontend compatibility
+    const userObj = user.toObject();
+    const activeTxForUser = await Transaction.find({ user: user._id, status: { $in: ['active', 'overdue'] }, returnDate: null })
+      .populate('book', 'title author isbn category bookId');
+    userObj.borrowedBooks = activeTxForUser.map(tx => ({
+      _id: tx._id,
+      book: tx.book,
+      borrowDate: tx.issueDate,
+      dueDate: tx.dueDate,
+      returnDate: tx.returnDate
+    })).filter(b => b.book);
+
+    res.status(201).json({
+      message: 'Books issued successfully',
+      results,
+      user: userObj
+    });
+  } catch (error) {
+    console.error('Bulk issue books error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
 // POST /api/library/return - Librarian receives a returned book
 router.post('/return', protect, authorize('librarian'), async (req, res) => {
   try {
@@ -536,6 +662,10 @@ router.get('/users/:id/borrowing-info', protect, async (req, res) => {
     const overdueBorrows = activeBorrowsWithNotes.filter(b => new Date(b.dueDate) < new Date());
     const limit = BORROW_LIMIT[user.role] || 5;
 
+    // Fetch unpaid fines total
+    const unpaidFines = await Fine.find({ user: user._id, status: 'unpaid' });
+    const outstandingFinesTotal = unpaidFines.reduce((sum, f) => sum + f.amount, 0);
+
     res.json({
       user: {
         _id: user._id,
@@ -547,6 +677,7 @@ router.get('/users/:id/borrowing-info', protect, async (req, res) => {
       },
       activeCount: activeBorrowsWithNotes.length,
       overdueCount: overdueBorrows.length,
+      outstandingFinesTotal,
       limit,
       borrowedBooks: activeBorrowsWithNotes,
       allBorrows: activeBorrowsWithNotes,

@@ -31,7 +31,7 @@ export default function TopBar({ onMenuToggle }) {
   } else if (path.startsWith('/books')) {
     pageTitle = 'Books Catalog'
   } else if (path.startsWith('/issue-book')) {
-    pageTitle = 'Issue Book'
+    pageTitle = 'Issue Book Center'
   } else if (path.startsWith('/return-book')) {
     pageTitle = 'Return Book'
   } else if (path.startsWith('/pending-registration')) {

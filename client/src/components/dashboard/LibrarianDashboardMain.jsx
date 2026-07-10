@@ -142,7 +142,7 @@ function PieChart({ data, size = 120, centerText }) {
 
 
 const quickActionColors = {
-  "Issue Book": { bg: '#DCFCE7', icon: '#166534' },
+  "Issue Book Center": { bg: '#DCFCE7', icon: '#166534' },
   "Return Book": { bg: '#DBEAFE', icon: '#1D4ED8' },
   "Add New Book": { bg: '#FFF3E0', icon: '#E65100' },
   "View Reports": { bg: '#F3E8FF', icon: '#7C3AED' },
@@ -484,7 +484,7 @@ export default function LibrarianDashboardMain() {
           <section>
             <h3 className="text-base font-bold mb-2" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
-              <QuickAction icon="book_5" label="Issue Book" onClick={() => navigate('/issue-book')} />
+              <QuickAction icon="book_5" label="Issue Book Center" onClick={() => navigate('/issue-book')} />
               <QuickAction icon="assignment_return" label="Return Book" onClick={() => navigate('/return-book')} />
               <QuickAction icon="add_circle" label="Add New Book" onClick={() => navigate('/books')} />
               <QuickAction icon="bar_chart" label="View Reports" onClick={() => navigate('/reports')} />
