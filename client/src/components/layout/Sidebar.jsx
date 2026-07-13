@@ -14,7 +14,7 @@ import api from '../../api/axios'
 const navItems = [
   { icon: "grid_view", label: "Dashboard", route: "/dashboard" },
   { icon: "library_books", label: "Books Catalog", route: "/books" },
-  { icon: "book_5", label: "Issue Book Center", route: "/issue-book" },
+  { icon: "book_5", label: "Issue Book", route: "/issue-book" },
   { icon: "assignment_return", label: "Return Book", route: "/return-book" },
   { icon: "person_check", label: "Pending Registration", route: "/pending-registration" },
   { icon: "group", label: "Members", route: "/members" },

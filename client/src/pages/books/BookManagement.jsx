@@ -415,7 +415,6 @@ export default function BookManagement() {
               >
                 <option value="title">Title</option>
                 <option value="author">Author</option>
-                <option value="copies">Copies Stock</option>
                 <option value="bookId">Book ID</option>
               </select>
             </div>

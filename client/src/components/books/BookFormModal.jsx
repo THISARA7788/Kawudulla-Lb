@@ -355,7 +355,7 @@ export default function BookFormModal({
         {/* Header */}
         <div className="flex items-center justify-between mb-3 border-b pb-2" style={{ fontFamily: "'Inter', sans-serif" }}>
           <div>
-            <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
+            <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2" style={{ color: '#4C0000', fontFamily: "'Manrope', sans-serif" }}>
               <span className="material-symbols-outlined" style={{ fontSize: 24 }}>menu_book</span>
               {editingBook ? 'Edit Book Details' : 'Add New Book'}
             </h2>
@@ -536,7 +536,7 @@ export default function BookFormModal({
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Title <span className="text-red-500 font-bold">*</span></label>
                   <input name="title" value={form.title || ''} onChange={handleChange} required
-                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
                     placeholder="e.g. Sherlock Holmes"
                   />
                 </div>
@@ -544,7 +544,7 @@ export default function BookFormModal({
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Author <span className="text-red-500 font-bold">*</span></label>
                   <input name="author" value={form.author || ''} onChange={handleChange} required
-                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
                     placeholder="e.g. Arthur Conan Doyle"
                   />
                 </div>
@@ -554,7 +554,7 @@ export default function BookFormModal({
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Category <span className="text-red-500 font-bold">*</span></label>
                   <select name="category" value={CATEGORIES.includes(form.category) ? form.category : 'Other'} onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white text-slate-700 cursor-pointer"
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white text-slate-700 cursor-pointer"
                   >
                     {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                     {!CATEGORIES.includes(form.category) && <option value="Other">{form.category}</option>}
@@ -562,7 +562,7 @@ export default function BookFormModal({
                   {(form.category === 'Other') && (
                     <input value={customCategory} onChange={(e) => setCustomCategory(e.target.value)}
                       placeholder="Enter custom category" required
-                      className="w-full mt-2 px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                      className="w-full mt-2 px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
                     />
                   )}
                 </div>
@@ -570,7 +570,7 @@ export default function BookFormModal({
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Publisher <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
                   <input name="publisher" value={form.publisher || ''} onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
                     placeholder="e.g. George Newnes"
                   />
                 </div>
@@ -580,7 +580,7 @@ export default function BookFormModal({
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Published Year <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
                   <input name="publishedYear" type="number" value={form.publishedYear || ''} onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
                     placeholder="e.g. 1892"
                   />
                 </div>
@@ -600,7 +600,7 @@ export default function BookFormModal({
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">ISBN Code <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
                   <input name="isbn" value={form.isbn || ''} onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
                     placeholder="e.g. 9780123456789"
                   />
                 </div>
@@ -611,7 +611,7 @@ export default function BookFormModal({
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">Book Description <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
                 <textarea name="description" value={form.description || ''} onChange={handleChange} rows="2"
-                  className="w-full px-3 py-2 text-sm rounded-xl outline-none resize-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                  className="w-full px-3 py-2 text-sm rounded-xl outline-none resize-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
                   placeholder="Brief summary or description..."
                 />
               </div>
@@ -620,10 +620,10 @@ export default function BookFormModal({
             {/* Right Column: Smart Scanning, Inventory, Cover Art */}
             <div className="space-y-3">
               {/* Section: Barcode & ISBN Auto-Fill */}
-              <div className="bg-indigo-50/30 p-2.5 rounded-2xl border-l-4 border-l-indigo-500 border border-indigo-100/50 flex flex-col gap-2 shadow-sm">
+              <div className="bg-red-50/10 p-2.5 rounded-2xl border-l-4 border-l-[#9E0D0D] border border-red-100/30 flex flex-col gap-2 shadow-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1.5 select-none">
-                    <span className="material-symbols-outlined text-indigo-500" style={{ fontSize: 16 }}>qr_code_scanner</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#9E0D0D] flex items-center gap-1.5 select-none">
+                    <span className="material-symbols-outlined text-[#9E0D0D]" style={{ fontSize: 16 }}>qr_code_scanner</span>
                     Barcode & ISBN Auto-Fill
                   </span>
                   {!showCamera && (
@@ -657,11 +657,11 @@ export default function BookFormModal({
                         onFocus={(e) => e.target.select()}
                         onClick={(e) => e.target.select()}
                         placeholder="Scan barcode or enter ISBN number..."
-                        className="w-full pl-9 pr-4 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white"
+                        className="w-full pl-9 pr-4 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
                       />
                       {searchingIsbn && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-                          <span className="material-symbols-outlined animate-spin text-indigo-500" style={{ fontSize: 16 }}>progress_activity</span>
+                          <span className="material-symbols-outlined animate-spin text-[#9E0D0D]" style={{ fontSize: 16 }}>progress_activity</span>
                         </div>
                       )}
                     </div>
@@ -669,7 +669,7 @@ export default function BookFormModal({
                       type="button"
                       disabled={searchingIsbn || !form.isbn}
                       onClick={() => triggerIsbnSearch(form.isbn)}
-                      className="px-3.5 py-1.5 text-xs font-bold rounded-xl text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 transition-all cursor-pointer active:scale-95 whitespace-nowrap shadow-sm hover:shadow"
+                      className="px-3.5 py-1.5 text-xs font-bold rounded-xl text-white bg-[#9E0D0D] hover:bg-[#7F0A0A] disabled:opacity-50 transition-all cursor-pointer active:scale-95 whitespace-nowrap shadow-sm hover:shadow"
                     >
                       Lookup
                     </button>
@@ -710,7 +710,7 @@ export default function BookFormModal({
                   {/* Drag and Drop Zone */}
                   <div
                     className={`flex-1 border border-dashed rounded-xl p-2.5 text-center transition-all cursor-pointer ${
-                      dragActive ? 'border-indigo-500 bg-indigo-50/20' : 'border-slate-200 hover:border-slate-350 hover:bg-slate-50/30'
+                      dragActive ? 'border-[#9E0D0D] bg-[#9E0D0D]/5' : 'border-slate-200 hover:border-slate-350 hover:bg-slate-50/30'
                     }`}
                     onDragEnter={handleDrag}
                     onDragOver={handleDrag}
@@ -732,14 +732,14 @@ export default function BookFormModal({
 
                     {uploadingImage ? (
                       <div className="flex flex-col items-center justify-center gap-1">
-                        <span className="material-symbols-outlined animate-spin text-indigo-500" style={{ fontSize: 16 }}>progress_activity</span>
+                        <span className="material-symbols-outlined animate-spin text-[#9E0D0D]" style={{ fontSize: 16 }}>progress_activity</span>
                         <span className="text-[8px] font-semibold text-slate-600">Uploading... {uploadProgress}%</span>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center text-slate-500">
                         <span className="material-symbols-outlined text-[16px] text-slate-400">cloud_upload</span>
                         <p className="text-[10px] font-semibold">
-                          Drop cover or <span className="text-indigo-650 font-bold hover:underline">browse</span>
+                          Drop cover or <span className="text-[#9E0D0D] font-bold hover:underline">browse</span>
                         </p>
                         <p className="text-[7px] text-slate-400">PNG, JPG, WEBP</p>
                       </div>
@@ -757,7 +757,7 @@ export default function BookFormModal({
                       min="1"
                       value={form.totalCopies ?? ''}
                       onChange={handleChange}
-                      className="w-16 px-2 py-1.5 text-center text-sm font-bold rounded-xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-16 px-2 py-1.5 text-center text-sm font-bold rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <div className="flex flex-col gap-0.5">
                       <button
@@ -766,7 +766,7 @@ export default function BookFormModal({
                           const current = Number(form.totalCopies) || 1;
                           handleChange({ target: { name: 'totalCopies', value: current + 1 } });
                         }}
-                        className="w-6 h-5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 hover:text-indigo-650 flex items-center justify-center text-slate-500 active:scale-90 transition-all cursor-pointer shadow-sm"
+                        className="w-6 h-5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 hover:text-[#9E0D0D] flex items-center justify-center text-slate-500 active:scale-90 transition-all cursor-pointer shadow-sm"
                         title="Increase copies"
                       >
                         <span className="material-symbols-outlined text-[18px] leading-none">arrow_drop_up</span>
@@ -777,7 +777,7 @@ export default function BookFormModal({
                           const current = Number(form.totalCopies) || 1;
                           handleChange({ target: { name: 'totalCopies', value: Math.max(1, current - 1) } });
                         }}
-                        className="w-6 h-5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 hover:text-indigo-650 flex items-center justify-center text-slate-500 active:scale-90 transition-all cursor-pointer shadow-sm"
+                        className="w-6 h-5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 hover:text-[#9E0D0D] flex items-center justify-center text-slate-500 active:scale-90 transition-all cursor-pointer shadow-sm"
                         title="Decrease copies"
                       >
                         <span className="material-symbols-outlined text-[18px] leading-none">arrow_drop_down</span>
@@ -796,11 +796,11 @@ export default function BookFormModal({
               disabled={!isFormValid || saving || uploadingImage}
               className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center ${
                 isFormValid && !saving && !uploadingImage
-                  ? 'text-white bg-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg active:scale-95 cursor-pointer'
-                  : 'text-white/60 bg-slate-900 opacity-40 cursor-not-allowed shadow-none'
+                  ? 'text-white bg-[#9E0D0D] hover:bg-[#7F0A0A] shadow-md hover:shadow-lg active:scale-95 cursor-pointer'
+                  : 'text-white/60 bg-slate-300 opacity-40 cursor-not-allowed shadow-none'
               }`}
             >
-              {saving ? 'Saving Book...' : editingBook ? 'Save Update' : 'Catalog Book'}
+              {saving ? 'Saving Book...' : editingBook ? 'Save Update' : 'Add Book'}
             </button>
             <button
               type="button"
@@ -817,7 +817,7 @@ export default function BookFormModal({
       {importing && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex flex-col items-center justify-center z-50 transition-all select-none animate-fadeIn" style={{ fontFamily: "'Inter', sans-serif" }}>
           <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4 text-center max-w-sm mx-4">
-            <div className="w-16 h-16 border-4 border-indigo-650 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-16 h-16 border-4 border-[#9E0D0D] border-t-transparent rounded-full animate-spin"></div>
             <h3 className="text-lg font-bold text-slate-800 mt-2">Importing Books</h3>
             <p className="text-xs text-slate-500">Parsing spreadsheet and updating library database. Please wait...</p>
           </div>
@@ -841,7 +841,7 @@ export default function BookFormModal({
             <button
               type="button"
               onClick={() => { setImportResult(null); stopCamera(); setShowModal(false); }}
-              className="mt-6 w-full py-2.5 bg-slate-900 text-white rounded-2xl text-sm font-bold shadow-md hover:bg-slate-800 transition-all active:scale-95 cursor-pointer"
+              className="mt-6 w-full py-2.5 bg-[#9E0D0D] text-white rounded-2xl text-sm font-bold shadow-md hover:bg-[#7F0A0A] transition-all active:scale-95 cursor-pointer"
             >
               Done
             </button>
