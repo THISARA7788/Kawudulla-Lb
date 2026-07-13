@@ -9,7 +9,7 @@ import TopBar from './TopBar';
  * @param {ReactNode} children - The inner page elements/widgets to render inside the main viewport
  * @param {Object} style - CSS inline styles, e.g., custom page background colors
  */
-export default function DashboardLayout({ children, style = { backgroundColor: '#F8FAFC' } }) {
+export default function DashboardLayout({ children, style = { backgroundColor: '#f5f5f5ff' } }) {
   // Local state to track whether the mobile/tablet navigation sidebar is slides open
   const [sidebarOpen, setSidebarOpen] = useState(false);
 

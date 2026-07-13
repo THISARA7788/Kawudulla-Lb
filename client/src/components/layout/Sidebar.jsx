@@ -77,10 +77,14 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen w-64 flex flex-col z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-slate-100 bg-white ${
+      className={`fixed left-0 top-0 h-screen w-64 flex flex-col z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-[#3B0000] ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
-      style={{ padding: '1rem', fontFamily: "'Inter', sans-serif" }}
+      style={{ 
+        padding: '1rem', 
+        fontFamily: "'Inter', sans-serif",
+        background: 'linear-gradient(to bottom, #4C0000 0%, #150000 100%)'
+      }}
     >
       {/* Profile / Brand Header */}
       <div className="flex items-center justify-between gap-3 px-2 mb-8">
@@ -91,10 +95,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             className="w-10 h-10 object-contain flex-shrink-0 transition-transform duration-300 hover:scale-105"
           />
           <div className="flex flex-col select-none">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-[#1E2A4A]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.05em' }}>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-white" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.05em' }}>
               KAWUDULLA MV
             </h2>
-            <span className="text-[10px] font-black text-[#9E0D0D] tracking-widest uppercase mt-0.5" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.15em' }}>
+            <span className="text-[10px] font-black text-[#EAB308] tracking-widest uppercase mt-0.5" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.15em' }}>
               LIBRARY PORTAL
             </span>
           </div>
@@ -102,8 +106,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         {/* Close mobile drawer toggle */}
         <button
           onClick={() => setIsOpen(false)}
-          className="lg:hidden p-1.5 rounded-xl hover:bg-slate-100"
-          style={{ color: '#64748B' }}
+          className="lg:hidden p-1.5 rounded-xl hover:bg-white/10"
+          style={{ color: '#CBD5E1' }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 22 }}>close</span>
         </button>
@@ -133,11 +137,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               onClick={() => handleNav(item.route)}
               className={`flex items-center gap-3 transition-all duration-300 text-sm w-full text-left cursor-pointer border border-transparent ${
                 isActive 
-                  ? 'font-bold bg-[#9E0D0D] text-white shadow-lg shadow-red-900/15' 
-                  : 'font-semibold text-[#334155] hover:text-[#9E0D0D] hover:bg-slate-50'
+                  ? 'font-bold bg-[#9E0D0D] text-white shadow-lg shadow-black/20' 
+                  : 'font-semibold text-[#CBD5E1] hover:text-white hover:bg-white/5'
               }`}
               style={{
-                padding: '0.6rem 0.85rem',
+                padding: '0.65rem 0.85rem',
                 margin: '0',
                 borderRadius: '12px',
               }}
@@ -145,7 +149,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'inherit', ...ms }}>{item.icon}</span>
               <span className="flex-1 truncate">{item.label}</span>
               {item.route === '/pending-registration' && pendingCount > 0 && (
-                <span className="w-5 h-5 rounded-full bg-[#B91C1C] text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0">
+                <span className="w-5 h-5 rounded-full bg-[#EF4444] text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0">
                   {pendingCount}
                 </span>
               )}
@@ -156,25 +160,23 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       </nav>
 
       {/* User Info Profile Card & Dropdown Chevron */}
-      <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between gap-2 px-1">
+      <div className="mt-auto pt-3 border-t border-[#3B0000] flex items-center justify-between gap-2 px-1">
         <div 
           onClick={() => handleNav('/profile')}
           className={`flex items-center gap-3 cursor-pointer p-1.5 rounded-xl flex-1 min-w-0 transition-all duration-300 ${
             isProfileActive 
-              ? 'bg-[#9E0D0D] text-white shadow-lg shadow-red-900/15' 
-              : 'hover:bg-slate-50'
+              ? 'bg-[#9E0D0D] text-white shadow-lg shadow-black/20' 
+              : 'hover:bg-white/5'
           }`}
         >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 transition-all duration-300 ${
-            isProfileActive ? 'bg-white text-[#9E0D0D]' : 'bg-[#9E0D0D] text-white'
-          }`}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 transition-all duration-300 bg-[#D97706] text-white">
             {getInitials(user?.name)}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className={`text-xs truncate leading-tight transition-all duration-300 ${isProfileActive ? 'font-bold text-white' : 'text-slate-700 truncate leading-tight font-bold'}`}>
+            <span className="text-xs truncate leading-tight font-bold text-white">
               {user?.name || 'User'}
             </span>
-            <span className={`text-[10px] capitalize mt-0.5 leading-none transition-all duration-300 ${isProfileActive ? 'text-white/90' : 'text-slate-400 font-semibold'}`}>
+            <span className="text-[10px] capitalize mt-0.5 leading-none text-[#CBD5E1] font-semibold">
               {user?.role || 'Member'}
             </span>
           </div>
@@ -183,7 +185,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         {/* Logout Button */}
         <button 
           onClick={logout}
-          className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#9E0D0D] hover:bg-red-50/50 transition-all cursor-pointer flex-shrink-0"
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-[#F87171] hover:text-white hover:bg-white/5 transition-all cursor-pointer flex-shrink-0"
           title="Logout"
         >
           <span className="material-symbols-outlined text-lg" style={msOutline}>logout</span>
