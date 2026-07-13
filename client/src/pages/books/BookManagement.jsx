@@ -635,13 +635,13 @@ export default function BookManagement() {
       {/* Book Profile / Details Modal */}
       {selectedBookProfile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}>
-          <div className="bg-white rounded-3xl w-full max-w-2xl mx-4 overflow-hidden shadow-2xl border border-slate-100 animate-fadeIn" style={{ fontFamily: "'Inter', sans-serif" }}>
+          <div className="bg-slate-50 rounded-3xl w-full max-w-3xl mx-4 overflow-hidden shadow-2xl border border-slate-150 animate-fadeIn" style={{ fontFamily: "'Inter', sans-serif" }}>
             
             {/* Header */}
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200 bg-white shadow-xs">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#1E2A4A]" style={{ fontSize: 20 }}>menu_book</span>
-                <span className="text-xs font-black uppercase text-[#1E2A4A] tracking-wider">Book Profile Details</span>
+                <span className="material-symbols-outlined text-[#4C0000] font-bold" style={{ fontSize: 20 }}>menu_book</span>
+                <span className="text-xs font-black uppercase text-[#4C0000] tracking-wider">Book Profile Details</span>
               </div>
               <button 
                 onClick={() => setSelectedBookProfile(null)}
@@ -652,10 +652,10 @@ export default function BookManagement() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 flex flex-col md:flex-row gap-6 max-h-[70vh] overflow-y-auto no-scrollbar">
+            <div className="p-6 flex flex-col md:flex-row gap-5 max-h-[70vh] overflow-y-auto no-scrollbar items-start">
               
-              {/* Left Side: Cover Image */}
-              <div className="w-full md:w-48 flex-shrink-0">
+              {/* Left Side: Cover Image white card */}
+              <div className="w-full md:w-48 flex-shrink-0 bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_4px_12px_rgba(148,163,184,0.08)] flex flex-col items-center">
                 <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden shadow-md ring-1 ring-slate-100 bg-slate-50 flex items-center justify-center">
                   {selectedBookProfile.coverImageUrl ? (
                     <img 
@@ -681,9 +681,9 @@ export default function BookManagement() {
                 </div>
                 
                 {/* Status Badge below Cover */}
-                <div className="mt-4 flex justify-center">
+                <div className="mt-4 flex justify-center w-full">
                   <span 
-                    className="px-4 py-1 text-[10px] font-black uppercase rounded-full border shadow-sm tracking-wider"
+                    className="px-4 py-1 text-[10px] font-black uppercase rounded-full border shadow-sm tracking-wider text-center w-full block"
                     style={getStatusBadgeStyle(selectedBookProfile.status || 'Available')}
                   >
                     {selectedBookProfile.status || 'Available'}
@@ -691,10 +691,10 @@ export default function BookManagement() {
                 </div>
               </div>
 
-              {/* Right Side: Metadata Profile Details */}
-              <div className="flex-1 space-y-4 text-left">
+              {/* Right Side: Metadata Profile Details white card */}
+              <div className="flex-1 space-y-4 text-left bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_4px_12px_rgba(148,163,184,0.08)] w-full">
                 <div>
-                  <span className="text-[10px] font-extrabold text-[#4062BB] uppercase tracking-widest bg-slate-50 border border-slate-100 px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-extrabold text-[#9E0D0D] uppercase tracking-widest bg-red-50 border border-red-100 px-2 py-0.5 rounded">
                     {selectedBookProfile.category}
                   </span>
                   <h2 className="text-lg font-black text-slate-800 leading-snug mt-2">{selectedBookProfile.title}</h2>
@@ -739,7 +739,7 @@ export default function BookManagement() {
                       className="h-2 rounded-full transition-all duration-500" 
                       style={{ 
                         width: `${Math.min(100, Math.max(0, ((selectedBookProfile.availableCopies ?? 0) / (selectedBookProfile.totalCopies ?? 1)) * 100))}%`,
-                        backgroundColor: (selectedBookProfile.availableCopies ?? 0) > 0 ? '#4f46e5' : '#ef4444'
+                        backgroundColor: (selectedBookProfile.availableCopies ?? 0) > 0 ? '#10B981' : '#EF4444'
                       }}
                     ></div>
                   </div>
@@ -757,14 +757,14 @@ export default function BookManagement() {
 
             {/* Footer Actions */}
             {user?.role === 'librarian' && (
-              <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50 justify-end">
+              <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-white justify-end shadow-xs">
                 <button
                   onClick={() => {
                     const bookToEdit = selectedBookProfile;
                     setSelectedBookProfile(null);
                     openEdit(bookToEdit);
                   }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#9E0D0D] hover:bg-[#7F0A0A] transition-all hover:shadow active:scale-95 cursor-pointer flex items-center gap-1"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all hover:shadow active:scale-95 cursor-pointer flex items-center gap-1"
                 >
                   <span className="material-symbols-outlined text-sm">edit</span>
                   Edit Details

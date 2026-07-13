@@ -349,8 +349,8 @@ export default function BookFormModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}>
       <div
-        className="rounded-2xl p-5 w-full max-w-4xl mx-4 shadow-2xl transition-all"
-        style={{ backgroundColor: '#fff', maxHeight: '96vh', overflowY: 'auto' }}
+        className="bg-slate-50 rounded-2xl p-5 w-full max-w-4xl mx-4 shadow-2xl transition-all border border-slate-150"
+        style={{ maxHeight: '96vh', overflowY: 'auto' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-3 border-b pb-2" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -526,7 +526,7 @@ export default function BookFormModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             
             {/* Left Column: General Book Information */}
-            <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 space-y-2.5">
+            <div className="bg-white p-4 rounded-2xl shadow-[0_4px_12px_rgba(148,163,184,0.08)] border border-slate-100 space-y-2.5">
               <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none flex items-center gap-1.5 mb-1">
                 <span className="material-symbols-outlined text-slate-400" style={{ fontSize: 16 }}>info</span>
                 General Book Information
@@ -620,7 +620,7 @@ export default function BookFormModal({
             {/* Right Column: Smart Scanning, Inventory, Cover Art */}
             <div className="space-y-3">
               {/* Section: Barcode & ISBN Auto-Fill */}
-              <div className="bg-red-50/10 p-2.5 rounded-2xl border-l-4 border-l-[#9E0D0D] border border-red-100/30 flex flex-col gap-2 shadow-sm">
+              <div className="bg-white p-4 rounded-2xl border-l-4 border-l-[#9E0D0D] border border-slate-100 flex flex-col gap-2 shadow-[0_4px_12px_rgba(148,163,184,0.08)]">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase tracking-wider text-[#9E0D0D] flex items-center gap-1.5 select-none">
                     <span className="material-symbols-outlined text-[#9E0D0D]" style={{ fontSize: 16 }}>qr_code_scanner</span>
@@ -678,7 +678,7 @@ export default function BookFormModal({
               </div>
 
               {/* Section: Cover Art & Inventory */}
-              <div className="bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100 space-y-2.5">
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 space-y-2.5 shadow-[0_4px_12px_rgba(148,163,184,0.08)]">
                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none flex items-center gap-1.5 mb-1">
                   <span className="material-symbols-outlined text-slate-400" style={{ fontSize: 16 }}>palette</span>
                   Cover Art & Inventory <span className="text-slate-400 text-[10px] font-normal normal-case ml-1">(Optional)</span>

@@ -36,7 +36,7 @@ export default function BookGrid({
         <p className="text-base font-semibold">No books match your selection</p>
         <p className="text-xs text-slate-400 mt-1">Try refining search query or category filters</p>
         {role === 'librarian' && (
-          <button onClick={openAdd} className="text-xs mt-4 px-4 py-2 font-bold rounded-xl text-white transition-all" style={{ backgroundColor: '#1a1245', boxShadow: '0 2px 8px rgba(26,18,69,0.15)' }}>
+          <button onClick={openAdd} className="text-xs mt-4 px-4 py-2 font-bold rounded-xl text-white transition-all cursor-pointer" style={{ backgroundColor: '#9E0D0D', boxShadow: '0 2px 8px rgba(158,13,13,0.15)' }}>
             + Add New Book
           </button>
         )}
@@ -95,10 +95,10 @@ export default function BookGrid({
             onTouchStart={() => onCardTouchStart && onCardTouchStart(book)}
             onTouchEnd={onCardTouchEnd}
             onClick={() => onCardClick && onCardClick(book)}
-            className={`group relative flex flex-col rounded-2xl bg-white border p-4 transition-all duration-300 ${
+            className={`group relative flex flex-col rounded-2xl bg-white p-4 transition-all duration-300 shadow-[0_4px_10px_rgba(148,163,184,0.28)] ${
               isSelected 
-                ? 'ring-2 ring-offset-2 ring-indigo-600 bg-indigo-50/20 shadow-md shadow-indigo-100/60' 
-                : 'border-slate-100 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-100 hover:border-slate-200'
+                ? 'ring-2 ring-offset-2 ring-[#9E0D0D] bg-red-50/20 shadow-md shadow-red-100/60' 
+                : 'hover:-translate-y-1.5 hover:shadow-[0_8px_20px_rgba(148,163,184,0.45)]'
             } cursor-pointer`}
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
@@ -107,7 +107,7 @@ export default function BookGrid({
               <div className="absolute top-2.5 left-2.5 z-30 select-none bg-white rounded-lg shadow-md border border-slate-200 flex items-center justify-center p-0.5 animate-fadeIn">
                 <span className="material-symbols-outlined font-black" style={{ 
                   fontSize: 18, 
-                  color: isSelected ? '#16a34a' : '#94a3b8',
+                  color: isSelected ? '#9E0D0D' : '#94a3b8',
                   fontVariationSettings: isSelected ? "'FILL' 1" : "'FILL' 0"
                 }}>
                   {isSelected ? 'check_box' : 'check_box_outline_blank'}
@@ -149,10 +149,9 @@ export default function BookGrid({
                 </div>
               )}
 
-              {/* Action Hover Overlay */}
               {!isSelectionMode && (
                 <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[1px] rounded-xl z-20">
-                  <div className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[#1a1245] text-[10px] font-black uppercase tracking-widest shadow-md flex items-center gap-1.5 transform translate-y-3 group-hover:translate-y-0 transition-all duration-300">
+                  <div className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full text-slate-950 text-[10px] font-black uppercase tracking-widest shadow-md flex items-center gap-1.5 transform translate-y-3 group-hover:translate-y-0 transition-all duration-300">
                     <span className="material-symbols-outlined font-semibold" style={{ fontSize: 14 }}>visibility</span>
                     <span>View</span>
                   </div>
@@ -163,7 +162,7 @@ export default function BookGrid({
             {/* Book Metadata details */}
             <div className="flex flex-col flex-1 mt-3.5">
               <div className="flex justify-between items-center select-none">
-                <span className="text-[9px] font-bold text-indigo-650/80 uppercase tracking-widest" style={{ color: '#4062BB' }}>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-[#9E0D0D]">
                   {book.category}
                 </span>
                 <span
@@ -174,7 +173,7 @@ export default function BookGrid({
                 </span>
               </div>
               
-              <h3 className="text-sm font-bold text-slate-800 mt-1 line-clamp-1 leading-snug group-hover:text-[#1a1245] transition-colors" title={book.title}>
+              <h3 className="text-sm font-bold text-slate-800 mt-1 line-clamp-1 leading-snug group-hover:text-[#9E0D0D] transition-colors" title={book.title}>
                 {book.title}
               </h3>
               
@@ -184,8 +183,7 @@ export default function BookGrid({
               {/* Catalog Serial ID & Copies count */}
               <div className="flex items-center justify-between mt-2.5 text-xs font-bold text-slate-650 font-mono select-none border-t border-slate-100 pt-2">
                 <div className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[#1a1245] font-black" style={{ fontSize: 15 }}>tag</span>
-                  <span className="text-[#1a1245] font-extrabold">{book.bookId || '—'}</span>
+                  <span className="text-slate-950 font-black">{book.bookId || '—'}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-slate-500" style={{ fontSize: 15 }}>import_contacts</span>

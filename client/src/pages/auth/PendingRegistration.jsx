@@ -14,6 +14,12 @@ function PendingRegistration() {
   const [toast, setToast] = useState(null);
   const [modal, setModal] = useState({ show: false, type: '', userId: '', userName: '' });
   const [rejectReason, setRejectReason] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredPendingUsers = pendingUsers.filter(u => 
+    u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -122,6 +128,27 @@ function PendingRegistration() {
   return (
     <DashboardLayout>
       <div className="p-1">
+        {/* Header Title Card & Search Bar */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 select-none">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-[#4C0000] flex items-center gap-2" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              <span className="material-symbols-outlined text-2xl font-bold">person_check</span>
+              Pending Registration Requests
+            </h1>
+            <p className="text-slate-500 text-xs mt-1">Review and approve new member registration forms.</p>
+          </div>
+          
+          <div className="relative w-full md:w-80">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: 18 }}>search</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name or email..."
+              className="w-full pl-9 pr-4 py-2 text-xs rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white font-medium text-slate-800"
+            />
+          </div>
+        </div>
 
         {/* Content */}
         {error && (
@@ -133,10 +160,10 @@ function PendingRegistration() {
 
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-20 bg-white rounded-2xl border border-slate-100">
             <div className="text-center">
               <div
-                className="inline-block w-10 h-10 border-4 border-t-[#1a1245] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mb-4"
+                className="inline-block w-10 h-10 border-4 border-t-[#9E0D0D] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mb-4"
               ></div>
               <p className="text-sm" style={{ color: '#94a3b8' }}>Loading pending registrations...</p>
             </div>
@@ -144,8 +171,14 @@ function PendingRegistration() {
         ) : pendingUsers.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-slate-100">
             <span className="material-symbols-outlined text-6xl mb-4" style={{ color: '#94a3b8' }}>check_circle</span>
-            <h3 className="text-xl font-bold mb-2" style={{ color: '#1a1245' }}>All Caught Up!</h3>
+            <h3 className="text-xl font-bold mb-2" style={{ color: '#4C0000' }}>All Caught Up!</h3>
             <p style={{ color: '#64748b' }}>No pending registration requests at the moment.</p>
+          </div>
+        ) : filteredPendingUsers.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-slate-100">
+            <span className="material-symbols-outlined text-6xl mb-4" style={{ color: '#94a3b8' }}>person_search</span>
+            <h3 className="text-xl font-bold mb-2" style={{ color: '#4C0000' }}>No Matching Requests</h3>
+            <p style={{ color: '#64748b' }}>Try adjusting your search keywords.</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
@@ -153,35 +186,35 @@ function PendingRegistration() {
               <table className="w-full min-w-[800px]">
                 <thead style={{ background: '#F5F3FC' }}>
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#1a1245' }}>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
                       <div className="flex items-center gap-1.5">
                         <span>Name</span>
-                        {pendingUsers.length > 0 && (
-                          <span className="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-black">
-                            {pendingUsers.length}
+                        {filteredPendingUsers.length > 0 && (
+                          <span className="bg-red-50 text-[#9E0D0D] border border-red-200 text-[10px] px-2 py-0.5 rounded-full font-black">
+                            {filteredPendingUsers.length}
                           </span>
                         )}
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#1a1245' }}>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
                       Email
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#1a1245' }}>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
                       Grade
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#1a1245' }}>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
                       Role
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#1a1245' }}>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
                       Registered
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#1a1245' }}>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {pendingUsers.map((u) => (
+                  {filteredPendingUsers.map((u) => (
                     <tr key={u._id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
