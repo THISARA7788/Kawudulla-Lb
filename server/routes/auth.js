@@ -42,8 +42,7 @@ router.post('/register', async (req, res) => {
     const sanitizedEmail = email ? email.trim().toLowerCase() : '';
     const userExists = await User.findOne({ email: sanitizedEmail });
     if (userExists) {
-      if (userExists.status !== 'active') {
-        // If the previous registration is not active (pending or rejected), delete it so they can register again
+      if (userExists.status === 'rejected') {
         await User.deleteOne({ _id: userExists._id });
       } else {
         return res.status(400).json({ message: 'User already exists with this email' });

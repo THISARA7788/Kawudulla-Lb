@@ -18,6 +18,7 @@ import Dashboard from './pages/dashboard/Dashboard';
 import BookManagement from './pages/books/BookManagement';
 import IssueBook from './pages/books/IssueBook';
 import ReturnBook from './pages/books/ReturnBook';
+import RenewBook from './pages/books/RenewBook';
 import CirculationRecord from './pages/books/CirculationRecord';
 import PendingRegistration from './pages/auth/PendingRegistration';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -66,6 +67,14 @@ function App() {
           element={
             <PrivateRoute>
               <ReturnBook />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/renew-book"
+          element={
+            <PrivateRoute>
+              <RenewBook />
             </PrivateRoute>
           }
         />

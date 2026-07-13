@@ -573,6 +573,81 @@ router.post('/return', protect, authorize('librarian'), async (req, res) => {
   }
 });
 
+// POST /api/library/renew - Librarian renews a borrowed book (extends due date)
+router.post('/renew', protect, authorize('librarian'), async (req, res) => {
+  try {
+    const { userId, bookId, newDueDate } = req.body;
+
+    if (!userId || !bookId || !newDueDate) {
+      return res.status(400).json({ message: 'userId, bookId, and newDueDate are required' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Find the active/overdue transaction
+    const transaction = await Transaction.findOne({
+      user: userId,
+      book: bookId,
+      status: { $in: ['active', 'overdue'] },
+      returnDate: null
+    });
+    if (!transaction) {
+      return res.status(400).json({ message: 'No active borrowing found for this book' });
+    }
+
+    const book = await Book.findById(bookId);
+    if (!book) return res.status(404).json({ message: 'Book not found' });
+
+    transaction.dueDate = new Date(newDueDate);
+    // If it was overdue but now the new due date is in the future, set status back to active
+    if (new Date(newDueDate) > new Date()) {
+      transaction.status = 'active';
+    }
+    await transaction.save();
+
+    // Notify user and librarian about renewal
+    const { createNotification } = require('../utils/notificationsHelper');
+    await Promise.all([
+      createNotification({
+        recipient: userId,
+        type: 'general',
+        message: `Your borrow of "${book.title}" was renewed. New due date: ${new Date(newDueDate).toLocaleDateString('en-US')}`,
+        relatedBook: book._id,
+        relatedTransaction: transaction._id,
+      }),
+      createNotification({
+        recipient: req.user._id,
+        type: 'general',
+        message: `Renewed "${book.title}" for ${user.name}. New due date: ${new Date(newDueDate).toLocaleDateString('en-US')}`,
+        relatedBook: book._id,
+        relatedTransaction: transaction._id,
+      }),
+    ]).catch(err => console.error('Notification error in renew:', err.message));
+
+    // Populate borrowedBooks dynamically on user response object for frontend compatibility
+    const userObj = user.toObject();
+    const activeTxForUser = await Transaction.find({ user: user._id, status: { $in: ['active', 'overdue'] }, returnDate: null })
+      .populate('book', 'title author isbn category bookId coverImageUrl');
+    userObj.borrowedBooks = activeTxForUser.map(tx => ({
+      _id: tx._id,
+      book: tx.book,
+      borrowDate: tx.issueDate,
+      dueDate: tx.dueDate,
+      returnDate: tx.returnDate
+    })).filter(b => b.book);
+
+    res.json({
+      message: `Successfully renewed "${book.title}" for ${user.name}`,
+      transaction,
+      user: userObj,
+    });
+  } catch (error) {
+    console.error('Renew book error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // GET /api/library/transactions - Get all circulation records
 router.get('/transactions', protect, async (req, res) => {
   try {

@@ -16,6 +16,7 @@ const navItems = [
   { icon: "library_books", label: "Books Catalog", route: "/books" },
   { icon: "book_5", label: "Issue Book", route: "/issue-book" },
   { icon: "assignment_return", label: "Return Book", route: "/return-book" },
+  { icon: "autorenew", label: "Renew Book", route: "/renew-book" },
   { icon: "person_check", label: "Pending Registration", route: "/pending-registration" },
   { icon: "group", label: "Members", route: "/members" },
   { icon: "history_edu", label: "Circulation", route: "/circulation" },

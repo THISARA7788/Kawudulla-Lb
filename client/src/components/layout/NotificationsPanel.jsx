@@ -45,36 +45,32 @@ export default function NotificationsPanel({ notifications, onClose, onMarkRead,
   return (
     <div
       ref={nodeRef}
-      className="absolute top-12 right-0 w-[360px] max-h-[500px] overflow-hidden rounded-xl shadow-2xl z-50 border"
+      className="absolute top-12 right-0 w-[360px] max-h-[500px] overflow-hidden rounded-xl shadow-2xl z-50 border border-slate-100 bg-slate-50"
       style={{ 
-        backgroundColor: 'rgba(15, 23, 42, 0.92)', 
-        backdropFilter: 'blur(10px) saturate(130%)',
-        WebkitBackdropFilter: 'blur(10px) saturate(130%)',
-        borderColor: 'rgba(255, 255, 255, 0.08)', 
         animation: 'fadeIn .15s ease-out', 
-        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5), 0 10px 10px -5px rgba(0,0,0,0.4), 0 0 15px rgba(99, 102, 241, 0.05)'
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 20px 1px rgba(74, 2, 2, 0.15)'
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}>
+      <div className="flex items-center justify-between px-4 py-3 bg-[#4A0202]" style={{ borderBottom: '1px solid rgba(0, 0, 0, 0.05)' }}>
         <h3 className="text-white font-bold text-sm" style={{ fontFamily: "'Manrope', sans-serif" }}>Notifications</h3>
         <div className="flex items-center gap-2">
           {notifications.some(n => !n.read) && (
-            <button onClick={async () => { await onMarkAllRead(); onRefresh() }} className="text-xs font-bold hover:underline" style={{ color: '#38bdf8' }}>
+            <button onClick={async () => { await onMarkAllRead(); onRefresh() }} className="text-xs font-bold hover:underline" style={{ color: '#EAB308' }}>
               Mark all read
             </button>
           )}
-          <button onClick={onClose} className="p-1.5 transition-colors hover:bg-white/10 rounded-lg text-slate-400 hover:text-white">
+          <button onClick={onClose} className="p-1.5 transition-colors hover:bg-white/10 rounded-lg text-slate-300 hover:text-white">
             <span className="material-symbols-outlined" style={{ fontSize: 18, verticalAlign: 'middle' }}>close</span>
           </button>
         </div>
       </div>
 
       {/* List */}
-      <div className="overflow-y-auto max-h-[420px]">
+      <div className="overflow-y-auto max-h-[420px] bg-slate-50 divide-y divide-slate-100">
         {notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4">
-            <span className="material-symbols-outlined mb-2 text-slate-600" style={{ fontSize: 40 }}>notifications_none</span>
+          <div className="flex flex-col items-center justify-center py-12 px-4 bg-slate-50">
+            <span className="material-symbols-outlined mb-2 text-slate-400" style={{ fontSize: 40 }}>notifications_none</span>
             <p className="text-sm font-semibold text-slate-500">No notifications yet</p>
           </div>
         ) : (
@@ -83,24 +79,24 @@ export default function NotificationsPanel({ notifications, onClose, onMarkRead,
             return (
               <div
                 key={n._id}
-                className={`flex items-start gap-3 px-4 py-3 border-b transition-colors group ${!n.read ? 'bg-white/[0.04]' : 'bg-transparent hover:bg-white/[0.06]'}`}
-                style={{ borderColor: 'rgba(255, 255, 255, 0.04)', cursor: 'pointer' }}
+                className={`flex items-start gap-3 px-4 py-3.5 transition-colors group ${!n.read ? 'bg-white' : 'bg-transparent hover:bg-white/60'}`}
+                style={{ cursor: 'pointer' }}
                 onClick={async () => { await onMarkRead(n._id); onRefresh() }}
               >
-                <div className="flex-shrink-0 mt-0.5 w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: c.color + '25' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 20, color: c.color }}>{c.icon}</span>
+                <div className="flex-shrink-0 mt-0.5 w-9 h-9 rounded-lg flex items-center justify-center bg-[#4A0202]">
+                  <span className="material-symbols-outlined text-white" style={{ fontSize: 18 }}>{c.icon}</span>
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-bold tracking-wide uppercase text-slate-400">{c.label}</p>
-                    {!n.read && <span className="w-2 h-2 rounded-full bg-sky-400 flex-shrink-0 animate-pulse shadow-[0_0_8px_#38bdf8]" />}
+                    <p className="text-[9px] font-extrabold tracking-wider uppercase text-slate-700">{c.label}</p>
+                    {!n.read && <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />}
                   </div>
-                  <p className="text-sm font-medium leading-snug mt-0.5 line-clamp-2 text-slate-200">{n.message}</p>
-                  <p className="text-[10px] font-bold mt-1 text-slate-500">{timeAgo(n.createdAt)}</p>
+                  <p className="text-xs font-semibold leading-snug mt-0.5 text-slate-800 whitespace-pre-wrap">{n.message}</p>
+                  <p className="text-[10px] font-bold mt-1 text-slate-400">{timeAgo(n.createdAt)}</p>
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteNotification(n._id) }}
-                  className="flex-shrink-0 p-1 opacity-0 group-hover:opacity-100 transition-all text-slate-500 hover:text-red-400 rounded-lg hover:bg-red-500/10"
+                  className="flex-shrink-0 p-1 opacity-0 group-hover:opacity-100 transition-all text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-100"
                   style={{ color: '#94a3b8' }}
                   title="Delete notification"
                 >

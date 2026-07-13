@@ -118,8 +118,9 @@ export default function TopBar({ onMenuToggle }) {
         <div className="relative">
           <button
             onClick={toggleNotifications}
-            className="p-2 transition-colors hover:bg-slate-100 rounded-xl"
-            style={{ color: '#4F5B7D' }}
+            className={`p-2 transition-colors rounded-xl ${
+              showNotifications ? 'bg-red-50 text-[#9E0D0D]' : 'hover:bg-slate-100 text-[#4F5B7D]'
+            }`}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 22, verticalAlign: 'middle' }}>notifications</span>
           </button>
