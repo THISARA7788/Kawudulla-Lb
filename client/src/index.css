@@ -43,7 +43,7 @@
 
 .login-left {
   flex: 0 0 45%;
-  background: #1a1245;
+  background: #9E0D0D;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,7 +109,7 @@
 .welcome-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #1a1245;
+  color: #9E0D0D;
   margin-bottom: 0.25rem;
   font-family: 'Manrope', 'Noto Sans Sinhala', sans-serif;
 }
@@ -144,15 +144,15 @@
 }
 
 .role-tab.active {
-  background: #1a1245;
+  background: #9E0D0D;
   color: #fff;
-  border-color: #1a1245;
+  border-color: #9E0D0D;
   box-shadow: 0 2px 8px rgba(26,18,69,0.15);
 }
 
 .role-tab:hover:not(.active) {
-  border-color: #1a1245;
-  color: #1a1245;
+  border-color: #9E0D0D;
+  color: #9E0D0D;
 }
 
 /* Form Groups */
@@ -164,7 +164,7 @@
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1a1245;
+  color: #9E0D0D;
   margin-bottom: 0.4rem;
 }
 
@@ -182,7 +182,7 @@
 }
 
 .form-group-new input:focus {
-  box-shadow: 0 0 0 2px #1a1245;
+  box-shadow: 0 0 0 2px #9E0D0D;
 }
 
 .form-group-new input::placeholder {
@@ -203,7 +203,7 @@
 
 .forgot-password:hover {
   text-decoration: underline;
-  color: #1a1245;
+  color: #9E0D0D;
 }
 
 /* Login Button */
@@ -212,7 +212,7 @@
   padding: 0.8rem;
   border: none;
   border-radius: 12px;
-  background: #1a1245;
+  background: #9E0D0D;
   color: #fff;
   font-size: 0.95rem;
   font-weight: 700;
@@ -268,10 +268,10 @@
   display: block;
   width: 100%;
   padding: 0.8rem;
-  border: 2px solid #1a1245;
+  border: 2px solid #9E0D0D;
   border-radius: 12px;
   background: transparent;
-  color: #1a1245;
+  color: #9E0D0D;
   font-size: 0.95rem;
   font-weight: 700;
   font-family: inherit;
@@ -283,7 +283,7 @@
 }
 
 .btn-register:hover {
-  background: #1a1245;
+  background: #9E0D0D;
   color: #fff;
 }
 
@@ -320,7 +320,7 @@
 
 .register-left {
   flex: 0 0 45%;
-  background: #1a1245;
+  background: #9E0D0D;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -379,7 +379,7 @@
 .register-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #1a1245;
+  color: #9E0D0D;
   margin-bottom: 0.25rem;
   font-family: 'Manrope', 'Noto Sans Sinhala', sans-serif;
 }
@@ -401,7 +401,7 @@
   padding: 0.8rem;
   border: none;
   border-radius: 12px;
-  background: #1a1245;
+  background: #9E0D0D;
   color: #fff;
   font-size: 0.95rem;
   font-weight: 700;
@@ -433,7 +433,7 @@
 }
 
 .login-text a {
-  color: #1a1245;
+  color: #9E0D0D;
   text-decoration: none;
   font-weight: 600;
 }
@@ -448,7 +448,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(160deg, #0f1923 0%, #1a1245 100%);
+  background: linear-gradient(160deg, #0f1923 0%, #9E0D0D 100%);
 }
 
 .dashboard-card {
@@ -464,7 +464,7 @@
 .dashboard-card h1 {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1a1245;
+  color: #9E0D0D;
   margin-bottom: 0.5rem;
 }
 
@@ -496,10 +496,10 @@
 
 .btn-logout {
   padding: 0.75rem 2rem;
-  border: 2px solid #1a1245;
+  border: 2px solid #9E0D0D;
   border-radius: 8px;
   background: transparent;
-  color: #1a1245;
+  color: #9E0D0D;
   font-size: 0.9rem;
   font-weight: 600;
   font-family: inherit;
@@ -508,7 +508,7 @@
 }
 
 .btn-logout:hover {
-  background: #1a1245;
+  background: #9E0D0D;
   color: #fff;
 }
 

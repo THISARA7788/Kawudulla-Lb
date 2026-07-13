@@ -14,6 +14,11 @@ const CLASS_SECTIONS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 export default function IssueBook() {
   const { token } = useAuth();
 
+  // Wizard Steps
+  const [step, setStep] = useState(1);
+  const [policyVerified, setPolicyVerified] = useState(false);
+  const [searchFilter, setSearchFilter] = useState('All');
+
   // Member state
   const [memberSearch, setMemberSearch] = useState('');
   const [memberResults, setMemberResults] = useState([]);
@@ -21,7 +26,33 @@ export default function IssueBook() {
   const [selectedMember, setSelectedMember] = useState(null);
   const memberInputRef = useRef(null);
   const [memberInputFocused, setMemberInputFocused] = useState(false);
-  const [memberError, setMemberError] = useState('');
+  
+  // Unified Error Toast State
+  const [toastError, setToastError] = useState('');
+  const toastTimeoutRef = useRef(null);
+
+  const showErrorToast = (msg) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    setToastError(msg);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastError('');
+    }, 4000);
+  };
+
+  const setError = (msg) => {
+    if (msg) showErrorToast(msg);
+    else setToastError('');
+  };
+  const setMemberError = (msg) => {
+    if (msg) showErrorToast(msg);
+    else setToastError('');
+  };
+  const setBookError = (msg) => {
+    if (msg) showErrorToast(msg);
+    else setToastError('');
+  };
 
   // Cart state for multi-book checkout
   const [cart, setCart] = useState([]);
@@ -41,7 +72,7 @@ export default function IssueBook() {
   });
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [issuedDetails, setIssuedDetails] = useState(null);
 
@@ -53,7 +84,7 @@ export default function IssueBook() {
   // Unified scanner / manual book search state
   const [bookInputFocused, setBookInputFocused] = useState(false);
   const bookInputRef = useRef(null);
-  const [bookError, setBookError] = useState('');
+
 
   // Data
   const [allUsers, setAllUsers] = useState([]);
@@ -128,24 +159,34 @@ export default function IssueBook() {
     setMemberResults(list);
   }, [memberSearch, allUsers]);
 
-  // Filter books
+  // Filter books based on search query and search filter tabs
   useEffect(() => {
     if (bookSearch.length >= 1) {
       const q = bookSearch.toLowerCase();
-      const results = allBooks.filter(b =>
-        b.availableCopies > 0 && (
-          b.title.toLowerCase().includes(q) ||
-          b.author.toLowerCase().includes(q) ||
-          (b.bookId && b.bookId.toLowerCase().includes(q)) ||
-          (b.isbn && b.isbn.toLowerCase().includes(q)) ||
-          b.category.toLowerCase().includes(q)
-        )
-      );
+      const results = allBooks.filter(b => {
+        if (b.availableCopies <= 0) return false;
+        
+        if (searchFilter === 'Title') {
+          return b.title.toLowerCase().includes(q);
+        } else if (searchFilter === 'Author') {
+          return b.author.toLowerCase().includes(q);
+        } else if (searchFilter === 'Barcode') {
+          return (b.bookId && b.bookId.toLowerCase().includes(q)) || 
+                 (b.isbn && b.isbn.toLowerCase().includes(q));
+        } else {
+          // 'All'
+          return b.title.toLowerCase().includes(q) ||
+                 b.author.toLowerCase().includes(q) ||
+                 (b.bookId && b.bookId.toLowerCase().includes(q)) ||
+                 (b.isbn && b.isbn.toLowerCase().includes(q)) ||
+                 b.category.toLowerCase().includes(q);
+        }
+      });
       setBookResults(results);
     } else {
       setBookResults([]);
     }
-  }, [bookSearch, allBooks]);
+  }, [bookSearch, allBooks, searchFilter]);
 
   // Fetch borrowing info
   const fetchBorrowingInfo = async (userId) => {
@@ -169,6 +210,7 @@ export default function IssueBook() {
     setMemberError('');
     fetchBorrowingInfo(m._id);
     setCart([]); // Clear cart when switching members
+    setStep(2); // Automatically proceed to step 2!
     setTimeout(() => {
       if (bookInputRef.current) bookInputRef.current.focus();
     }, 50);
@@ -240,6 +282,8 @@ export default function IssueBook() {
     setCart([]);
     setShowMemberSuggestions(true);
     setMemberError('');
+    setStep(1); // Go back to step 1
+    setPolicyVerified(false);
   };
 
   const clearBook = () => {
@@ -253,6 +297,8 @@ export default function IssueBook() {
     clearBook();
     setNotes('');
     setCart([]);
+    setStep(1);
+    setPolicyVerified(false);
   };
 
   // Reusable barcode processor
@@ -458,12 +504,24 @@ export default function IssueBook() {
 
     setSaving(true);
     try {
-      const issuePayload = cart.map(item => ({
-        bookId: item.book._id,
-        dueDate: item.dueDate,
-        notes: item.notes || notes,
-        issueDate: issueDate
-      }));
+      const issuePayload = cart.map(item => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        let finalIssueDate = now.toISOString();
+        
+        if (issueDate !== todayStr) {
+          const selected = new Date(issueDate);
+          selected.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+          finalIssueDate = selected.toISOString();
+        }
+        
+        return {
+          bookId: item.book._id,
+          dueDate: item.dueDate,
+          notes: item.notes || notes,
+          issueDate: finalIssueDate
+        };
+      });
 
       await api.post('/library/issue/bulk', {
         userId: selectedMember._id,
@@ -513,255 +571,174 @@ export default function IssueBook() {
     return u.role;
   }
 
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return parts[0].slice(0, 2).toUpperCase();
+  };
+
+  const handleStepClick = (targetStep) => {
+    if (targetStep === 1) {
+      setStep(1);
+    } else if (targetStep === 2 && selectedMember) {
+      setStep(2);
+    } else if (targetStep === 3 && selectedMember && cart.length > 0) {
+      setStep(3);
+    }
+  };
+
+  const selectedPresetDays = (() => {
+    if (!issueDate || !dueDate) return null;
+    const timeDiff = new Date(dueDate).getTime() - new Date(issueDate).getTime();
+    return Math.round(timeDiff / (1000 * 3600 * 24));
+  })();
+
   return (
     <DashboardLayout>
-      <div className="mx-auto space-y-6" style={{ maxWidth: '1280px' }}>
-        
-        
-
-        {error && (
-          <div className="px-4 py-3 rounded-2xl text-sm flex items-center gap-2 shadow-sm animate-fadeIn" style={{ backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>
-            <span className="material-symbols-outlined text-lg">error</span>
-            <span className="font-semibold">{error}</span>
+      {/* Toast Error Popup */}
+      {toastError && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] max-w-sm w-full px-4 animate-toast-slide-down">
+          <style>{`
+            @keyframes slideDown {
+              0% { transform: translate(-50%, -20px); opacity: 0; }
+              100% { transform: translate(-50%, 0); opacity: 1; }
+            }
+            .animate-toast-slide-down {
+              animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+          `}</style>
+          <div 
+            className="bg-white border-l-4 border-red-600 rounded-xl p-3.5 shadow-xl flex items-center justify-between gap-3"
+            style={{ boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="material-symbols-outlined text-red-650 flex-shrink-0 animate-pulse" style={{ fontSize: 18 }}>error</span>
+              <p className="text-[11px] font-bold text-slate-700 leading-normal truncate max-w-[260px]">{toastError}</p>
+            </div>
+            <button 
+              onClick={() => setToastError('')}
+              className="text-slate-400 hover:text-slate-600 flex-shrink-0 cursor-pointer p-0.5 rounded-full hover:bg-slate-100"
+            >
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* ========= MAIN COLUMN ========= */}
-          <div className="flex-1 space-y-6">
+      <div className="mx-auto space-y-4" style={{ maxWidth: '1280px', fontFamily: "'Inter', sans-serif" }}>
 
-            {/* Selection Grid: Member + Book */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* ========= MAIN COLUMN (Steppers + Step Views) ========= */}
+          <div className="flex-1 flex flex-col space-y-4">
 
-              {/* --- MEMBER SELECTION --- */}
-              <div className="rounded-2xl p-5 border border-slate-100 shadow-sm transition-all duration-300 bg-white">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-indigo-50">
-                      <span className="material-symbols-outlined text-indigo-600" style={{ fontSize: 18 }}>person_search</span>
-                    </div>
-                    <h2 className="text-sm font-extrabold text-slate-700">
-                      {memberSearch.length >= 1 ? `${memberResults.length} Results` : 'Select Member'}
-                    </h2>
-                  </div>
-                  {selectedMember && (
-                    <span className="text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-200">Selected</span>
-                  )}
+            {/* Stepper Header */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between">
+              {/* Step 1 */}
+              <button 
+                onClick={() => handleStepClick(1)}
+                className="flex items-center gap-2.5 text-left focus:outline-none cursor-pointer group"
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
+                  step === 1 
+                    ? 'bg-[#9E0D0D] text-white shadow-md' 
+                    : (selectedMember ? 'bg-amber-100 text-[#D97706] border border-amber-200' : 'bg-slate-100 text-slate-400')
+                }`}>
+                  {selectedMember ? <span className="material-symbols-outlined text-sm font-bold">check</span> : '1'}
                 </div>
-
-
-
-                {/* Search bar */}
-                {selectedMember ? (
-                  <div className="relative flex items-center justify-between w-full py-2.5 pl-10 pr-3.5 rounded-xl border border-indigo-200 bg-indigo-50/50 animate-fadeIn min-h-[46px] shadow-sm">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500" style={{ fontSize: 20 }}>person</span>
-                    <div className="flex-1 min-w-0 pr-2 flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-extrabold text-indigo-950 truncate">{selectedMember.name}</span>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {/* Member ID */}
-                        <span className="text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 uppercase tracking-wide">
-                          {selectedMember.memberId || '—'}
-                        </span>
-                        {/* Role */}
-                        <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-lg border uppercase tracking-wide ${
-                          selectedMember.role === 'student' 
-                            ? 'bg-sky-50 text-sky-700 border-sky-200' 
-                            : 'bg-rose-50 text-rose-700 border-rose-200'
-                        }`}>
-                          {selectedMember.role}
-                        </span>
-                        {/* Grade (only for students with a grade) */}
-                        {selectedMember.role === 'student' && selectedMember.grade && (
-                          <span className="text-[10px] font-black px-2.5 py-0.5 rounded-lg bg-emerald-50 border border-emerald-250 text-emerald-700 uppercase tracking-wide">
-                            {gradeDisplay(selectedMember)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <button 
-                      onClick={clearMember} 
-                      className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-indigo-100/50 text-indigo-400 hover:text-red-500 transition-colors flex-shrink-0"
-                    >
-                      <span className="material-symbols-outlined text-lg">close</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: memberInputFocused ? '#6366F1' : '#9CA3AF', fontSize: 20 }}>person_search</span>
-                    <input
-                      ref={memberInputRef}
-                      type="text"
-                      value={memberSearch}
-                      onChange={(e) => { setMemberSearch(e.target.value); setMemberError(''); }}
-                      onKeyDown={handleMemberSearchKeyDown}
-                      onFocus={(e) => {
-                        setMemberInputFocused(true);
-                        setShowMemberSuggestions(memberSearch.length === 0);
-                        e.target.select();
-                      }}
-                      onBlur={() => setMemberInputFocused(false)}
-                      onClick={(e) => e.target.select()}
-                      placeholder="Type name, email, or member ID..."
-                      className="w-full py-2.5 pl-10 pr-3 text-sm rounded-xl outline-none transition-all border bg-slate-50/50"
-                      style={{ 
-                        borderColor: memberInputFocused ? '#6366F1' : '#E5E7EB',
-                        fontFamily: memberSearch.toUpperCase().startsWith('KMV') ? 'monospace' : 'inherit',
-                        fontWeight: memberSearch.toUpperCase().startsWith('KMV') ? 'bold' : 'normal'
-                      }}
-                    />
-                  </div>
-                )}
-
-                {memberError && (
-                  <div className="mt-2.5 px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 font-medium border border-red-100 bg-red-50/50 text-red-600">
-                    <span className="material-symbols-outlined text-sm">error</span>
-                    {memberError}
-                  </div>
-                )}
-
-
-
-                {/* Results list */}
-                {memberSearch.length >= 1 && !selectedMember && (
-                  <div className="mt-3 rounded-xl border border-slate-100 max-h-[220px] overflow-y-auto bg-slate-50/30">
-                    {memberResults.length === 0 ? (
-                      <div className="p-8 text-center">
-                        <span className="material-symbols-outlined mx-auto block mb-1 text-slate-300" style={{ fontSize: 32 }}>person_off</span>
-                        <p className="text-xs text-slate-400 font-medium">No members found</p>
-                      </div>
-                    ) : (
-                      memberResults.slice(0, 15).map(u => (
-                        <button
-                          key={u._id}
-                          onClick={() => handleSelectMember(u)}
-                          className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left hover:bg-indigo-50/30 border-b border-slate-100 transition-colors last:border-0"
-                        >
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-indigo-50">
-                            <span className="material-symbols-outlined text-indigo-500" style={{ fontSize: 18 }}>person</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-bold text-slate-700 truncate">{u.name}</div>
-                            <div className="text-[10px] text-slate-400 font-mono">
-                              {u.memberId || '—'} • {gradeDisplay(u)}
-                            </div>
-                          </div>
-                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${
-                            u.role === 'student' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-amber-50 text-amber-600 border-amber-100'
-                          }`}>
-                            {u.role === 'student' ? 'STUDENT' : 'TEACHER'}
-                          </span>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-
-
-              </div>
-
-              {/* --- BOOK SELECTION --- */}
-              <div className="rounded-2xl p-5 border border-slate-100 shadow-sm transition-all duration-300 bg-white" style={{ border: bookInputFocused ? '1px solid #F59E0B' : '1px solid #E5E7EB' }}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-50">
-                      <span className="material-symbols-outlined text-amber-600" style={{ fontSize: 18 }}>menu_book</span>
-                    </div>
-                    <h2 className="text-sm font-extrabold text-slate-700">
-                      {bookSearch.length >= 1 ? `${bookResults.length} Results` : 'Scan/Search Book'}
-                    </h2>
-                  </div>
-                  {cart.length > 0 && (
-                    <span className="text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-200 animate-pulse">
-                      {cart.length} in Cart
-                    </span>
-                  )}
-                </div>
-
-                {/* Book search input */}
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: bookInputFocused ? '#F59E0B' : '#9CA3AF', fontSize: 20 }}>
-                    {bookInputFocused ? 'qr_code_scanner' : 'search'}
+                <div>
+                  <span className="block text-xs font-black text-slate-750 group-hover:text-[#9E0D0D] transition-colors">Select Member</span>
+                  <span className="block text-[10px] text-slate-400 font-semibold truncate max-w-[150px]">
+                    {selectedMember ? selectedMember.name : 'Choose borrower'}
                   </span>
-                  <input
-                    ref={bookInputRef}
-                    id="book-search-input"
-                    type="text"
-                    value={bookSearch}
-                    onChange={(e) => { setBookSearch(e.target.value); setBookError(''); }}
-                    onFocus={(e) => {
-                      setBookInputFocused(true);
-                      setShowBookSuggestions(bookSearch.length === 0);
-                      e.target.select();
-                    }}
-                    onBlur={() => bookInputRef.current && setBookInputFocused(false)}
-                    onClick={(e) => e.target.select()}
-                    onKeyDown={handleBookSearchKeyDown}
-                    disabled={!selectedMember}
-                    placeholder={selectedMember ? "Scan barcode/ISBN or type title, author..." : "Please select a member first"}
-                    className="w-full py-2.5 pl-10 pr-3 text-sm rounded-xl outline-none transition-all border font-medium bg-slate-50/50"
-                    style={{ 
-                      borderColor: bookInputFocused ? '#F59E0B' : '#E5E7EB',
-                      fontFamily: bookSearch.startsWith('BK') || /^\d{6}/.test(bookSearch) ? 'monospace' : 'inherit',
-                      cursor: selectedMember ? 'text' : 'not-allowed'
-                    }}
-                  />
                 </div>
+              </button>
 
-                {bookError && (
-                  <div className="mt-2.5 px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 font-medium border border-red-100 bg-red-50/50 text-red-600 animate-fadeIn">
-                    <span className="material-symbols-outlined text-sm">error</span>
-                    {bookError}
-                  </div>
-                )}
+              <div className={`flex-1 h-[2px] mx-4 transition-all duration-300 ${step >= 2 ? 'bg-[#9E0D0D]' : 'bg-slate-200'}`} />
 
+              {/* Step 2 */}
+              <button 
+                onClick={() => handleStepClick(2)}
+                disabled={!selectedMember}
+                className={`flex items-center gap-2.5 text-left focus:outline-none ${selectedMember ? 'cursor-pointer group' : 'cursor-not-allowed'}`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
+                  step === 2 
+                    ? 'bg-[#9E0D0D] text-white shadow-md' 
+                    : (step > 2 ? 'bg-amber-100 text-[#D97706] border border-amber-200' : 'bg-slate-100 text-slate-400')
+                }`}>
+                  {step > 2 ? <span className="material-symbols-outlined text-sm font-bold">check</span> : '2'}
+                </div>
+                <div>
+                  <span className={`block text-xs font-black transition-colors ${selectedMember ? 'text-slate-750 group-hover:text-[#9E0D0D]' : 'text-slate-455'}`}>Add Books</span>
+                  <span className="block text-[10px] text-slate-400 font-semibold">Scan or search books</span>
+                </div>
+              </button>
 
+              <div className={`flex-1 h-[2px] mx-4 transition-all duration-300 ${step === 3 ? 'bg-[#9E0D0D]' : 'bg-slate-200'}`} />
 
-                {/* Results list */}
-                {bookSearch.length >= 1 && (
-                  <div className="mt-3 rounded-xl border border-slate-100 max-h-[220px] overflow-y-auto bg-slate-50/30">
-                    {bookResults.length === 0 ? (
-                      <div className="p-8 text-center">
-                        <span className="material-symbols-outlined mx-auto block mb-1 text-slate-300" style={{ fontSize: 32 }}>search_off</span>
-                        <p className="text-xs text-slate-400 font-medium">No available books found</p>
-                      </div>
-                    ) : (
-                      bookResults.slice(0, 15).map(b => {
-                        const inCart = cart.some(item => item.book._id === b._id);
-                        return (
-                          <button
-                            key={b._id}
-                            disabled={inCart}
-                            onClick={() => handleSelectBook(b)}
-                            className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left border-b border-slate-100 transition-colors last:border-0 ${
-                              inCart ? 'opacity-40 cursor-not-allowed bg-slate-100/50' : 'hover:bg-amber-50/30'
-                            }`}
-                          >
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-50">
-                              <span className="material-symbols-outlined text-amber-500" style={{ fontSize: 18 }}>menu_book</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs font-bold text-slate-700 truncate">{b.title}</div>
-                              <div className="text-[10px] text-slate-400">
-                                {b.author} • ID: <span className="font-mono">{b.bookId || '—'}</span>
-                              </div>
-                            </div>
-                            {inCart ? (
-                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-500">IN CART</span>
-                            ) : (
-                              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                {b.availableCopies} Available
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
-              </div>
+              {/* Step 3 */}
+              <button 
+                onClick={() => handleStepClick(3)}
+                disabled={!selectedMember || cart.length === 0}
+                className={`flex items-center gap-2.5 text-left focus:outline-none ${selectedMember && cart.length > 0 ? 'cursor-pointer group' : 'cursor-not-allowed'}`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
+                  step === 3 
+                    ? 'bg-[#9E0D0D] text-white shadow-md' 
+                    : 'bg-slate-100 text-slate-400'
+                }`}>
+                  3
+                </div>
+                <div>
+                  <span className={`block text-xs font-black transition-colors ${selectedMember && cart.length > 0 ? 'text-slate-750 group-hover:text-[#9E0D0D]' : 'text-slate-455'}`}>Review & Issue</span>
+                  <span className="block text-[10px] text-slate-400 font-semibold">Confirm and issue</span>
+                </div>
+              </button>
             </div>
 
-            {/* --- BORROWER WARNING WIDGETS --- */}
+            {/* Selected Borrower Details Card */}
+            {selectedMember && (
+              <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fadeIn">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-[#9E0D0D] flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+                    <span className="material-symbols-outlined text-2xl">person</span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-extrabold text-slate-800">{selectedMember.name}</h3>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-200">Active</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 uppercase">
+                        ID: {selectedMember.memberId || '—'}
+                      </span>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 uppercase">
+                        {selectedMember.role}
+                      </span>
+                      {selectedMember.role === 'student' && selectedMember.grade && (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 uppercase">
+                          Grade {gradeDisplay(selectedMember)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Search another member */}
+                <button 
+                  onClick={clearMember}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-white border border-[#9E0D0D] text-[#9E0D0D] hover:bg-red-50/50 transition-all hover:shadow-sm active:scale-95 flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">person_search</span>
+                  Search another member
+                </button>
+              </div>
+            )}
+
+            {/* Borrower warning widgets */}
             {selectedMember && (outstandingFines > 0 || overdueCount > 0) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn">
                 {outstandingFines > 0 && (
@@ -787,208 +764,492 @@ export default function IssueBook() {
               </div>
             )}
 
-            {/* --- CHECKOUT CART / DRAFT LIST --- */}
-            <div className="rounded-2xl p-5 border border-slate-100 shadow-sm bg-white">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2">
+            {/* ========= STEP 1 VIEW: Member Selection ========= */}
+            {step === 1 && !selectedMember && (
+              <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-3.5 animate-fadeIn flex flex-col h-[432px]">
+                <div className="flex items-center gap-2 pb-2.5 border-b border-slate-100">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-50">
-                    <span className="material-symbols-outlined text-indigo-600" style={{ fontSize: 18 }}>shopping_cart_checkout</span>
+                    <span className="material-symbols-outlined text-indigo-650" style={{ fontSize: 18 }}>person_search</span>
                   </div>
                   <div>
-                    <h2 className="text-sm font-extrabold text-slate-800">Checkout Cart</h2>
-                    <p className="text-[11px] text-slate-400">Books selected for checkout in this batch</p>
+                    <h3 className="text-sm font-extrabold text-slate-700">Select Member</h3>
+                    <p className="text-[10px] text-slate-400">Search for active student or teacher to begin checkout</p>
                   </div>
                 </div>
 
-                {/* Global Date Presets */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Due Date Presets:</span>
-                  <div className="inline-flex rounded-lg overflow-hidden border border-slate-200 bg-slate-50/50 p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => applyPresetDueDate(7)}
-                      className="px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:bg-white rounded hover:text-indigo-600 transition-all"
-                    >+7d</button>
-                    <button
-                      type="button"
-                      onClick={() => applyPresetDueDate(14)}
-                      className="px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:bg-white rounded hover:text-indigo-600 transition-all"
-                    >+14d</button>
-                    <button
-                      type="button"
-                      onClick={() => applyPresetDueDate(30)}
-                      className="px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:bg-white rounded hover:text-indigo-600 transition-all"
-                    >+30d</button>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: memberInputFocused ? '#9E0D0D' : '#94A3B8', fontSize: 20 }}>
+                    person_search
+                  </span>
+                  <input
+                    ref={memberInputRef}
+                    type="text"
+                    value={memberSearch}
+                    onChange={(e) => { setMemberSearch(e.target.value); setMemberError(''); }}
+                    onKeyDown={handleMemberSearchKeyDown}
+                    onFocus={() => setMemberInputFocused(true)}
+                    onBlur={() => setMemberInputFocused(false)}
+                    placeholder=""
+                    className="w-full py-2.5 pl-10 pr-4 text-sm rounded-xl outline-none border transition-all bg-slate-50/50 focus:bg-white"
+                    style={{ 
+                      borderColor: memberInputFocused ? '#9E0D0D' : '#E2E8F0',
+                    }}
+                  />
+                </div>
+
+
+
+                {/* Suggestions List */}
+                <div className="border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 overflow-y-auto flex-1 min-h-0">
+                  {memberResults.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <span className="material-symbols-outlined text-slate-300 text-4xl mb-1.5">person_off</span>
+                      <p className="text-xs text-slate-400 font-medium">No members found</p>
+                    </div>
+                  ) : (
+                    memberResults.slice(0, 10).map((u) => (
+                      <button
+                        key={u._id}
+                        onClick={() => handleSelectMember(u)}
+                        className="w-full p-3.5 flex items-center justify-between gap-4 text-left hover:bg-slate-50/50 transition-colors cursor-pointer"
+                      >
+                        <div className="flex gap-3 items-center min-w-0">
+                          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-500 font-black">
+                            {getInitials(u.name)}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-xs font-bold text-slate-800 truncate">{u.name}</h4>
+                            <p className="text-[10px] text-slate-450 truncate">
+                              {u.memberId || '—'} • {gradeDisplay(u)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${
+                          u.role === 'student' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                        }`}>
+                          {u.role.toUpperCase()}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ========= STEP 2 VIEW: Add Books ========= */}
+            {step === 2 && selectedMember && (
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 animate-fadeIn">
+                {/* Left side search catalog */}
+                <div className="xl:col-span-7 space-y-4">
+                  <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between h-[380px]">
+                    {/* Header bar */}
+                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 animate-fadeIn">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50">
+                        <span className="material-symbols-outlined text-amber-650" style={{ fontSize: 18 }}>qr_code_scanner</span>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-extrabold text-slate-700">Scan or Search Book</h3>
+                        <p className="text-[10px] text-slate-405">Scan barcode or type title, author, or ISBN</p>
+                      </div>
+                    </div>
+
+                    {/* Input search with Enter button */}
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: bookInputFocused ? '#D97706' : '#94A3B8', fontSize: 20 }}>
+                          {bookInputFocused ? 'qr_code_scanner' : 'search'}
+                        </span>
+                        <input
+                          ref={bookInputRef}
+                          type="text"
+                          value={bookSearch}
+                          onChange={(e) => { setBookSearch(e.target.value); setBookError(''); }}
+                          onFocus={() => setBookInputFocused(true)}
+                          onBlur={() => setBookInputFocused(false)}
+                          onKeyDown={handleBookSearchKeyDown}
+                          placeholder=""
+                          className="w-full py-2.5 pl-10 pr-10 text-sm rounded-xl outline-none border transition-all bg-slate-50/50 focus:bg-white"
+                          style={{ 
+                            borderColor: bookInputFocused ? '#D97706' : '#E2E8F0',
+                            fontFamily: bookSearch.startsWith('BK') || /^\d{6}/.test(bookSearch) ? 'monospace' : 'inherit',
+                          }}
+                        />
+                        {bookSearch && (
+                          <button 
+                            onClick={() => setBookSearch('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-450 hover:text-slate-650 p-0.5 rounded-full hover:bg-slate-200"
+                          >
+                            <span className="material-symbols-outlined text-base">close</span>
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => processBarcode(bookSearch)}
+                        className="px-4 py-2 text-xs font-bold border border-slate-200 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 hover:shadow-sm transition-all active:scale-95 cursor-pointer flex-shrink-0"
+                      >
+                        Enter
+                      </button>
+                    </div>
+
+
+
+
+                    {/* Book catalog selection items */}
+                    <div className="mt-3 border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 overflow-y-auto pr-1 flex-1 min-h-0">
+                      {bookSearch.trim() === '' ? (
+                        <div className="p-8 text-center flex flex-col items-center justify-center h-full select-none">
+                          <span className="material-symbols-outlined text-slate-300 mb-1.5" style={{ fontSize: 36 }}>search</span>
+                          <p className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">Search for a Book</p>
+                          <p className="text-[10px] text-slate-400 mt-1 max-w-[200px] leading-normal">
+                            Type title, author, barcode or scan barcode to select books.
+                          </p>
+                        </div>
+                      ) : bookResults.length === 0 ? (
+                        <div className="p-8 text-center flex flex-col items-center justify-center h-full select-none animate-fadeIn">
+                          <span className="material-symbols-outlined text-slate-300 mb-1.5" style={{ fontSize: 36 }}>search_off</span>
+                          <p className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">No books found</p>
+                          <p className="text-[10px] text-slate-400 mt-1 max-w-[200px] leading-normal">
+                            No copies available or query matched. Please check barcodes.
+                          </p>
+                        </div>
+                      ) : (
+                        bookResults.map((bk) => {
+                          const inCart = cart.some(item => item.book._id === bk._id);
+                          return (
+                            <div key={bk._id} className="p-2.5 flex items-center justify-between gap-4 transition-colors hover:bg-slate-50/20">
+                              <div className="flex gap-3 items-center min-w-0">
+                                <div className="w-10 h-10 rounded-lg bg-amber-50 border border-amber-250 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                  {bk.coverImageUrl ? (
+                                    <img src={bk.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="material-symbols-outlined text-amber-600 text-xl">menu_book</span>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="text-xs font-black text-slate-800 truncate">{bk.title}</h4>
+                                  <p className="text-[10px] text-slate-450 mt-0.5 truncate">
+                                    {bk.author} • ID: <span className="font-mono font-bold">{bk.bookId}</span>
+                                  </p>
+                                  <div className="mt-1 flex items-center gap-2">
+                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                      {bk.availableCopies} Available
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => handleSelectBook(bk)}
+                                disabled={inCart || bk.availableCopies === 0}
+                                className={`w-28 flex-shrink-0 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border cursor-pointer text-center ${
+                                  inCart
+                                    ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed font-semibold'
+                                    : bk.availableCopies === 0
+                                      ? 'bg-red-50 border-red-100 text-red-650 cursor-not-allowed font-semibold'
+                                      : 'bg-[#9E0D0D] border-[#9E0D0D] text-white hover:opacity-90 active:scale-95 shadow-sm shadow-red-900/10'
+                                }`}
+                              >
+                                {inCart ? 'In Cart' : '+ Add to cart'}
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+
+                  </div>
+                </div>
+
+                {/* Right side checkout cart details */}
+                <div className="xl:col-span-5 space-y-4">
+                  <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between h-[380px] relative">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                        <span className="material-symbols-outlined text-[#9E0D0D] text-xl">shopping_cart</span>
+                        <div>
+                          <h3 className="text-sm font-extrabold text-slate-705">Checkout Cart ({cart.length})</h3>
+                          <p className="text-[10px] text-slate-400">Selected books</p>
+                        </div>
+                      </div>
+
+                      {/* Selected Books list */}
+                      <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1">
+                        {cart.length === 0 ? (
+                          <div className="text-center py-6">
+                            <span className="material-symbols-outlined text-slate-300 text-3xl mb-1.5">local_library</span>
+                            <p className="text-[11px] text-slate-400 font-medium">Cart is empty</p>
+                            <p className="text-[9px] text-slate-400 mt-0.5">Select books from the list on the left.</p>
+                          </div>
+                        ) : (
+                          cart.map((item) => (
+                            <div key={item.book._id} className="p-2.5 bg-slate-50/50 border border-slate-100 rounded-xl flex items-center justify-between gap-3 animate-fadeIn">
+                              <div className="flex gap-2 items-center min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-250 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                  {item.book.coverImageUrl ? (
+                                    <img src={item.book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="material-symbols-outlined text-amber-650 text-lg">menu_book</span>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="text-xs font-black text-slate-700 truncate">{item.book.title}</h4>
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => removeFromCart(item.book._id)}
+                                className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0 cursor-pointer"
+                              >
+                                <span className="material-symbols-outlined text-base">close</span>
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {cart.length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
+                        {/* Preset dates */}
+                        <div>
+                          <span className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Due Date Presets</span>
+                          <div className="flex items-center gap-1.5">
+                            {[
+                              { label: '1 week', days: 7 },
+                              { label: '2 weeks', days: 14 },
+                              { label: '1 month', days: 30 }
+                            ].map((preset) => {
+                              const isActive = selectedPresetDays === preset.days;
+                              return (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() => applyPresetDueDate(preset.days)}
+                                  className={`flex-1 py-1 px-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                                    isActive
+                                      ? 'bg-[#9E0D0D] border border-[#9E0D0D] text-white shadow-sm'
+                                      : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 hover:shadow-sm'
+                                  }`}
+                                >
+                                  {preset.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Custom Date selectors */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <span className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Issue Date</span>
+                            <input
+                              type="date"
+                              value={issueDate}
+                              onChange={(e) => {
+                                const newIssueDate = e.target.value;
+                                setIssueDate(newIssueDate);
+                                // Maintain same day duration spacing when issue date changes
+                                const prevDays = selectedPresetDays || 14;
+                                const newDue = new Date(newIssueDate);
+                                newDue.setDate(newDue.getDate() + prevDays);
+                                setDueDate(newDue.toISOString().split('T')[0]);
+                              }}
+                              className="w-full px-2 py-1.5 text-xs rounded-xl border border-slate-200 outline-none bg-white font-medium focus:border-[#D97706]"
+                            />
+                          </div>
+                          <div>
+                            <span className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Due Date</span>
+                            <input
+                              type="date"
+                              value={dueDate}
+                              onChange={(e) => setDueDate(e.target.value)}
+                              className="w-full px-2 py-1.5 text-xs rounded-xl border border-slate-200 outline-none bg-white font-medium focus:border-[#D97706]"
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => setStep(3)}
+                          className="w-full py-2 rounded-xl text-xs font-black text-white bg-[#9E0D0D] hover:bg-[#7F0A0A] hover:shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-red-900/10 cursor-pointer"
+                        >
+                          Continue to Review & Issue
+                          <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+            )}
 
-              {cart.length === 0 ? (
-                <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-2xl">
-                  <span className="material-symbols-outlined text-slate-300 text-5xl mb-2.5">local_library</span>
-                  <h3 className="text-xs font-bold text-slate-600">Checkout Cart is Empty</h3>
-                  <p className="text-[10px] text-slate-400 mt-1 max-w-[280px] mx-auto">
-                    {selectedMember 
-                      ? "Use the scanner or type in the Book Search box to add items here."
-                      : "Please select a member first to begin adding books."}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {cart.map((item) => (
-                    <div 
-                      key={item.book._id} 
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 bg-slate-50/40 hover:bg-indigo-50/20 hover:border-indigo-100 transition-all animate-fadeIn"
+            {/* ========= STEP 3 VIEW: Review & Issue ========= */}
+            {step === 3 && selectedMember && cart.length > 0 && (
+              <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm animate-fadeIn flex flex-col justify-between flex-grow flex-1">
+
+
+                {/* Table for checkout details */}
+                <div className="flex-1 flex flex-col min-h-0 mb-4">
+                  <div className="flex items-center justify-between mb-2 select-none">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">Books to be Issued ({cart.length})</h3>
+                    <button
+                      onClick={() => setStep(2)}
+                      className="text-xs font-bold text-[#9E0D0D] hover:underline flex items-center gap-1 cursor-pointer"
                     >
-                      {/* Book Cover / Details */}
-                      <div className="flex gap-3 items-center min-w-0 flex-1">
-                        <div className="w-9 h-9 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center flex-shrink-0">
-                          <span className="material-symbols-outlined text-amber-600 text-xl">menu_book</span>
+                      <span className="material-symbols-outlined text-sm font-black">add</span>
+                      Add another book
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 overflow-y-auto pr-1 max-h-[340px]">
+                    {cart.map((item) => (
+                      <div
+                        key={item.book._id}
+                        className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl flex gap-4 items-center justify-between animate-fadeIn hover:bg-slate-50 transition-colors"
+                      >
+                        {/* Cover Image */}
+                        <div className="w-16 h-20 rounded-xl bg-amber-50 border border-amber-250 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
+                          {item.book.coverImageUrl ? (
+                            <img src={item.book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="material-symbols-outlined text-amber-500 text-3xl">menu_book</span>
+                          )}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs font-black text-slate-800 truncate">{item.book.title}</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5 truncate">
-                            {item.book.author} • <span className="font-mono font-bold text-[9px]">{item.book.bookId}</span>
+
+                        {/* Details & Actions */}
+                        <div className="flex-grow min-w-0 flex flex-col justify-between h-20">
+                          {/* Top: Title & Remove */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-xs font-black text-slate-800 line-clamp-1">{item.book.title}</h4>
+                              <p className="text-[10px] text-slate-450 mt-0.5 truncate">{item.book.author || 'Unknown Author'}</p>
+                            </div>
+                            <button
+                              onClick={() => removeFromCart(item.book._id)}
+                              className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0 cursor-pointer"
+                              title="Remove book"
+                            >
+                              <span className="material-symbols-outlined text-base">delete</span>
+                            </button>
+                          </div>
+
+                          {/* Bottom: Book ID & Due Date selector */}
+                          <div className="flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+                            <div className="text-[10px] font-mono font-bold text-[#9E0D0D]">
+                              ID: {item.book.bookId}
+                            </div>
+                            
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Due Date:</span>
+                              <input
+                                type="date"
+                                value={item.dueDate}
+                                onChange={(e) => updateCartItemDueDate(item.book._id, e.target.value)}
+                                className="px-2.5 py-1 text-xs border border-slate-200 outline-none rounded-lg bg-white focus:border-[#D97706] font-medium"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
-
-                      {/* Customization Inputs (DueDate & Notes) */}
-                      <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                        {/* Due Date field */}
-                        <div className="flex flex-col">
-                          <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Due Date</label>
-                          <input 
-                            type="date" 
-                            value={item.dueDate} 
-                            onChange={(e) => updateCartItemDueDate(item.book._id, e.target.value)}
-                            className="px-2 py-1 text-xs rounded-lg border border-slate-200 outline-none focus:border-indigo-500 bg-white"
-                          />
-                        </div>
-
-                        {/* Notes field */}
-                        <div className="flex flex-col flex-1 sm:flex-initial">
-                          <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Notes</label>
-                          <input 
-                            type="text" 
-                            placeholder="Optional notes..." 
-                            value={item.notes} 
-                            onChange={(e) => updateCartItemNotes(item.book._id, e.target.value)}
-                            className="px-2.5 py-1 text-xs rounded-lg border border-slate-200 outline-none focus:border-indigo-500 bg-white min-w-[130px]"
-                          />
-                        </div>
-
-                        {/* Remove item */}
-                        <button 
-                          type="button" 
-                          onClick={() => removeFromCart(item.book._id)}
-                          className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0 mt-3 sm:mt-0"
-                        >
-                          <span className="material-symbols-outlined text-lg">close</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Checkout Actions Panel */}
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Batch Issue Date</label>
-                        <input 
-                          type="date" 
-                          value={issueDate} 
-                          onChange={(e) => setIssueDate(e.target.value)}
-                          className="px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 outline-none bg-slate-50"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={clearAll}
-                        className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
-                      >
-                        Clear Cart
-                      </button>
-                      <button 
-                        onClick={handleIssue} 
-                        disabled={!canIssue}
-                        className="px-6 py-2 rounded-xl text-xs font-black text-white flex items-center gap-1.5 shadow-md transition-all animate-fadeIn"
-                        style={{
-                          backgroundColor: canIssue ? '#1a1245' : '#D1D5DB',
-                          boxShadow: canIssue ? '0 4px 12px rgba(26,18,69,0.25)' : 'none',
-                          cursor: canIssue ? 'pointer' : 'not-allowed',
-                        }}
-                      >
-                        <span className="material-symbols-outlined text-base">check_circle</span>
-                        {saving ? 'Processing...' : `Issue ${cart.length} Books`}
-                      </button>
-                    </div>
+                    ))}
                   </div>
                 </div>
-              )}
-            </div>
+
+                {/* Footer action buttons */}
+                <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row justify-between gap-3">
+                  <button
+                    onClick={() => setStep(2)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-50 hover:shadow-sm text-slate-650 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm font-bold">arrow_back</span>
+                    Back to Add Books
+                  </button>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={clearAll}
+                      className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                      Clear Cart
+                    </button>
+
+                    <button
+                      onClick={handleIssue}
+                      disabled={!canIssue || saving}
+                      className="px-6 py-2.5 rounded-xl text-xs font-black text-white flex items-center gap-1.5 shadow-md transition-all active:scale-95 select-none"
+                      style={{
+                        backgroundColor: (canIssue && !saving) ? '#9E0D0D' : '#D1D5DB',
+                        boxShadow: (canIssue && !saving) ? '0 4px 12px rgba(158,13,13,0.2)' : 'none',
+                        cursor: (canIssue && !saving) ? 'pointer' : 'not-allowed',
+                      }}
+                    >
+                      <span className="material-symbols-outlined text-sm">check_circle</span>
+                      {saving ? 'Processing...' : `Issue ${cart.length} Books`}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* ========= RIGHT SIDEBAR ========= */}
-          <div className="w-full lg:w-72 space-y-6 flex-shrink-0 animate-fadeIn">
-
+          {/* ========= RIGHT SIDEBAR (Always present on page) ========= */}
+          <div className="w-full lg:w-64 space-y-4 flex-shrink-0 animate-fadeIn select-none">
             {/* Current Borrowings */}
-            <div className="rounded-2xl p-5 border border-slate-100 shadow-sm bg-white">
+            <div className="rounded-2xl p-4 border border-slate-100 shadow-sm bg-white">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-indigo-600" style={{ fontSize: 18 }}>receipt_long</span>
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-600">Current Borrowings</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="material-symbols-outlined text-indigo-650" style={{ fontSize: 18 }}>receipt_long</span>
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-550 truncate">Borrowings</span>
                 </div>
                 {selectedMember && (
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border flex-shrink-0 ${
                     activeBorrows.length >= borrowLimit 
                       ? 'bg-red-50 text-red-600 border-red-100' 
-                      : 'bg-indigo-50 text-indigo-600 border-indigo-100'
+                      : 'bg-indigo-50 text-indigo-600 border-indigo-105'
                   }`}>
-                    {activeBorrows.length} / {borrowLimit}
+                    {activeBorrows.length}/{borrowLimit}
                   </span>
                 )}
               </div>
               
-              {selectedMember && (
-                <div className="space-y-3.5">
-                  <div className="text-xs font-bold text-slate-700 pb-2 border-b border-slate-100 truncate">
-                    Borrower: {selectedMember.name}
+              {selectedMember ? (
+                <div className="space-y-3">
+                  <div className="text-xs font-bold text-slate-700 pb-1.5 border-b border-slate-100 truncate">
+                    {selectedMember.name}
                   </div>
                   <ActiveBorrowsList
                     borrows={activeBorrows}
                     selectedMember={selectedMember}
-                    maxHeight="160px"
+                    maxHeight="112px"
                   />
                   <div className="pt-2">
                     <div className="flex items-center justify-between mb-1 text-[10px] text-slate-400 font-bold">
-                      <span>Quota Allocation</span>
-                      <span>{Math.min(activeBorrows.length, borrowLimit)} of {borrowLimit} used</span>
+                      <span>Quota</span>
+                      <span>{Math.min(activeBorrows.length, borrowLimit)}/{borrowLimit} used</span>
                     </div>
                     <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div className="h-full rounded-full transition-all duration-300" style={{
                         width: `${Math.min((activeBorrows.length / borrowLimit) * 100, 100)}%`,
-                        backgroundColor: activeBorrows.length >= borrowLimit ? '#EF4444' : '#4F46E5',
+                        backgroundColor: activeBorrows.length >= borrowLimit ? '#EF4444' : '#9E0D0D',
                       }} />
                     </div>
                   </div>
                 </div>
-              )}
-              {!selectedMember && (
-                <div className="text-center py-6">
-                  <span className="material-symbols-outlined mx-auto block mb-1 text-slate-300" style={{ fontSize: 32 }}>person_outline</span>
-                  <p className="text-xs text-slate-400 font-medium">Select member to view history</p>
+              ) : (
+                <div className="text-center py-8">
+                  <span className="material-symbols-outlined mx-auto block mb-1.5 text-slate-300" style={{ fontSize: 32 }}>person_outline</span>
+                  <p className="text-xs text-slate-405 font-medium">Select member</p>
                 </div>
               )}
             </div>
 
             {/* Recent Issues */}
-            <div className="rounded-2xl p-5 border border-slate-100 shadow-sm bg-white">
-              <div className="flex items-center gap-2 mb-3.5">
+            <div className="rounded-2xl p-4 border border-slate-100 shadow-sm bg-white">
+              <div className="flex items-center gap-1.5 mb-3">
                 <span className="material-symbols-outlined text-emerald-600" style={{ fontSize: 18 }}>history</span>
-                <span className="text-xs font-black uppercase tracking-wider text-slate-600">Recent Issues</span>
+                <span className="text-xs font-black uppercase tracking-wider text-slate-550 truncate">Recent Issues</span>
               </div>
 
               <RecentTransactionsList
@@ -1004,22 +1265,6 @@ export default function IssueBook() {
       {/* Success Modal Overlay */}
       {showSuccessModal && issuedDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn" style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(8px)' }}>
-          <style>{`
-            @keyframes fadeIn {
-              from { opacity: 0; }
-              to { opacity: 1; }
-            }
-            @keyframes scaleUp {
-              from { transform: scale(0.95); opacity: 0; }
-              to { transform: scale(1); opacity: 1; }
-            }
-            .animate-fadeIn {
-              animation: fadeIn 0.2s ease-out forwards;
-            }
-            .animate-scaleUp {
-              animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-            }
-          `}</style>
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl transition-all border border-slate-100 flex flex-col items-center text-center relative overflow-hidden animate-scaleUp">
             <div className="absolute top-0 left-0 right-0 h-2 bg-emerald-500" />
             
@@ -1027,7 +1272,7 @@ export default function IssueBook() {
               <span className="material-symbols-outlined text-4xl font-bold">check_circle</span>
             </div>
 
-            <h3 className="text-xl font-black mb-1 text-indigo-950">
+            <h3 className="text-xl font-black mb-1 text-slate-800">
               Checkout Successful!
             </h3>
             <p className="text-slate-400 text-xs mb-5">Issued {issuedDetails.books ? issuedDetails.books.length : 1} books successfully</p>
@@ -1037,8 +1282,8 @@ export default function IssueBook() {
                 <span className="material-symbols-outlined text-slate-400 mt-0.5" style={{ fontSize: 18 }}>person</span>
                 <div className="flex-1 min-w-0">
                   <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Borrower</div>
-                  <div className="font-extrabold text-slate-800 truncate">{issuedDetails.member.name}</div>
-                  <div className="text-[10px] text-slate-500 font-mono">{issuedDetails.member.memberId}</div>
+                  <div className="font-extrabold text-slate-850 truncate">{issuedDetails.member.name}</div>
+                  <div className="text-[10px] text-slate-500 font-mono font-bold">{issuedDetails.member.memberId}</div>
                 </div>
               </div>
               
@@ -1052,8 +1297,8 @@ export default function IssueBook() {
                     {issuedDetails.books ? (
                       issuedDetails.books.map((bk) => (
                         <div key={bk._id} className="font-extrabold text-slate-800 text-xs py-0.5 flex justify-between items-center border-b border-slate-100 last:border-0 animate-fadeIn">
-                          <span className="truncate pr-2">{bk.title}</span>
-                          <span className="font-mono text-[9px] text-slate-400 flex-shrink-0">{bk.bookId}</span>
+                          <span className="truncate pr-2 font-bold">{bk.title}</span>
+                          <span className="font-mono text-[9px] text-slate-400 flex-shrink-0 font-bold">{bk.bookId}</span>
                         </div>
                       ))
                     ) : (
@@ -1062,21 +1307,6 @@ export default function IssueBook() {
                   </div>
                 </div>
               </div>
-
-              {issuedDetails.dueDate && (
-                <>
-                  <div className="border-t border-dashed border-slate-200" />
-                  <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-emerald-600 mt-0.5" style={{ fontSize: 18 }}>event</span>
-                    <div>
-                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Default Return Due Date</div>
-                      <div className="font-black text-emerald-700 text-sm mt-0.5">
-                        {new Date(issuedDetails.dueDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
             </div>
 
             {/* Action buttons */}
@@ -1086,7 +1316,7 @@ export default function IssueBook() {
                   setShowSuccessModal(false);
                   setIssuedDetails(null);
                 }}
-                className="flex-1 py-3 rounded-xl text-xs font-black text-white transition-all hover:opacity-90 flex items-center justify-center gap-1.5 shadow-md bg-emerald-600 shadow-emerald-100"
+                className="flex-1 py-3 rounded-xl text-xs font-black text-white transition-all hover:opacity-90 flex items-center justify-center gap-1.5 shadow-md bg-emerald-600 shadow-emerald-100 cursor-pointer"
               >
                 Done (Enter)
               </button>

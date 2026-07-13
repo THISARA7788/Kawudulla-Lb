@@ -22,23 +22,30 @@ router.get('/quick-lookup/:id', async (req, res) => {
     const { id } = req.params;
     const trimmed = id.trim();
 
-    // 1. Try to find user by memberId (case-insensitive)
-    const user = await User.findOne({ memberId: trimmed.toUpperCase() }, '-password -borrowedBooks -resetToken -resetTokenExpiry');
+    // 1. Try to find user by memberId (case-insensitive) or MongoDB _id
+    let user = null;
+    const mongoose = require('mongoose');
+    if (mongoose.Types.ObjectId.isValid(trimmed)) {
+      user = await User.findById(trimmed, '-password -borrowedBooks -resetToken -resetTokenExpiry');
+    }
+    if (!user) {
+      user = await User.findOne({ memberId: trimmed.toUpperCase() }, '-password -borrowedBooks -resetToken -resetTokenExpiry');
+    }
     
     if (user) {
       const Fine = require('../models/Fine');
       const populatedUser = await User.findById(user._id, '-password -borrowedBooks -resetToken -resetTokenExpiry')
-        .populate('borrowedBooks.book', 'bookId title author');
+        .populate('borrowedBooks.book', 'bookId title author coverImageUrl');
         
       const activeBorrows = await Transaction.find({ user: user._id, status: 'active' })
-        .populate('book', 'bookId title author')
+        .populate('book', 'bookId title author coverImageUrl')
         .sort({ issueDate: -1 })
         .limit(10);
 
       const totalBorrows = await Transaction.countDocuments({ user: user._id });
       
       const activeFines = await Fine.find({ user: user._id, status: 'unpaid' })
-        .populate('book', 'bookId title author')
+        .populate('book', 'bookId title author coverImageUrl')
         .populate('transaction', 'transactionId dueDate');
 
       return res.json({
@@ -62,7 +69,8 @@ router.get('/quick-lookup/:id', async (req, res) => {
 
     if (book) {
       const activeTransactions = await Transaction.find({ book: book._id, status: { $in: ['active', 'overdue'] } })
-        .populate('user', 'name email memberId grade class role');
+        .populate('user', 'name email memberId grade class role')
+        .populate('book', 'bookId title author isbn category coverImageUrl');
 
       return res.json({
         type: 'book',
@@ -71,7 +79,46 @@ router.get('/quick-lookup/:id', async (req, res) => {
       });
     }
 
-    return res.status(404).json({ message: `No member or book found with ID/ISBN "${trimmed}"` });
+    // 3. Try to search by member name or book name (fallback case-insensitive search)
+    const matchedUsers = await User.find({
+      name: { $regex: trimmed, $options: 'i' },
+      status: 'active',
+      role: { $ne: 'librarian' }
+    }, '-password -borrowedBooks -resetToken -resetTokenExpiry').limit(10);
+
+    const cleanQuery = trimmed.replace(/[-\s]/g, '');
+    const matchedBooks = await Book.find({
+      $or: [
+        { title: { $regex: trimmed, $options: 'i' } },
+        { author: { $regex: trimmed, $options: 'i' } },
+        { bookId: { $regex: trimmed, $options: 'i' } },
+        { bookId: { $regex: cleanQuery, $options: 'i' } },
+        { isbn: { $regex: trimmed, $options: 'i' } },
+        { isbn: { $regex: cleanQuery, $options: 'i' } }
+      ],
+      isDeleted: { $ne: true }
+    }).limit(10);
+
+    const matchedBookIds = matchedBooks.map(b => b._id);
+
+    const activeTransactions = await Transaction.find({
+      book: { $in: matchedBookIds },
+      status: { $in: ['active', 'overdue'] }
+    })
+      .populate('book', 'bookId title author isbn category coverImageUrl')
+      .populate('user', 'name email memberId grade class role')
+      .sort({ dueDate: 1 })
+      .limit(10);
+
+    if (matchedUsers.length > 0 || activeTransactions.length > 0) {
+      return res.json({
+        type: 'search_results',
+        members: matchedUsers,
+        activeTransactions: activeTransactions
+      });
+    }
+
+    return res.status(404).json({ message: `No member or book found matching "${trimmed}"` });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

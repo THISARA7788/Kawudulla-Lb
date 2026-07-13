@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -26,8 +26,8 @@ export default function ReturnBook() {
 
   // Borrowing state
   const [activeBorrows, setActiveBorrows] = useState([]);
-  const [selectedBorrow, setSelectedBorrow] = useState(null);
-  const [returnDate, setReturnDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedBorrows, setSelectedBorrows] = useState([]);
+  const [returnDate, setReturnDate] = useState(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
   const [overdueFine, setOverdueFine] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -54,19 +54,46 @@ export default function ReturnBook() {
   const [multipleBorrowers, setMultipleBorrowers] = useState([]);
   const [scannedBook, setScannedBook] = useState(null);
 
+  // Search Results state for fallback book/member searches
+  const [searchResults, setSearchResults] = useState(null);
+  const [allActiveTransactions, setAllActiveTransactions] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const fetchAllActiveTransactions = async () => {
+    try {
+      const [activeTxRes, overdueTxRes] = await Promise.all([
+        api.get('/library/transactions?status=active&limit=10000', { headers: { Authorization: `Bearer ${token}` } }),
+        api.get('/library/transactions?status=overdue&limit=10000', { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const activeList = activeTxRes.data.transactions || [];
+      const overdueList = overdueTxRes.data.transactions || [];
+      setAllActiveTransactions([...activeList, ...overdueList]);
+    } catch (err) {
+      console.error('Fetch active transactions error:', err);
+    }
+  };
+
   // Load data
   useEffect(() => {
     const init = async () => {
       try {
-        const [usersRes, txRes] = await Promise.all([
+        const [usersRes, activeTxRes, overdueTxRes, txRes] = await Promise.all([
           api.get('/users', { headers: { Authorization: `Bearer ${token}` } }),
+          api.get('/library/transactions?status=active&limit=10000', { headers: { Authorization: `Bearer ${token}` } }),
+          api.get('/library/transactions?status=overdue&limit=10000', { headers: { Authorization: `Bearer ${token}` } }),
           api.get('/library/transactions?status=returned&limit=10'),
         ]);
         setAllUsers(usersRes.data.users || []);
+        
+        const activeList = activeTxRes.data.transactions || [];
+        const overdueList = overdueTxRes.data.transactions || [];
+        setAllActiveTransactions([...activeList, ...overdueList]);
+        
         setRecentReturns(txRes.data.transactions || []);
         
         // Log data for debugging
         console.log('Loaded users:', usersRes.data.users?.length || 0);
+        console.log('Loaded active/overdue transactions:', activeList.length + overdueList.length);
         console.log('Loaded recent returns:', txRes.data.transactions?.length || 0);
       } catch (err) {
         console.error('Init error:', err);
@@ -122,6 +149,40 @@ export default function ReturnBook() {
     setMemberResults(list);
   }, [memberSearch, memberRoleFilter, memberGradeFilter, memberClassFilter, allUsers]);
 
+  // Real-time suggestions filtering (runs locally without any delay)
+  useEffect(() => {
+    const q = scanInput.trim().toLowerCase();
+    if (!q) {
+      setSearchResults(null);
+      return;
+    }
+
+    // Filter members matching query
+    const matchedMembers = allUsers.filter(u => 
+      u.status === 'active' &&
+      u.role !== 'librarian' &&
+      (u.name.toLowerCase().includes(q) ||
+       u.email.toLowerCase().includes(q) ||
+       (u.memberId && u.memberId.toLowerCase().includes(q)))
+    );
+
+    // Filter active borrowing transactions matching query
+    const matchedTxs = allActiveTransactions.filter(tx => 
+      (tx.book && tx.book.title && tx.book.title.toLowerCase().includes(q)) ||
+      (tx.book && tx.book.author && tx.book.author.toLowerCase().includes(q)) ||
+      (tx.book && tx.book.bookId && tx.book.bookId.toLowerCase().includes(q)) ||
+      (tx.book && tx.book.isbn && tx.book.isbn.toLowerCase().includes(q)) ||
+      (tx.user && tx.user.name && tx.user.name.toLowerCase().includes(q)) ||
+      (tx.user && tx.user.memberId && tx.user.memberId.toLowerCase().includes(q))
+    );
+
+    setSearchResults({
+      query: scanInput,
+      members: matchedMembers.slice(0, 10),
+      activeTransactions: matchedTxs.slice(0, 10)
+    });
+  }, [scanInput, allUsers, allActiveTransactions]);
+
   // Recent members from returns
   const recentMembers = (() => {
     const seen = new Set();
@@ -138,13 +199,25 @@ export default function ReturnBook() {
 
   // Fetch borrows for a member
   const fetchBorrows = async (userId) => {
+    setSearchLoading(true);
     try {
       const res = await api.get(`/library/users/${userId}/borrowing-info`);
-      setActiveBorrows(res.data.borrowedBooks || []);
-      console.log(`Loaded ${res.data.borrowedBooks?.length || 0} active borrows for user ${userId}`);
+      const borrows = res.data.borrowedBooks || [];
+      setActiveBorrows(borrows);
+      
+      // Auto-select the book if there is only 1 book checked out
+      if (borrows.length === 1) {
+        setSelectedBorrows([borrows[0]]);
+      } else {
+        setSelectedBorrows([]);
+      }
+      
+      console.log(`Loaded ${borrows.length} active borrows for user ${userId}`);
     } catch (err) {
       console.error('Fetch borrows error:', err);
       setError('Failed to load borrowing information');
+    } finally {
+      setSearchLoading(false);
     }
   };
 
@@ -152,7 +225,7 @@ export default function ReturnBook() {
     setSelectedMember(m);
     setMemberSearch(m.name);
     setShowMemberSuggestions(false);
-    setSelectedBorrow(null);
+    setSelectedBorrows([]);
     fetchBorrows(m._id);
   };
 
@@ -160,8 +233,9 @@ export default function ReturnBook() {
     setSelectedMember(null);
     setMemberSearch('');
     setActiveBorrows([]);
-    setSelectedBorrow(null);
+    setSelectedBorrows([]);
     setShowMemberSuggestions(true);
+    setSearchResults(null);
   };
 
   const clearAll = () => {
@@ -173,6 +247,16 @@ export default function ReturnBook() {
 
   const playBeep = (type = 'success') => {
     // Audio feedback disabled per user preference
+  };
+
+  const handleToggleBorrow = (borrow) => {
+    if (!borrow) return;
+    const exists = selectedBorrows.some(b => b._id === borrow._id);
+    if (exists) {
+      setSelectedBorrows(selectedBorrows.filter(b => b._id !== borrow._id));
+    } else {
+      setSelectedBorrows([...selectedBorrows, borrow]);
+    }
   };
 
   const performReturnDirectly = async (memberId, bookId, bookTitle, memberName) => {
@@ -205,10 +289,12 @@ export default function ReturnBook() {
       if (selectedMember && selectedMember._id === memberId) {
         await fetchBorrows(memberId);
       }
-      setSelectedBorrow(null);
+      setSelectedBorrows([]);
 
+      // Refresh recent returns & active transactions
       const txRes = await api.get('/library/transactions?status=returned&limit=10');
       setRecentReturns(txRes.data.transactions || []);
+      await fetchAllActiveTransactions();
       console.log('Book returned successfully!');
     } catch (err) {
       const errMsg = err.response?.data?.message || 'Failed to return book.';
@@ -221,13 +307,70 @@ export default function ReturnBook() {
   };
 
   const handleScanSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setScanError('');
     setScanSuccess('');
+    
     const query = scanInput.trim();
     if (!query) return;
 
+    setScanInput('');
+    const upperQuery = query.toUpperCase();
+    setSearchLoading(true);
+
     try {
+      // 1. Try to find local match in active transactions (exact bookId or isbn)
+      const matchingTxs = allActiveTransactions.filter(tx => 
+        (tx.book && tx.book.bookId && tx.book.bookId.toUpperCase() === upperQuery) ||
+        (tx.book && tx.book.isbn && tx.book.isbn === query)
+      );
+
+      if (matchingTxs.length > 0) {
+        setSearchResults(null);
+        if (matchingTxs.length === 1) {
+          const activeTx = matchingTxs[0];
+          const borrower = activeTx.user;
+          const book = activeTx.book;
+
+          if (autoSubmit) {
+            await performReturnDirectly(borrower._id, book._id, book.title, borrower.name);
+            setScanInput('');
+          } else {
+            if (selectedMember && selectedMember._id === borrower._id) {
+              setSelectedBorrows(prev => prev.some(b => b._id === activeTx._id) ? prev : [...prev, activeTx]);
+            } else {
+              setSelectedMember(borrower);
+              await fetchBorrows(borrower._id);
+              setSelectedBorrows([activeTx]);
+            }
+            playBeep('success');
+            setScanSuccess(`Book "${book.title}" selected (Borrower: ${borrower.name})`);
+            setScanInput('');
+          }
+        } else {
+          // Multiple active borrowers for this book (same ISBN/title)
+          playBeep('success');
+          setMultipleBorrowers(matchingTxs);
+          setScannedBook(matchingTxs[0].book);
+          setScanInput('');
+        }
+        return;
+      }
+
+      // 2. Try to find local match in active users (exact memberId)
+      const matchingUser = allUsers.find(u => u.memberId && u.memberId.toUpperCase() === upperQuery);
+      if (matchingUser) {
+        setSearchResults(null);
+        setSelectedMember(matchingUser);
+        setSelectedBorrows([]);
+        await fetchBorrows(matchingUser._id);
+        playBeep('success');
+        setScanSuccess(`Member "${matchingUser.name}" selected.`);
+        setScanInput('');
+        return;
+      }
+
+      // 3. Fallback to API lookup for non-active or unborrowed book checkouts
       const res = await api.get(`/library/quick-lookup/${query}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -252,54 +395,85 @@ export default function ReturnBook() {
             await performReturnDirectly(borrower._id, book._id, book.title, borrower.name);
             setScanInput('');
           } else {
-            setSelectedMember(borrower);
-            await fetchBorrows(borrower._id);
-            setSelectedBorrow(activeTx);
+            if (selectedMember && selectedMember._id === borrower._id) {
+              setSelectedBorrows(prev => prev.some(b => b._id === activeTx._id) ? prev : [...prev, activeTx]);
+            } else {
+              setSelectedMember(borrower);
+              await fetchBorrows(borrower._id);
+              setSelectedBorrows([activeTx]);
+            }
             playBeep('success');
             setScanSuccess(`Book "${book.title}" selected (Borrower: ${borrower.name})`);
-            setScanLog(prev => [{ text: `Book: ${book.title}`, time: new Date().toLocaleTimeString(), type: 'book' }, ...prev].slice(0, 5));
             setScanInput('');
           }
         } else {
-          // Multiple active borrowers for this book (same ISBN/title)
           playBeep('success');
           setMultipleBorrowers(activeTxs);
           setScannedBook(book);
           setScanInput('');
         }
-      } else {
-        playBeep('error');
-        setScanError(`Barcode matched a member, but this scanner only accepts books.`);
+      } else if (data.type === 'member') {
+        const member = data.member;
+        setSelectedMember(member);
+        setSelectedBorrows([]);
+        await fetchBorrows(member._id);
+        playBeep('success');
+        setScanSuccess(`Member "${member.name}" selected.`);
         setScanInput('');
+      } else {
+        const members = data.members || [];
+        const activeTxs = data.activeTransactions || [];
+
+        if (members.length === 1 && activeTxs.length === 0) {
+          const member = members[0];
+          setSelectedMember(member);
+          setSelectedBorrows([]);
+          await fetchBorrows(member._id);
+          playBeep('success');
+          setScanSuccess(`Member "${member.name}" selected.`);
+          setScanInput('');
+        } else if (activeTxs.length === 1 && members.length === 0) {
+          const activeTx = activeTxs[0];
+          const borrower = activeTx.user;
+          const book = activeTx.book;
+
+          if (autoSubmit) {
+            await performReturnDirectly(borrower._id, book._id, book.title, borrower.name);
+            setScanInput('');
+          } else {
+            if (selectedMember && selectedMember._id === borrower._id) {
+              setSelectedBorrows(prev => prev.some(b => b._id === activeTx._id) ? prev : [...prev, activeTx]);
+            } else {
+              setSelectedMember(borrower);
+              await fetchBorrows(borrower._id);
+              setSelectedBorrows([activeTx]);
+            }
+            playBeep('success');
+            setScanSuccess(`Book "${book.title}" selected (Borrower: ${borrower.name})`);
+            setScanInput('');
+          }
+        } else if (members.length === 0 && activeTxs.length === 0) {
+          playBeep('error');
+          setScanError(`No active borrowings or members found matching "${query}".`);
+          setScanInput('');
+        } else {
+          setSearchResults({
+            query,
+            members,
+            activeTransactions: activeTxs
+          });
+        }
       }
     } catch (err) {
       playBeep('error');
-      setScanError(err.response?.data?.message || `No book found matching "${query}".`);
+      setScanError(err.response?.data?.message || `No book or member found matching "${query}".`);
       setScanInput('');
+    } finally {
+      setSearchLoading(false);
     }
   };
 
-  // Auto-trigger scan processing when typing/scanning stops (hands-free processing)
-  useEffect(() => {
-    const trimmedInput = scanInput.trim();
-    if (!trimmedInput) return;
 
-    // Detect if it is likely a completed barcode scan (BKxxx or ISBN digits)
-    const isReady = 
-      (trimmedInput.toUpperCase().startsWith('BK') && trimmedInput.length >= 5) || 
-      (/^\d+$/.test(trimmedInput) && trimmedInput.length >= 10) ||
-      (trimmedInput.length >= 13);
-
-    // Use a very short 150ms delay for completed formats, or a 400ms delay for manual typing pauses
-    const delay = isReady ? 150 : 400;
-
-    const timer = setTimeout(() => {
-      const mockEvent = { preventDefault: () => {} };
-      handleScanSubmit(mockEvent);
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, [scanInput]);
 
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
@@ -347,50 +521,64 @@ export default function ReturnBook() {
     }
   }, []);
 
-  const handleReturn = async () => {
+  const handleReturnSelected = async () => {
+    if (selectedBorrows.length === 0) return;
     setError('');
     setSuccessMsg('');
-    if (!selectedMember || !selectedBorrow) return;
-
     setSaving(true);
+    
     try {
-      const res = await api.post('/library/return', {
-        userId: selectedMember._id,
-        bookId: selectedBorrow.book._id,
-        returnDate,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
+      // Submit concurrent returns for all selected checkouts
+      const results = await Promise.all(selectedBorrows.map(async (borrow) => {
+        const res = await api.post('/library/return', {
+          userId: selectedMember._id,
+          bookId: borrow.book._id,
+          returnDate,
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        return { borrow, data: res.data };
+      }));
+
+      // Calculate total accumulated overdue days for modal feedback
+      let totalOverdueDays = 0;
+      results.forEach(r => {
+        if (r.data.transaction) {
+          totalOverdueDays += r.data.transaction.overdueDays || 0;
+        }
       });
 
-      setSuccessMsg(`"${selectedBorrow.book.title}" returned successfully!`);
+      // Feedback for modal / notification
+      const firstReturned = results[0];
+      setSuccessMsg(selectedBorrows.length === 1 
+        ? `"${firstReturned.borrow.book.title}" returned successfully!`
+        : `${selectedBorrows.length} books returned successfully!`
+      );
 
-      const { transaction, user: returnedUser, book: returnedBook } = res.data;
       setReturnedDetails({
-        member: returnedUser || selectedMember,
-        book: returnedBook || selectedBorrow.book,
+        member: selectedMember,
+        book: firstReturned.borrow.book,
+        booksCount: selectedBorrows.length,
         returnDate: returnDate || new Date(),
-        overdueDays: transaction ? transaction.overdueDays : 0,
+        overdueDays: totalOverdueDays,
       });
       setShowSuccessModal(true);
 
+      // Refresh active borrowings list
       await fetchBorrows(selectedMember._id);
-      setSelectedBorrow(null);
-      setReturnDate(new Date().toISOString().split('T')[0]);
+      setSelectedBorrows([]);
+      setReturnDate(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
 
-      // Refresh recent returns
+      // Refresh recent returns sidebar & active logs
       const txRes = await api.get('/library/transactions?status=returned&limit=10');
       setRecentReturns(txRes.data.transactions || []);
-      console.log('Book returned successfully!');
+      await fetchAllActiveTransactions();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to return book.');
+      console.error('Bulk return error:', err);
+      setError(err.response?.data?.message || 'Failed to process return check-ins.');
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleReturnSelected = async () => {
-    if (!selectedBorrow) return;
-    handleReturn();
   };
 
   function gradeDisplay(u) {
@@ -405,65 +593,74 @@ export default function ReturnBook() {
 
   return (
     <DashboardLayout>
+      <style>{`
+        @keyframes slideDown {
+          from { transform: translate(-50%, -100%); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        .animate-slideDown {
+          animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
+
+      {/* Sliding Toast Notifications */}
+      {error && (
+        <div 
+          onClick={() => setError('')}
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] px-4 py-2.5 rounded-xl text-xs font-black text-white bg-[#DC2626] border border-red-700 shadow-2xl flex items-center gap-2 cursor-pointer animate-slideDown max-w-[90%] sm:max-w-md text-center select-none"
+        >
+          <span className="material-symbols-outlined text-sm flex-shrink-0">error</span>
+          <span className="truncate flex-1">{error}</span>
+          <span className="material-symbols-outlined text-[10px] text-red-200 hover:text-white transition-colors">close</span>
+        </div>
+      )}
+
+      {scanError && (
+        <div 
+          onClick={() => setScanError('')}
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] px-4 py-2.5 rounded-xl text-xs font-black text-white bg-[#DC2626] border border-red-700 shadow-2xl flex items-center gap-2 cursor-pointer animate-slideDown max-w-[90%] sm:max-w-md text-center select-none"
+        >
+          <span className="material-symbols-outlined text-sm flex-shrink-0">error</span>
+          <span className="truncate flex-1">{scanError}</span>
+          <span className="material-symbols-outlined text-[10px] text-red-200 hover:text-white transition-colors">close</span>
+        </div>
+      )}
 
 
-
-          {error && (
-            <div className="mb-3 px-4 py-2 rounded-xl text-sm flex items-center gap-2" style={{ backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>error</span>
-              {error}
-            </div>
-          )}
-          {successMsg && (
-            <div className="mb-3 px-4 py-2 rounded-xl text-sm flex items-center gap-2" style={{ backgroundColor: '#DCFCE7', color: '#166534', border: '1px solid #BBF7D0' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check_circle</span>
-              {successMsg}
-            </div>
-          )}
-
-          <div className="flex gap-4" style={{ maxWidth: '1200px' }}>
-
-            {/* ========= MAIN COLUMN ========= */}
-            <div className="flex-1 space-y-4">
-
-              {/* --- BARCODE SCANNER WORKSPACE --- */}
-              <div className="rounded-2xl p-4 shadow-sm transition-all" style={{ backgroundColor: '#fff', border: scannerFocused ? '2px solid #10B981' : '1px solid #E5E7EB' }}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${scannerFocused ? 'bg-emerald-600' : 'bg-slate-500'}`}>
-                      <span className="material-symbols-outlined text-white" style={{ fontSize: 16 }}>qr_code_scanner</span>
+      <div className="mx-auto space-y-4 flex flex-col min-h-0" style={{ maxWidth: '1280px', fontFamily: "'Inter', sans-serif" }}>
+        
+        {/* Main Grid: Columns stretch to match sidebar */}
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch min-h-0">
+          
+          {/* LEFT COLUMN: Main actions & forms (Flex-1) */}
+          <div className="flex-grow flex-1 flex flex-col space-y-4 min-h-0">
+            
+            {/* 1. Barcode scanner workspace */}
+            {!selectedMember && (
+              <div 
+                className="rounded-2xl p-5 bg-white border transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 select-none animate-fadeIn"
+                style={{ 
+                  borderColor: scannerFocused ? '#10B981' : '#E2E8F0',
+                  boxShadow: scannerFocused ? '0 10px 25px -5px rgba(16, 185, 129, 0.1), 0 8px 10px -6px rgba(16, 185, 129, 0.05)' : '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
+                }}
+              >
+                <div className="flex-grow flex flex-col gap-3 min-w-0">
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all ${
+                      scannerFocused 
+                        ? 'bg-emerald-500 text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)]' 
+                        : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      <span className="material-symbols-outlined text-xl">qr_code_scanner</span>
                     </div>
-                    <div>
-                      <h2 className="text-sm font-bold" style={{ color: '#1a1245' }}>Smart Book Barcode Return Scanner</h2>
-                      <p className="text-[10px]" style={{ color: '#94a3b8' }}>Scan a Book barcode (Book ID / ISBN) to auto-return or auto-select the borrower.</p>
+                    <div className="min-w-0">
+                      <h2 className="text-xs font-black uppercase tracking-wider text-slate-800">Search Member or Book</h2>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Scan barcode or search by book title, member name, or ID</p>
                     </div>
                   </div>
-                  
-                  {/* Auto-submit mode & Status Indicator */}
-                  <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                      <input 
-                        type="checkbox" 
-                        checked={autoSubmit} 
-                        onChange={(e) => setAutoSubmit(e.target.checked)} 
-                        className="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                        style={{ width: 14, height: 14 }}
-                      />
-                      <span className="text-[10px] font-bold" style={{ color: autoSubmit ? '#10B981' : '#6B7280' }}>⚡ Auto-Submit Return</span>
-                    </label>
 
-                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ backgroundColor: scannerFocused ? '#ECFDF5' : '#F3F4F6' }}>
-                      <span className={`w-2 h-2 rounded-full ${scannerFocused ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
-                      <span className="text-[10px] font-semibold" style={{ color: scannerFocused ? '#047857' : '#6B7280' }}>
-                        {scannerFocused ? 'Scanner Ready' : 'Click Input to Connect'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <form onSubmit={handleScanSubmit} className="w-full">
-                  <div className="relative w-full">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: scannerFocused ? '#10B981' : '#9CA3AF', fontSize: 20 }}>barcode</span>
+                  <form onSubmit={handleScanSubmit} className="relative flex-grow min-w-0">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" style={{ fontSize: 20 }}>barcode</span>
                     <input
                       ref={scannerRef}
                       type="text"
@@ -474,231 +671,237 @@ export default function ReturnBook() {
                         e.target.select();
                       }}
                       onBlur={() => setScannerFocused(false)}
-                      onClick={(e) => e.target.select()}
-                      placeholder="Scan Book Barcode (BKXXX / ISBN)..."
-                      className="w-full py-2.5 pl-10 pr-3 text-sm rounded-xl outline-none transition-all font-mono font-bold"
-                      style={{ 
-                        backgroundColor: '#F9FAFB', 
-                        border: scannerFocused ? '1px solid #10B981' : '1px solid #E5E7EB',
-                        color: '#1a1245'
-                      }}
+                      placeholder="Scan barcode or type name, title, member ID..."
+                      className="w-full py-2.5 pl-10 pr-4 text-xs border border-slate-200 outline-none rounded-xl bg-slate-50/20 focus:bg-white focus:border-[#10B981] focus:shadow-[0_2px_8px_rgba(16,185,129,0.05)] transition-all font-medium text-slate-800 placeholder-slate-400"
                     />
-                  </div>
-                </form>
+                  </form>
+                </div>
 
-                {/* Feedback Messages */}
-                {scanError && (
-                  <div className="mt-2.5 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5" style={{ backgroundColor: '#FEF2F2', color: '#DC2626' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>error</span>
-                    {scanError}
+                <div className="flex flex-row md:flex-col items-center md:items-end gap-3 justify-between md:justify-center flex-shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-5">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border select-none transition-all" style={{ 
+                    backgroundColor: scannerFocused ? '#E6FBF3' : '#F8FAFC', 
+                    borderColor: scannerFocused ? '#A7F3D0' : '#E2E8F0' 
+                  }}>
+                    <span className="relative flex h-2 w-2">
+                      {scannerFocused && (
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      )}
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${scannerFocused ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                    </span>
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500">
+                      {scannerFocused ? 'Scanner Ready' : 'Click Input'}
+                    </span>
                   </div>
-                )}
-                {scanSuccess && (
-                  <div className="mt-2.5 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5" style={{ backgroundColor: '#ECFDF5', color: '#047857' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>check_circle</span>
-                    {scanSuccess}
-                  </div>
-                )}
 
-
-                {/* Scanned History Row */}
-                {scanLog.length > 0 && (
-                  <div className="mt-3 pt-2.5 border-t border-dashed border-slate-200">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Last scanned in this session</p>
-                    <div className="flex gap-1.5 overflow-x-auto py-1">
-                      {scanLog.map((log, index) => (
-                        <div key={index} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] whitespace-nowrap"
-                          style={{ 
-                            backgroundColor: log.type === 'member' ? '#E0E7FF' : log.type === 'success' ? '#D1FAE5' : '#FFFBEB',
-                            color: log.type === 'member' ? '#4338CA' : log.type === 'success' ? '#065F46' : '#B45309',
-                            border: log.type === 'member' ? '1px solid #C7D2FE' : log.type === 'success' ? '1px solid #A7F3D0' : '1px solid #FDE68A'
-                          }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: 12 }}>
-                            {log.type === 'member' ? 'person' : log.type === 'success' ? 'assignment_turned_in' : 'menu_book'}
-                          </span>
-                          <span className="font-semibold">{log.text}</span>
-                          <span className="text-[8px] opacity-60">@{log.time}</span>
-                        </div>
-                      ))}
+                  <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setAutoSubmit(!autoSubmit)}>
+                    <div className={`relative w-8 h-4 rounded-full transition-colors duration-200 ${autoSubmit ? 'bg-[#10B981]' : 'bg-slate-200'}`}>
+                      <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-200 ${autoSubmit ? 'translate-x-4' : ''}`} />
                     </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider transition-colors duration-200" style={{ color: autoSubmit ? '#10B981' : '#6B7280' }}>
+                      ⚡ Auto-Submit Return
+                    </span>
                   </div>
-                )}
+                </div>
               </div>
+            )}
 
-              {/* Member Search + Borrowings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                {/* --- MEMBER SELECTION --- */}
-                <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: '#fff' }}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#10B981' }}>
-                      <span className="material-symbols-outlined text-white" style={{ fontSize: 16 }}>assignment_return</span>
+            {/* 2. Selected Borrower Details Card (Horizontal, displayed if selected) */}
+            {selectedMember && (
+              <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fadeIn">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-[#10B981] flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+                    <span className="material-symbols-outlined text-2xl">person</span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-extrabold text-slate-800">{selectedMember.name}</h3>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-200">Active</span>
                     </div>
-                    <h2 className="text-sm font-bold" style={{ color: '#1a1245' }}>
-                      {memberSearch.length >= 1 ? `${memberResults.length} results` : 'Select Member'}
-                    </h2>
-                    {selectedMember && (
-                      <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#DCFCE7', color: '#166534' }}>Selected</span>
-                    )}
-                  </div>
-
-                  {/* Filters row */}
-                  <div className="flex gap-2 mb-3">
-                    <select
-                      value={memberRoleFilter}
-                      onChange={(e) => { setMemberRoleFilter(e.target.value); setMemberGradeFilter('all'); setMemberClassFilter('all'); }}
-                      className="py-2 px-2 text-xs rounded-lg outline-none cursor-pointer"
-                      style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', color: '#374151' }}
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="student">Students</option>
-                      <option value="teacher">Teachers</option>
-                    </select>
-                    {(memberRoleFilter === 'all' || memberRoleFilter === 'student') && (
-                      <select
-                        value={memberGradeFilter}
-                        onChange={(e) => { setMemberGradeFilter(e.target.value); setMemberClassFilter('all'); }}
-                        className="flex-1 py-2 px-2 text-xs rounded-lg outline-none cursor-pointer"
-                        style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', color: '#374151' }}
-                      >
-                        <option value="all">All Grades</option>
-                        {GRADES.filter(g => availableGrades.includes(g)).map(g => (
-                          <option key={g} value={g}>{g}</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-
-                  {/* Class filter buttons */}
-                  {memberGradeFilter !== 'all' && memberGradeFilter !== 'Grade 12' && memberGradeFilter !== 'Grade 13' && (
-                    <div className="flex gap-1 mb-3 flex-wrap">
-                      <button
-                        onClick={() => setMemberClassFilter('all')}
-                        className="px-2 py-1 text-[10px] rounded-md font-semibold transition-all"
-                        style={{
-                          backgroundColor: memberClassFilter === 'all' ? '#10B981' : '#F3F4F6',
-                          color: memberClassFilter === 'all' ? '#fff' : '#6B7280',
-                        }}
-                      >All</button>
-                      {CLASS_SECTIONS.filter(c => availableClasses.includes(c)).map(c => (
-                        <button
-                          key={c}
-                          onClick={() => setMemberClassFilter(c === memberClassFilter ? 'all' : c)}
-                          className="px-2 py-1 text-[10px] rounded-md font-semibold transition-all"
-                          style={{
-                            backgroundColor: memberClassFilter === c ? '#10B981' : '#F3F4F6',
-                            color: memberClassFilter === c ? '#fff' : '#6B7280',
-                          }}
-                        >{c}</button>
-                      ))}
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-655 uppercase">
+                        ID: {selectedMember.memberId || '—'}
+                      </span>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 uppercase">
+                        {selectedMember.role}
+                      </span>
+                      {selectedMember.role === 'student' && selectedMember.grade && (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-655 uppercase">
+                          Grade {gradeDisplay(selectedMember)}
+                        </span>
+                      )}
                     </div>
-                  )}
-
-                  {/* Search */}
-                  <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#9CA3AF', fontSize: 20 }}>person_search</span>
-                    <input
-                      type="text"
-                      value={memberSearch}
-                      onChange={(e) => setMemberSearch(e.target.value)}
-                      onFocus={() => setShowMemberSuggestions(memberSearch.length === 0)}
-                      placeholder="Type name, email, or member ID..."
-                      className="w-full py-2 pl-10 pr-3 text-sm rounded-xl outline-none"
-                      style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}
-                    />
                   </div>
+                </div>
 
-                  {/* Suggestions (when idle) - Removed Recent Returns as requested */}
+                {/* Search another member */}
+                <button 
+                  onClick={clearMember}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-white border border-[#10B981] text-[#10B981] hover:bg-emerald-50/50 transition-all hover:shadow-sm active:scale-95 flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">person_search</span>
+                  Search another member or book
+                </button>
+              </div>
+            )}
 
-                  {/* Results (when searching) */}
-                  {memberSearch.length >= 1 && (
-                    <div className="mt-2 rounded-xl overflow-y-auto" style={{ maxHeight: '180px', backgroundColor: '#FAFBFC', border: '1px solid #F3F4F6' }}>
-                      {memberResults.length === 0 ? (
-                        <div className="p-6 text-center">
-                          <span className="material-symbols-outlined mx-auto block mb-1" style={{ color: '#D1D5DB', fontSize: 28 }}>person_off</span>
-                          <p className="text-xs" style={{ color: '#9CA3AF' }}>No members found</p>
-                        </div>
-                      ) : (
-                        memberResults.slice(0, 15).map(u => (
+            {/* 3. Grid for search / workspace / confirm details */}
+            {!selectedMember ? (
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col h-[460px] animate-fadeIn relative justify-center">
+                {searchLoading ? (
+                  <div className="flex flex-col items-center justify-center flex-grow select-none animate-fadeIn">
+                    <span className="material-symbols-outlined text-4xl text-[#10B981] animate-spin">sync</span>
+                    <p className="text-xs text-slate-400 mt-2 font-bold uppercase tracking-wider animate-pulse">Loading search results...</p>
+                  </div>
+                ) : (
+                  /* Side-by-side columns */
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow min-h-0">
+                  
+                  {/* Left Column: Members List */}
+                  <div className="flex flex-col min-h-0">
+                    <div className="flex items-center gap-2 mb-3 select-none flex-shrink-0">
+                      <span className="material-symbols-outlined text-[#10B981] text-lg font-black">group</span>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                        {searchResults ? `Matching Members (${searchResults.members.length})` : 'Members Search'}
+                      </h3>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                      {searchResults ? (
+                        searchResults.members.map(member => (
                           <button
-                            key={u._id}
-                            onClick={() => handleSelectMember(u)}
-                            className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-green-50 transition-colors border-b"
-                            style={{ borderColor: '#F3F4F6' }}
+                            key={member._id}
+                            type="button"
+                            onClick={async () => {
+                              setSelectedMember(member);
+                              setSelectedBorrows([]);
+                              await fetchBorrows(member._id);
+                              setSearchResults(null);
+                              setScanInput('');
+                            }}
+                            className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/30 hover:border-emerald-450 hover:bg-emerald-50/20 transition-all text-left cursor-pointer animate-fadeIn"
                           >
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#D1FAE5' }}>
-                              <span className="material-symbols-outlined" style={{ fontSize: 16, color: '#10B981' }}>person</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold" style={{ color: '#1a1245' }}>{u.name}</div>
-                              <div className="text-[11px]" style={{ color: '#9CA3AF' }}>
-                                {u.memberId || '—'} \u2022 {gradeDisplay(u)}
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-slate-800 truncate">{member.name}</div>
+                              <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                ID: {member.memberId} {member.grade ? `• Gr.${member.grade.replace('Grade ', '')}-${member.class || ''}` : ''}
                               </div>
                             </div>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
-                              u.role === 'student' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-700'
+                            <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wide ${
+                              member.role === 'student' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-700'
                             }`}>
-                              {u.role === 'student' ? 'St' : 'Tc'}
+                              {member.role === 'student' ? 'Student' : 'Teacher'}
                             </span>
                           </button>
                         ))
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-center py-12 text-slate-350 select-none animate-fadeIn">
+                          <span className="material-symbols-outlined text-4xl mb-2 text-[#10B981] animate-pulse">person_search</span>
+                          <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Search Members</h4>
+                          <p className="text-[10px] text-slate-400 max-w-[200px] leading-relaxed">
+                            Type a member's name or ID in the search bar above to list profiles.
+                          </p>
+                        </div>
+                      )}
+                      {searchResults && searchResults.members.length === 0 && (
+                        <p className="text-xs text-slate-400 italic text-center py-8">No members found</p>
                       )}
                     </div>
-                  )}
+                  </div>
 
-                  {/* Selected card */}
-                  {selectedMember && (
-                    <div className="mt-3 flex items-center gap-3 p-3 rounded-xl" style={{ border: '2px solid #D1FAE5', backgroundColor: '#ECFDF5' }}>
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#10B981' }}>
-                        <span className="material-symbols-outlined text-white" style={{ fontSize: 22 }}>person</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold truncate" style={{ color: '#1a1245' }}>{selectedMember.name}</div>
-                        <div className="text-xs" style={{ color: '#6B7280' }}>
-                          <span className="font-mono font-bold text-[10px]">{selectedMember.memberId || '—'}</span>
-                          {' '}\u2022 {gradeDisplay(selectedMember)}
+                  {/* Right Column: Book returns or instructions */}
+                  <div className="flex flex-col min-h-0 border-l border-slate-100 pl-6">
+                    <div className="flex items-center gap-2 mb-3 select-none flex-shrink-0">
+                      <span className="material-symbols-outlined text-[#F59E0B] text-base font-bold">book</span>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                        {searchResults ? `Matching Borrowed Books (${searchResults.activeTransactions.length})` : 'Active Checkout Returns'}
+                      </h3>
+                    </div>
+
+                    <div className="flex-grow overflow-y-auto space-y-2 pr-1 min-h-0">
+                      {searchResults ? (
+                        searchResults.activeTransactions.map(tx => {
+                          const borrower = tx.user || {};
+                          const book = tx.book || {};
+                          const isOverdue = new Date(tx.dueDate) < new Date();
+                          return (
+                            <button
+                              key={tx._id}
+                              type="button"
+                              onClick={async () => {
+                                if (autoSubmit) {
+                                  setSearchResults(null);
+                                  await performReturnDirectly(borrower._id, book._id, book.title, borrower.name);
+                                  setScanInput('');
+                                } else {
+                                  setSelectedMember(borrower);
+                                  await fetchBorrows(borrower._id);
+                                  setSelectedBorrows([tx]);
+                                  setSearchResults(null);
+                                  setScanInput('');
+                                }
+                              }}
+                              className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/30 hover:border-emerald-450 hover:bg-emerald-50/20 transition-all text-left cursor-pointer"
+                            >
+                              <div className="min-w-0 flex-1 mr-2">
+                                <div className="text-xs font-bold text-slate-800 truncate">"{book.title}"</div>
+                                <div className="text-[10px] text-slate-450 mt-0.5 truncate">
+                                  Borrower: {borrower.name}
+                                </div>
+                              </div>
+                              <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wide ${isOverdue ? 'text-red-655 bg-red-55' : 'text-emerald-705 bg-emerald-50'}`}>
+                                {isOverdue ? 'Overdue' : 'Active'}
+                              </span>
+                            </button>
+                          )
+                        })
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-center py-12 text-slate-350 select-none">
+                          <span className="material-symbols-outlined text-4xl mb-2 text-amber-500/80 animate-pulse">qr_code_scanner</span>
+                          <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Scan or Search to Start</h4>
+                          <p className="text-[10px] text-slate-400 max-w-[200px] leading-relaxed">
+                            Scan a book barcode or type search terms to filter matching borrowers or return details.
+                          </p>
                         </div>
-                      </div>
-                      <button onClick={clearMember} className="p-1 rounded-lg hover:bg-red-50 flex-shrink-0">
-                        <span className="material-symbols-outlined text-red-500" style={{ fontSize: 20 }}>close</span>
-                      </button>
+                      )}
+                      {searchResults && searchResults.activeTransactions.length === 0 && (
+                        <p className="text-xs text-slate-400 italic text-center py-8">No matching active borrowings</p>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                {/* --- ACTIVE BORROWINGS --- */}
-                <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: '#fff' }}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#F59E0B' }}>
-                      <span className="material-symbols-outlined text-white" style={{ fontSize: 16 }}>receipt_long</span>
+                </div>
+              )}
+            </div>
+            ) : (
+              /* If member is selected, show: Active Borrowings (left) & Confirm Return (right) side-by-side */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Active Borrowings Card */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between h-[460px]">
+                  <div className="flex items-center justify-between mb-3 select-none flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-[#F59E0B]">
+                        <span className="material-symbols-outlined text-white text-base">receipt_long</span>
+                      </div>
+                      <h2 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                        {multipleBorrowers.length > 0 && !selectedMember
+                          ? `Multiple Borrowers (${multipleBorrowers.length})`
+                          : `${activeBorrows.length} Active Book(s)`}
+                      </h2>
                     </div>
-                    <h2 className="text-sm font-bold" style={{ color: '#1a1245' }}>
-                      {multipleBorrowers.length > 0 && !selectedMember
-                        ? `Multiple Borrowers (${multipleBorrowers.length})`
-                        : selectedMember ? `${activeBorrows.length} book(s)` : 'Active Borrowings'}
-                    </h2>
                   </div>
 
                   {multipleBorrowers.length > 0 && !selectedMember ? (
-                    <div className="space-y-2 overflow-y-auto pr-1 animate-fadeIn" style={{ maxHeight: '340px' }}>
-                      <style>{`
-                        @keyframes fadeIn {
-                          from { opacity: 0; transform: translateY(-4px); }
-                          to { opacity: 1; transform: translateY(0); }
-                        }
-                        .animate-fadeIn {
-                          animation: fadeIn 0.18s ease-out forwards;
-                        }
-                      `}</style>
-                      <div className="p-2.5 rounded-xl border border-dashed border-amber-200 bg-amber-50/20 text-xs mb-2 flex justify-between items-center">
-                        <div>
-                          <span className="font-bold text-amber-800">Scanned: "{scannedBook.title}"</span>
-                          <p className="text-[10px] text-amber-700 mt-0.5 font-medium">Select borrower returning this copy:</p>
+                    <div className="flex-grow flex-1 min-h-0 overflow-y-auto pr-1">
+                      <div className="p-2.5 rounded-xl border border-dashed border-amber-250 bg-amber-50/20 text-xs flex justify-between items-center select-none mb-2">
+                        <div className="min-w-0 mr-2">
+                          <span className="font-bold text-amber-800 truncate block">Scanned: "{scannedBook.title}"</span>
+                          <p className="text-[10px] text-amber-700 mt-0.5 font-semibold">Select borrower returning this copy:</p>
                         </div>
                         <button 
                           type="button" 
                           onClick={() => { setMultipleBorrowers([]); setScannedBook(null); }}
-                          className="text-[10px] text-red-500 font-bold hover:underline"
+                          className="text-[10px] text-red-500 font-extrabold hover:underline flex-shrink-0 cursor-pointer"
                         >
                           Clear
                         </button>
@@ -720,23 +923,23 @@ export default function ReturnBook() {
                                 } else {
                                   setSelectedMember(borrower);
                                   await fetchBorrows(borrower._id);
-                                  setSelectedBorrow(tx);
+                                  setSelectedBorrows([tx]);
                                 }
                               }}
-                              className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-amber-400 hover:bg-amber-50/30 transition-all text-left animate-fadeIn"
-                              style={{ backgroundColor: '#F9FAFB' }}
+                              className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-[#10B981] hover:bg-slate-50/50 transition-all text-left animate-fadeIn cursor-pointer"
+                              style={{ backgroundColor: '#FAFCFD' }}
                             >
                               <div className="min-w-0">
-                                <div className="text-xs font-bold text-slate-800 truncate">{borrower.name}</div>
-                                <div className="text-[9px] text-slate-400 font-mono mt-0.5">
+                                <div className="text-xs font-black text-slate-800 truncate">{borrower.name}</div>
+                                <div className="text-[10px] text-slate-455 mt-0.5 font-bold">
                                   ID: {borrower.memberId} {borrower.grade ? `• Gr.${borrower.grade.replace('Grade ', '')}-${borrower.class || ''}` : ''}
                                 </div>
                               </div>
-                              <div className="text-right flex flex-col items-end flex-shrink-0 ml-2">
-                                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${isOverdue ? 'text-red-600 bg-red-100' : 'text-green-700 bg-green-100'}`}>
+                              <div className="text-right flex flex-col items-end flex-shrink-0 ml-2 select-none">
+                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider ${isOverdue ? 'text-red-655 bg-red-55' : 'text-green-700 bg-green-55'}`}>
                                   {isOverdue ? 'Overdue' : 'Active'}
                                 </span>
-                                <span className="text-[9px] text-slate-400 mt-1">Due: {new Date(tx.dueDate).toLocaleDateString()}</span>
+                                <span className="text-[9px] text-slate-455 mt-1 font-semibold">Due: {new Date(tx.dueDate).toLocaleDateString()}</span>
                               </div>
                             </button>
                           );
@@ -744,69 +947,135 @@ export default function ReturnBook() {
                       </div>
                     </div>
                   ) : (
-                    <ActiveBorrowsList
-                      borrows={activeBorrows}
-                      selectedMember={selectedMember}
-                      selectedBorrow={selectedBorrow}
-                      onSelect={setSelectedBorrow}
-                      maxHeight="340px"
-                    />
+                    <div className="flex-grow flex-1 min-h-0 flex flex-col justify-between select-none">
+                      <ActiveBorrowsList
+                        borrows={activeBorrows}
+                        selectedMember={selectedMember}
+                        selectedBorrows={selectedBorrows}
+                        onSelect={handleToggleBorrow}
+                        maxHeight="380px"
+                      />
+                    </div>
                   )}
                 </div>
-              </div>
 
-              {/* --- CONFIRM RETURN --- */}
-              <div className="rounded-2xl p-4 shadow-sm" style={{ backgroundColor: '#fff' }}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#10B981' }}>
-                    <span className="material-symbols-outlined text-white" style={{ fontSize: 16 }}>assignment_turned_in</span>
-                  </div>
-                  <h2 className="text-sm font-bold" style={{ color: '#1a1245' }}>Confirm Return</h2>
-                </div>
-
-                {selectedBorrow ? (
-                  <>
-                    {/* Selected book details */}
-                    <div className="mb-3 p-3 rounded-xl" style={{ backgroundColor: '#FAFBFC', border: '1px solid #E5E7EB' }}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#1a1245' }}>
-                          <span className="material-symbols-outlined text-white" style={{ fontSize: 24 }}>menu_book</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-bold truncate" style={{ color: '#1a1245' }}>{selectedBorrow.book?.title}</div>
-                          <div className="text-xs" style={{ color: '#6B7280' }}>
-                            {selectedBorrow.book?.author} \u2022 ID: {selectedBorrow.book?.bookId || '—'}
+                {/* Confirm Return Card */}
+                {selectedBorrows.length > 0 ? (
+                  <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between h-[460px] animate-fadeIn">
+                    <div className="flex-grow flex flex-col min-h-0 justify-start">
+                      
+                      <div className="flex items-center justify-between mb-3 select-none flex-shrink-0">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-500">
+                            <span className="material-symbols-outlined text-white text-base">assignment_turned_in</span>
                           </div>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="text-[11px]" style={{ color: '#9CA3AF' }}>
-                              Borrowed: <span className="font-semibold" style={{ color: '#374151' }}>{new Date(selectedBorrow.borrowDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</span>
-                            </span>
-                            <span className="text-[11px]" style={{ color: '#9CA3AF' }}>
-                              Due: <span className={`font-semibold ${new Date(selectedBorrow.dueDate) < new Date() ? 'text-red-600' : 'text-green-600'}`}>{new Date(selectedBorrow.dueDate).toLocaleDateString()}</span>
-                            </span>
-                          </div>
+                          <h2 className="text-xs font-black uppercase tracking-wider text-slate-700">Confirm Return</h2>
                         </div>
-                        {new Date(selectedBorrow.dueDate) < new Date() && (
-                          <span className="text-[10px] px-2 py-1 rounded-full font-bold flex-shrink-0" style={{ backgroundColor: '#FEF2F2', color: '#DC2626' }}>
-                            OVERDUE {Math.floor((Date.now() - new Date(selectedBorrow.dueDate)) / 86400000)}d
-                          </span>
-                        )}
+                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-55 text-emerald-700 border border-emerald-100">
+                          {selectedBorrows.length} Book{selectedBorrows.length > 1 ? 's' : ''} Selected
+                        </span>
                       </div>
 
-                      {/* Overdue Warnings format */}
-                      {(() => {
-                        const diffTime = new Date(returnDate) - new Date(selectedBorrow.dueDate);
-                        const days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-                        const fine = days * 10;
-                        if (days > 0) {
+                      {/* Scrollable list or Single-Book Preview details */}
+                      {selectedBorrows.length === 1 ? (
+                        /* Single Selected Book: Beautiful top-big-cover details-bottom layout */
+                        (() => {
+                          const borrow = selectedBorrows[0];
+                          const book = borrow.book || {};
+                          const diffTime = new Date(returnDate) - new Date(borrow.dueDate);
+                          const days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                          const fine = days * 10;
                           return (
-                            <div className="mt-3 p-3 rounded-xl border flex items-start gap-2.5 bg-red-50/50 border-red-200 animate-fadeIn">
-                              <span className="material-symbols-outlined text-red-600 mt-0.5" style={{ fontSize: 18 }}>warning</span>
-                              <div className="text-xs">
-                                <p className="font-extrabold text-red-700">Overdue Return Warning</p>
-                                <p className="text-red-600 mt-0.5 font-medium">
-                                  This return is <span className="font-bold">{days} days overdue</span>. 
-                                  An automated overdue fine of <span className="font-extrabold text-red-700 bg-red-100/50 px-1.5 py-0.5 rounded">LKR {fine}.00</span> will be generated upon return.
+                            <div className="flex flex-col items-center flex-grow justify-center min-h-0 select-none animate-fadeIn my-2">
+                              {/* Big cover shadow card */}
+                              <div className="w-32 h-44 rounded-2xl bg-amber-50 border border-slate-250 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-lg mb-4">
+                                {book.coverImageUrl ? (
+                                  <img src={book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="material-symbols-outlined text-amber-500 text-4xl">menu_book</span>
+                                )}
+                              </div>
+                              
+                              {/* Details below cover */}
+                              <div className="text-center w-full px-4">
+                                <h4 className="text-sm font-black text-slate-855 line-clamp-2">{book.title}</h4>
+                                <p className="text-[10px] text-slate-400 mt-1 truncate">{book.author || 'Unknown Author'}</p>
+                                <div className="text-[10px] font-mono font-bold text-slate-500 mt-1">Book ID: {book.bookId || '—'}</div>
+                                
+                                <div className="flex justify-center gap-2 mt-2 text-[9.5px] font-semibold text-slate-455">
+                                  <span>Borrowed: <span className="font-bold text-slate-600">{new Date(borrow.borrowDate).toLocaleDateString()}</span></span>
+                                  <span>•</span>
+                                  <span>Due: <span className={`font-bold ${days > 0 ? 'text-red-500' : 'text-emerald-600'}`}>{new Date(borrow.dueDate).toLocaleDateString()}</span></span>
+                                </div>
+
+                                {days > 0 && (
+                                  <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-50 border border-red-105 rounded-lg text-[9px] text-red-655 font-bold animate-fadeIn">
+                                    <span className="material-symbols-outlined text-[11px] text-red-600">warning</span>
+                                    <span>{days}d Overdue (LKR {fine}.00 fine)</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        /* Multiple Selected Books: Scrollable list of return checkouts */
+                        <div className="flex-grow overflow-y-auto space-y-1.5 pr-1 my-1">
+                          {selectedBorrows.map((borrow) => {
+                            const isOverdue = new Date(returnDate) > new Date(borrow.dueDate);
+                            const diffTime = new Date(returnDate) - new Date(borrow.dueDate);
+                            const days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                            const book = borrow.book || {};
+                            return (
+                              <div key={borrow._id} className="flex gap-3 items-center p-2 rounded-xl bg-slate-50/50 border border-slate-100 shadow-xs relative">
+                                <div className="w-10 h-12 rounded bg-amber-50 border border-amber-205 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                  {book.coverImageUrl ? (
+                                    <img src={book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="material-symbols-outlined text-amber-500 text-lg">menu_book</span>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-xs font-black text-slate-800 line-clamp-1">{book.title}</h4>
+                                  <p className="text-[9px] text-slate-400 mt-0.5 truncate">ID: {book.bookId || '—'} • Due: {new Date(borrow.dueDate).toLocaleDateString()}</p>
+                                  {days > 0 && (
+                                    <span className="text-[8px] font-extrabold text-red-655 bg-red-50 border border-red-100 px-1 py-0.2 rounded mt-0.5 inline-block">
+                                      LKR {days * 10}.00 Fine ({days}d late)
+                                    </span>
+                                  )}
+                                </div>
+                                <button 
+                                  type="button"
+                                  onClick={() => handleToggleBorrow(borrow)}
+                                  className="text-slate-400 hover:text-red-500 p-1 flex-shrink-0 transition-colors cursor-pointer"
+                                >
+                                  <span className="material-symbols-outlined text-sm">close</span>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Cumulative Warning banner if fines exist and multiple books are selected */}
+                      {selectedBorrows.length > 1 && (() => {
+                        let totalFine = 0;
+                        selectedBorrows.forEach(b => {
+                          const diffTime = new Date(returnDate) - new Date(b.dueDate);
+                          const days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                          if (days > 0) {
+                            totalFine += days * 10;
+                          }
+                        });
+                        
+                        if (totalFine > 0) {
+                          return (
+                            <div className="mt-2 p-2 rounded-xl border flex items-start gap-1.5 bg-red-50/60 border-red-150 animate-fadeIn flex-shrink-0 select-none">
+                              <span className="material-symbols-outlined text-red-655 text-sm flex-shrink-0 mt-0.5">warning</span>
+                              <div className="text-[10px]">
+                                <p className="font-extrabold text-red-750 uppercase tracking-wider">Overdue Returns Fine Alert</p>
+                                <p className="text-red-655 mt-0.5 leading-snug font-semibold">
+                                  Accumulated Fine: <span className="font-black text-red-700 bg-red-100/50 px-1.5 py-0.5 rounded">LKR {totalFine}.00</span>
                                 </p>
                               </div>
                             </div>
@@ -816,202 +1085,225 @@ export default function ReturnBook() {
                       })()}
                     </div>
 
-                    {/* Return controls */}
-                    <div className="flex gap-3 items-end">
-                      <div className="flex-1">
-                        <label className="block text-[10px] font-semibold mb-1 uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Return Date</label>
-                        <input type="date" value={returnDate} onChange={(e) => setReturnDate(e.target.value)}
-                          className="w-full px-3 py-2 text-sm rounded-xl outline-none"
-                          style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-col gap-2.5 flex-shrink-0">
+                      <div className="flex items-center justify-between select-none">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Return Date:</span>
+                        <input 
+                          type="date" 
+                          value={returnDate} 
+                          onChange={(e) => setReturnDate(e.target.value)}
+                          className="px-2.5 py-1 text-xs border border-slate-200 outline-none rounded-lg bg-white focus:border-emerald-500 font-medium max-w-[160px]"
                         />
                       </div>
-                      <div className="flex gap-2 flex-shrink-0">
-                        <button onClick={handleReturnSelected} disabled={saving}
-                          className="py-2 px-6 rounded-xl text-sm font-bold flex items-center gap-2 transition-all text-white"
-                          style={{
-                            backgroundColor: !saving ? '#1a1245' : '#D1D5DB',
-                            boxShadow: !saving ? '0 4px 14px rgba(26,18,69,0.3)' : 'none',
-                            cursor: saving ? 'not-allowed' : 'pointer',
-                          }}
+
+                      <div className="flex gap-2 w-full select-none">
+                        <button 
+                          onClick={handleReturnSelected} 
+                          disabled={saving}
+                          className="flex-grow py-2 rounded-xl font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-emerald-900/10 cursor-pointer"
+                          style={{ backgroundColor: !saving ? '#059669' : '#CBD5E1' }}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>assignment_returned</span>
-                          {saving ? 'Processing...' : 'Confirm Return'}
+                          <span className="material-symbols-outlined text-sm">assignment_returned</span>
+                          {saving ? 'Processing...' : `Confirm Return (${selectedBorrows.length} Book${selectedBorrows.length > 1 ? 's' : ''})`}
                         </button>
-                        <button onClick={() => setSelectedBorrow(null)}
-                          className="py-2 px-4 rounded-xl text-sm font-bold transition-all"
-                          style={{ backgroundColor: '#F3F4F6', color: '#6B7280' }}
+                        <button 
+                          onClick={() => setSelectedBorrows([])}
+                          className="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all font-bold text-xs text-slate-655 cursor-pointer"
                         >
-                          Cancel
+                          Clear
                         </button>
                       </div>
                     </div>
-                  </>
+
+                  </div>
                 ) : selectedMember && activeBorrows.length > 0 ? (
-                  <div className="text-center py-4">
-                    <span className="material-symbols-outlined mx-auto block mb-1" style={{ color: '#9CA3AF', fontSize: 28 }}>menu_book</span>
-                    <p className="text-xs" style={{ color: '#9CA3AF' }}>Click a book above to return it</p>
+                  <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center h-[460px] text-slate-350 select-none animate-fadeIn">
+                    <span className="material-symbols-outlined text-4xl mb-1.5">arrow_circle_down</span>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Select Book(s) to Return</p>
+                    <p className="text-[9px] mt-0.5 max-w-[200px]">Click active book cards on the left or scan barcodes to queue returns</p>
                   </div>
                 ) : (
-                  <div className="text-center py-4">
-                    <span className="material-symbols-outlined mx-auto block mb-1" style={{ color: '#D1D5DB', fontSize: 28 }}>assignment_return</span>
-                    <p className="text-xs" style={{ color: '#D1D5DB' }}>Select a member and book to return</p>
+                  <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center h-[460px] text-slate-300 select-none">
+                    <span className="material-symbols-outlined text-4xl mb-1.5">assignment_returned</span>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Return Checkout Verification</p>
+                    <p className="text-[9px] mt-0.5 max-w-[200px]">Select a library member first to load their current borrowing transactions</p>
                   </div>
                 )}
+
               </div>
-            </div>
+            )}
 
-            {/* ========= RIGHT SIDEBAR ========= */}
-            <div className="w-72 space-y-4 flex-shrink-0">
-
-              {/* Quick return summary */}
-              {selectedMember && (
-                <div className="rounded-2xl p-4" style={{ backgroundColor: '#fff', border: '1px solid #E5E7EB' }}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#10B981' }}>person</span>
-                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>Member Info</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#D1FAE5' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#10B981' }}>person</span>
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-bold truncate" style={{ color: '#1a1245' }}>{selectedMember.name}</div>
-                      <div className="text-[11px]" style={{ color: '#9CA3AF' }}>
-                        {selectedMember.memberId || '—'} \u2022 {gradeDisplay(selectedMember)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 pt-2" style={{ borderTop: '1px solid #F3F4F6' }}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px]" style={{ color: '#9CA3AF' }}>Active books</span>
-                      <span className="text-xs font-bold" style={{ color: activeBorrows.length > 3 ? '#DC2626' : '#1a1245' }}>{activeBorrows.length}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Recent Returns */}
-              <div className="rounded-2xl p-4" style={{ backgroundColor: '#fff', border: '1px solid #E5E7EB' }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#10B981' }}>assignment_returned</span>
-                  <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>Recent Returns</span>
-                </div>
-
-                <RecentTransactionsList
-                  transactions={recentReturns}
-                  type="returns"
-                  maxHeight="256px"
-                />
-              </div>
-            </div>
           </div>
 
-          {/* Success Modal Overlay */}
-          {showSuccessModal && returnedDetails && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn" style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(8px)' }}>
-              <style>{`
-                @keyframes fadeIn {
-                  from { opacity: 0; }
-                  to { opacity: 1; }
-                }
-                @keyframes scaleUp {
-                  from { transform: scale(0.95); opacity: 0; }
-                  to { transform: scale(1); opacity: 1; }
-                }
-                .animate-fadeIn {
-                  animation: fadeIn 0.2s ease-out forwards;
-                }
-                .animate-scaleUp {
-                  animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-                }
-              `}</style>
-              <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl transition-all border border-slate-100 flex flex-col items-center text-center relative overflow-hidden animate-scaleUp">
-                {/* Elegant top background shape */}
-                <div className="absolute top-0 left-0 right-0 h-2 bg-emerald-500" />
+          {/* RIGHT COLUMN: Sidebar (w-full lg:w-64) */}
+          <div className="w-full lg:w-64 flex-shrink-0 flex flex-col space-y-4 select-none">
+            
+            {/* Borrower metadata card */}
+            {selectedMember && (
+              <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm animate-fadeIn select-none">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="material-symbols-outlined text-[#10B981] text-lg font-black">person</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Borrower Info</span>
+                </div>
                 
-                {/* Checkmark icon */}
-                <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4 mt-2 animate-bounce">
-                  <span className="material-symbols-outlined text-4xl font-bold">assignment_turned_in</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-emerald-50 text-[#10B981]">
+                    <span className="material-symbols-outlined text-xl">person</span>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-black text-slate-800 truncate">{selectedMember.name}</div>
+                    <div className="text-[10px] text-slate-450 mt-0.5 font-bold">
+                      ID: {selectedMember.memberId || '—'} • {gradeDisplay(selectedMember)}
+                    </div>
+                  </div>
                 </div>
 
-                <h3 className="text-xl font-extrabold mb-1" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
-                  Book Returned Successfully!
-                </h3>
-                <p className="text-slate-400 text-xs mb-5">Return transaction completed and recorded</p>
+                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-455 font-bold">Active books:</span>
+                  <span className={`text-xs font-black px-1.5 py-0.5 rounded ${activeBorrows.length > 3 ? 'text-red-655 bg-red-50' : 'text-slate-700 bg-slate-100'}`}>
+                    {activeBorrows.length}
+                  </span>
+                </div>
+              </div>
+            )}
 
-                {/* Details Box */}
-                <div className="w-full rounded-2xl p-4 mb-6 border border-slate-100 bg-slate-50/50 flex flex-col gap-3.5 text-left text-xs">
-                  <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-slate-400 mt-0.5" style={{ fontSize: 18 }}>person</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Returned By</div>
-                      <div className="font-bold text-slate-800 truncate">{returnedDetails.member.name}</div>
-                      <div className="text-[10px] text-slate-500 font-mono">{returnedDetails.member.memberId || '—'}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="border-t border-dashed border-slate-200" />
+            {/* Recent Returns sidebar item */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col min-h-0 max-h-[460px] flex-grow">
+              <div className="flex items-center gap-2 mb-3 select-none">
+                <span className="material-symbols-outlined text-[#10B981] text-lg font-black">assignment_returned</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Recent Returns</span>
+              </div>
+              
+              <RecentTransactionsList
+                transactions={recentReturns}
+                type="returns"
+                maxHeight="380px"
+              />
 
-                  <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-slate-400 mt-0.5" style={{ fontSize: 18 }}>menu_book</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Book Details</div>
+              {recentReturns.length >= 10 && (
+                <Link
+                  to="/circulation"
+                  className="mt-3 pt-2.5 border-t border-slate-100 text-center text-[10px] font-extrabold uppercase tracking-wider text-[#10B981] hover:text-emerald-700 transition-all hover:shadow-xs flex items-center justify-center gap-1 cursor-pointer select-none"
+                >
+                  <span>View more in circulation</span>
+                  <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                </Link>
+              )}
+            </div>
+            
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Success Modal Overlay */}
+      {showSuccessModal && returnedDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn" style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(8px)' }}>
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes scaleUp {
+              from { transform: scale(0.95); opacity: 0; }
+              to { transform: scale(1); opacity: 1; }
+            }
+            .animate-fadeIn {
+              animation: fadeIn 0.2s ease-out forwards;
+            }
+            .animate-scaleUp {
+              animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            }
+          `}</style>
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl transition-all border border-slate-100 flex flex-col items-center text-center relative overflow-hidden animate-scaleUp">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-[#10B981]" />
+            
+            <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4 mt-2 animate-bounce">
+              <span className="material-symbols-outlined text-4xl font-bold">assignment_turned_in</span>
+            </div>
+
+            <h3 className="text-xl font-extrabold mb-1" style={{ color: '#1A1245', fontFamily: "'Inter', sans-serif" }}>
+              Book Returned Successfully!
+            </h3>
+            <p className="text-slate-400 text-xs mb-5">Return transaction completed and recorded</p>
+
+            <div className="w-full rounded-2xl p-4 mb-6 border border-slate-100 bg-slate-50/50 flex flex-col gap-3.5 text-left text-xs">
+              <div className="flex gap-3">
+                <span className="material-symbols-outlined text-slate-400 mt-0.5" style={{ fontSize: 18 }}>person</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Returned By</div>
+                  <div className="font-bold text-slate-800 truncate">{returnedDetails.member.name}</div>
+                  <div className="text-[10px] text-slate-500 font-mono">{returnedDetails.member.memberId || '—'}</div>
+                </div>
+              </div>
+              
+              <div className="border-t border-dashed border-slate-200" />
+
+              <div className="flex gap-3">
+                <span className="material-symbols-outlined text-slate-400 mt-0.5" style={{ fontSize: 18 }}>menu_book</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Book Details</div>
+                  {returnedDetails.booksCount > 1 ? (
+                    <div className="font-bold text-slate-800">{returnedDetails.booksCount} books checked back in</div>
+                  ) : (
+                    <>
                       <div className="font-bold text-slate-800 truncate">{returnedDetails.book.title}</div>
                       <div className="text-[10px] text-slate-500 font-mono">Catalog ID: {returnedDetails.book.bookId || '—'}</div>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-dashed border-slate-200" />
-
-                  <div className="flex gap-3">
-                    <span className="material-symbols-outlined text-slate-400 mt-0.5" style={{ fontSize: 18 }}>event</span>
-                    <div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date Returned</div>
-                      <div className="font-semibold text-slate-800 mt-0.5">
-                        {new Date(returnedDetails.returnDate).toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Overdue/Fine info */}
-                  {returnedDetails.overdueDays > 0 && (
-                    <>
-                      <div className="border-t border-dashed border-slate-200" />
-                      <div className="flex gap-3 p-3 rounded-xl bg-red-50 border border-red-150 text-left animate-fadeIn">
-                        <span className="material-symbols-outlined text-red-600 mt-0.5" style={{ fontSize: 20 }}>warning</span>
-                        <div className="text-xs">
-                          <div className="font-extrabold text-red-800 uppercase tracking-wider text-[10px]">Overdue Fine Charged</div>
-                          <div className="font-extrabold text-red-600 text-sm mt-0.5">
-                            LKR {returnedDetails.overdueDays * 10}.00 ({returnedDetails.overdueDays} days late)
-                          </div>
-                          <p className="text-[9px] text-slate-500 mt-0.5 font-medium">Billed and added to the borrower's account status.</p>
-                        </div>
-                      </div>
                     </>
                   )}
                 </div>
+              </div>
 
-                {/* Close Button */}
-                <div className="flex gap-3 w-full">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSuccessModal(false);
-                      setReturnedDetails(null);
-                      if (scannerRef.current) {
-                        scannerRef.current.focus();
-                      }
-                    }}
-                    className="flex-1 py-3 rounded-xl text-xs font-extrabold text-white transition-all hover:opacity-90 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-700/20"
-                    style={{ backgroundColor: '#10B981' }}
-                  >
-                    <span className="material-symbols-outlined text-sm font-bold">qr_code_scanner</span>
-                    Scan Next Book (Enter)
-                  </button>
+              <div className="border-t border-dashed border-slate-200" />
+
+              <div className="flex gap-3">
+                <span className="material-symbols-outlined text-slate-400 mt-0.5" style={{ fontSize: 18 }}>event</span>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date Returned</div>
+                  <div className="font-semibold text-slate-800 mt-0.5">
+                    {new Date(returnedDetails.returnDate).toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </div>
                 </div>
               </div>
+
+              {returnedDetails.overdueDays > 0 && (
+                <>
+                  <div className="border-t border-dashed border-slate-200" />
+                  <div className="flex gap-3 p-3 rounded-xl bg-red-50 border border-red-155 text-left animate-fadeIn">
+                    <span className="material-symbols-outlined text-red-600 mt-0.5" style={{ fontSize: 20 }}>warning</span>
+                    <div className="text-xs">
+                      <div className="font-extrabold text-red-800 uppercase tracking-wider text-[10px]">Overdue Fine Charged</div>
+                      <div className="font-extrabold text-red-600 text-sm mt-0.5">
+                        LKR {returnedDetails.overdueDays * 10}.00 ({returnedDetails.overdueDays} days late)
+                      </div>
+                      <p className="text-[9px] text-slate-500 mt-0.5 font-medium">Billed and added to the borrower's account status.</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-          )}
+
+            <div className="flex gap-3 w-full">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  setReturnedDetails(null);
+                  if (scannerRef.current) {
+                    scannerRef.current.focus();
+                  }
+                }}
+                className="flex-1 py-3 rounded-xl text-xs font-extrabold text-white transition-all hover:opacity-90 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-700/20 cursor-pointer"
+                style={{ backgroundColor: '#10B981' }}
+              >
+                <span className="material-symbols-outlined text-sm font-bold">qr_code_scanner</span>
+                Scan Next Book (Enter)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

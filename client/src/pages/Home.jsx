@@ -1,11 +1,3 @@
-// =========================================================================
-// WHAT DOES THIS FILE DO?
-// This is the public landing homepage of the website. It welcomes visitors,
-// presents the main tagline ("Smart Catalog, Seamless Borrowing"), details
-// the core library system capabilities, and provides a CTA "Login" button
-// to redirect users to the login screen.
-// =========================================================================
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -52,30 +44,35 @@ export default function Home() {
 
           {/* Logo brand */}
           <div className="flex items-center gap-3.5 mb-10">
-            <img src="/images/logo.png" alt="KMV School Logo" className="w-16 h-16 object-contain" />
+            <img src="/images/logo.png" alt="KMV School Logo" className="w-14 h-14 object-contain" />
             <div className="text-left">
-              <h1 className="text-base font-black tracking-tight" style={{ color: '#1E2A4A', fontFamily: "'Manrope', sans-serif" }}>KAWUDULLA MAHA VIDYALAYA</h1>
-              <p className="text-[11px] font-bold text-slate-400 tracking-widest leading-none mt-0.5">LIBRARY PORTAL</p>
+              <h1 className="text-sm font-black tracking-tight" style={{ color: '#9E0D0D', fontFamily: "'Manrope', sans-serif" }}>
+                KAWUDULLA MAHA VIDYALAYA
+              </h1>
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest leading-none mt-0.5">
+                LIBRARY PORTAL
+              </p>
             </div>
           </div>
 
           {/* Slogans / Slogan headers */}
-          <h2 className="text-4xl sm:text-5xl font-black leading-tight tracking-tight mb-5" style={{ color: '#1E2A4A', fontFamily: "'Manrope', sans-serif" }}>
-            Smart Catalog,<br />
-            <span className="text-indigo-600">Seamless Borrowing</span>
+          <h2 className="text-4xl sm:text-5xl font-black leading-[1.15] tracking-tight mb-5" style={{ color: '#1E2A4A', fontFamily: "'Manrope', sans-serif" }}>
+            Smartly<br />
+            Discover Knowledge<br />
+            <span style={{ color: '#D97706' }}>Borrow with Ease</span>
           </h2>
 
           {/* Slogans paragraphs */}
-          <p className="text-slate-500 text-sm sm:text-base leading-relaxed mb-8">
-            Welcome to the official Kawudulla school library portal. Browse thousands of catalog books, search by title or barcode, review active checkouts, and request registration approvals from your librarian. Access your account dynamically from any device.
+          <p className="text-slate-500 text-sm leading-relaxed mb-8">
+            Welcome to the official Kawudulla Maha Vidyalaya Library Portal. Search books by title, author, category, or ISBN barcode, borrow and return books with ease, track your borrowing history, and manage your library account anytime, from any device.
           </p>
 
           {/* CTA login redirect button */}
           <div>
             <button
               onClick={() => navigate('/login')}
-              className="px-10 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20 active:scale-[0.98] transform transition-all duration-150"
-              style={{ cursor: 'pointer' }}
+              className="px-12 py-3 bg-[#9E0D0D] hover:bg-[#7F0A0A] text-white rounded-xl font-bold text-sm tracking-widest active:scale-[0.98] transform transition-all duration-150 shadow-lg shadow-red-900/10"
+              style={{ cursor: 'pointer', fontFamily: "Georgia, serif" }}
             >
               Login
             </button>
@@ -86,22 +83,22 @@ export default function Home() {
 
       {/* ===== RIGHT GRAPHICS COLUMN (Aesthetic replica of reference photo) ===== */}
       <div
-        className="hidden lg:flex lg:w-[45%] flex-col items-center justify-center relative overflow-hidden px-8 select-none"
-        style={{ backgroundColor: '#EFF3FD' }}
+        className="hidden lg:flex lg:w-[48%] flex-col items-center justify-center relative overflow-hidden px-8 select-none border-l border-slate-100"
+        style={{ backgroundColor: '#FCFDFE' }}
       >
-        {/* Soft abstract blur blobs */}
-        <div className="absolute rounded-full filter blur-3xl opacity-60" style={{ width: 400, height: 400, background: 'rgba(99, 102, 241, 0.12)', top: '5%', left: '-5%' }} />
-        <div className="absolute rounded-full filter blur-3xl opacity-50" style={{ width: 350, height: 350, background: 'rgba(14, 165, 233, 0.1)', bottom: '5%', right: '-5%' }} />
+        {/* Soft abstract blur blobs (Crimson & Amber tinted) */}
+        <div className="absolute rounded-full filter blur-3xl opacity-30" style={{ width: 400, height: 400, background: 'rgba(158, 13, 13, 0.1)', top: '5%', left: '-5%' }} />
+        <div className="absolute rounded-full filter blur-3xl opacity-30" style={{ width: 350, height: 350, background: 'rgba(217, 119, 6, 0.08)', bottom: '5%', right: '-5%' }} />
 
         {/* Outer composition container */}
         <div className="relative w-full max-w-xl h-[560px]">
 
-          {/* 1. Purple semicircle shape on top left */}
-          <div className="absolute top-[100px] left-[40px] w-16 h-9 bg-purple-600 rounded-t-full transform -rotate-45 opacity-90 z-0" />
+          {/* 1. Crimson semicircle shape on top left */}
+          <div className="absolute top-[100px] left-[40px] w-16 h-9 rounded-t-full transform -rotate-45 opacity-90 z-0" style={{ backgroundColor: '#9E0D0D' }} />
 
-          {/* 2. Light blue circle/arc ring segment on the right (spins slowly) */}
-          <div className="absolute right-[20px] top-[140px] w-36 h-36 border-[24px] border-[#0ea5e9] rounded-full opacity-20 z-0 animate-rotate-slow" />
-          <div className="absolute right-[0px] top-[240px] w-28 h-28 bg-[#0ea5e9] rounded-full opacity-80 z-0" style={{ clipPath: 'polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)', transform: 'scale(1.25) rotate(45deg)' }} />
+          {/* 2. Amber circle/arc ring segment on the right */}
+          <div className="absolute right-[20px] top-[140px] w-36 h-36 border-[24px] rounded-full opacity-10 z-0 animate-rotate-slow" style={{ borderColor: '#D97706' }} />
+          <div className="absolute right-[0px] top-[240px] w-28 h-28 rounded-full opacity-80 z-0" style={{ backgroundColor: '#D97706', clipPath: 'polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)', transform: 'scale(1.25) rotate(45deg)' }} />
 
           {/* 3. Background Y-Axis Chart Grid on the bottom-left */}
           <div className="absolute bottom-[40px] left-[10px] flex flex-col justify-between h-[200px] border-l border-slate-200 pl-2.5 text-[10px] text-slate-400 font-mono z-0 select-none">
@@ -111,16 +108,16 @@ export default function Home() {
             <span>300</span>
             <span>200</span>
             <span>100</span>
-            {/* Green curve line */}
+            {/* Crimson curve line */}
             <svg className="absolute left-0 bottom-0 w-[230px] h-[150px] overflow-visible" style={{ pointerEvents: 'none' }}>
-              <path d="M 0 130 Q 60 30, 120 100 T 230 40" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeDasharray="3 3" />
+              <path d="M 0 130 Q 60 30, 120 100 T 230 40" fill="none" stroke="#9E0D0D" strokeWidth="2.5" strokeDasharray="3 3" />
             </svg>
           </div>
 
           {/* 4. Large Main Visual Photo (Real photo of students) */}
           <div className="absolute bottom-[60px] left-[70px] right-[20px] h-[300px] rounded-[32px] overflow-hidden shadow-2xl border-[8px] border-white z-10 bg-white">
             <img
-              src="/images/library_illustration.png"
+              src="/images/library_illustration.jpg"
               alt="Students Studying"
               className="w-full h-full object-cover"
             />
@@ -132,7 +129,7 @@ export default function Home() {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2 px-0.5">
                 <span className="text-[10px] font-extrabold text-slate-700">March 2026</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span className="w-2 h-2 rounded-full bg-[#D97706]"></span>
               </div>
               <div className="grid grid-cols-7 gap-1 text-center text-[8px] font-bold text-slate-400 mb-1">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i}>{d}</span>)}
@@ -141,7 +138,8 @@ export default function Home() {
                   return (
                     <span
                       key={idx}
-                      className={`p-0.5 rounded flex items-center justify-center text-[8px] ${isSelected ? 'bg-[#0ea5e9] text-white font-bold' : ''}`}
+                      className={`p-0.5 rounded flex items-center justify-center text-[8px] ${isSelected ? 'text-white font-bold' : ''}`}
+                      style={isSelected ? { backgroundColor: '#9E0D0D' } : {}}
                     >
                       {idx + 1}
                     </span>
@@ -158,38 +156,41 @@ export default function Home() {
                 <div className="space-y-1">
                   <div className="bg-slate-50 rounded p-1 text-[9px] font-bold text-slate-700 flex justify-between">
                     <span>Due Soon</span>
-                    <span className="text-amber-500">02</span>
+                    <span style={{ color: '#D97706' }}>02</span>
                   </div>
                   <div className="bg-slate-50 rounded p-1 text-[9px] font-bold text-slate-700 flex justify-between">
                     <span>Overdue</span>
-                    <span className="text-red-500">00</span>
+                    <span style={{ color: '#9E0D0D' }}>00</span>
                   </div>
                 </div>
               </div>
-              <button type="button" className="w-full py-1.5 bg-[#0ea5e9] hover:bg-[#0284c7] text-white rounded-lg text-[9px] font-extrabold tracking-wider transition-colors uppercase mt-1.5">
+              <button
+                type="button"
+                className="w-full py-1.5 text-white rounded-lg text-[9px] font-extrabold tracking-wider transition-colors uppercase mt-1.5 bg-[#9E0D0D] hover:bg-[#7F0A0A]"
+              >
                 Active Slot
               </button>
             </div>
           </div>
 
           {/* 6. Floating pill: Automatic Reminders (Top Right) */}
-          <div className="absolute top-[80px] right-[0px] bg-[#e0f2fe] text-[#0369a1] shadow-lg rounded-full px-4 py-2 flex items-center gap-2 border border-sky-100 z-20">
-            <span className="material-symbols-outlined text-[#0ea5e9]" style={{ fontSize: 15, fontWeight: 'bold' }}>notifications</span>
+          <div className="absolute top-[80px] right-[0px] shadow-lg rounded-full px-4 py-2 flex items-center gap-2 border z-20" style={{ backgroundColor: '#FDF2F2', borderColor: '#FEE2E2', color: '#9E0D0D' }}>
+            <span className="material-symbols-outlined text-[15px] font-bold" style={{ color: '#9E0D0D' }}>notifications</span>
             <span className="text-[10px] font-bold tracking-wide">Automatic Reminders</span>
           </div>
 
           {/* 7. Floating badge: Increases Knowledge (Left Center) */}
-          <div className="absolute left-[-30px] top-[260px] bg-[#f0fdf4] text-[#166534] shadow-xl rounded-xl px-4 py-3 border border-emerald-100 flex items-center gap-2.5 z-30 animate-float-badge">
-            <div className="w-6 h-6 rounded-lg bg-emerald-500 flex items-center justify-center text-white">
-              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>menu_book</span>
+          <div className="absolute left-[-30px] top-[260px] shadow-xl rounded-xl px-4 py-3 border flex items-center gap-2.5 z-30 animate-float-badge" style={{ backgroundColor: '#FEF3C7', borderColor: '#FDE68A', color: '#92400E' }}>
+            <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: '#D97706' }}>
+              <span className="material-symbols-outlined text-[15px]">menu_book</span>
             </div>
             <span className="text-[10px] font-extrabold tracking-wide">Increases Knowledge</span>
           </div>
 
           {/* 8. Floating badge: Reduces Conflicts (Bottom Center) */}
-          <div className="absolute bottom-[20px] left-[55%] -translate-x-1/2 bg-[#faf5ff] text-[#6b21a8] shadow-xl rounded-xl px-5 py-3 border border-purple-100 flex items-center gap-2.5 z-20 animate-float-badge-reverse">
-            <div className="w-6 h-6 rounded-lg bg-purple-500 flex items-center justify-center text-white">
-              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>hourglass_empty</span>
+          <div className="absolute bottom-[20px] left-[55%] -translate-x-1/2 shadow-xl rounded-xl px-5 py-3 border flex items-center gap-2.5 z-20 animate-float-badge-reverse" style={{ backgroundColor: '#FDF2F2', borderColor: '#FEE2E2', color: '#7F0A0A' }}>
+            <div className="w-6 h-6 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: '#9E0D0D' }}>
+              <span className="material-symbols-outlined text-[15px]">hourglass_empty</span>
             </div>
             <span className="text-[10px] font-extrabold tracking-wide">Reduces Conflicts</span>
           </div>

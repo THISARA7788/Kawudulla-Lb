@@ -153,7 +153,7 @@ router.get('/borrowed', protect, async (req, res) => {
       user: req.user._id,
       status: { $in: ['active', 'overdue'] },
       returnDate: null
-    }).populate('book', 'title author isbn category bookId');
+    }).populate('book', 'title author isbn category bookId coverImageUrl');
 
     const borrowedBooks = activeTx.map(tx => {
       if (!tx.book) return null;
@@ -312,7 +312,7 @@ router.post('/issue', protect, authorize('librarian'), async (req, res) => {
     // Populate borrowedBooks dynamically on user response object for frontend compatibility
     const userObj = user.toObject();
     const activeTxForUser = await Transaction.find({ user: user._id, status: { $in: ['active', 'overdue'] }, returnDate: null })
-      .populate('book', 'title author isbn category bookId');
+      .populate('book', 'title author isbn category bookId coverImageUrl');
     userObj.borrowedBooks = activeTxForUser.map(tx => ({
       _id: tx._id,
       book: tx.book,
@@ -438,7 +438,7 @@ router.post('/issue/bulk', protect, authorize('librarian'), async (req, res) => 
     // Populate borrowedBooks dynamically on user response object for frontend compatibility
     const userObj = user.toObject();
     const activeTxForUser = await Transaction.find({ user: user._id, status: { $in: ['active', 'overdue'] }, returnDate: null })
-      .populate('book', 'title author isbn category bookId');
+      .populate('book', 'title author isbn category bookId coverImageUrl');
     userObj.borrowedBooks = activeTxForUser.map(tx => ({
       _id: tx._id,
       book: tx.book,
@@ -482,7 +482,16 @@ router.post('/return', protect, authorize('librarian'), async (req, res) => {
       return res.status(400).json({ message: 'No active borrowing found for this book' });
     }
 
-    const normalizedReturnDate = returnDate ? new Date(returnDate) : new Date();
+    let normalizedReturnDate = new Date();
+    if (returnDate) {
+      if (returnDate.length === 10) {
+        const [year, month, day] = returnDate.split('-').map(Number);
+        const now = new Date();
+        normalizedReturnDate = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+      } else {
+        normalizedReturnDate = new Date(returnDate);
+      }
+    }
     transaction.returnDate = normalizedReturnDate;
     transaction.status = 'returned';
     await transaction.save();
@@ -543,7 +552,7 @@ router.post('/return', protect, authorize('librarian'), async (req, res) => {
     // Populate borrowedBooks dynamically on user response object for frontend compatibility
     const userObj = user.toObject();
     const activeTxForUser = await Transaction.find({ user: user._id, status: { $in: ['active', 'overdue'] }, returnDate: null })
-      .populate('book', 'title author isbn category bookId');
+      .populate('book', 'title author isbn category bookId coverImageUrl');
     userObj.borrowedBooks = activeTxForUser.map(tx => ({
       _id: tx._id,
       book: tx.book,
@@ -598,7 +607,7 @@ router.get('/transactions', protect, async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit))
       .populate('user', 'name email role memberId grade')
-      .populate('book', 'title author isbn bookId category')
+      .populate('book', 'title author isbn bookId category coverImageUrl')
       .populate('issuedBy', 'name');
 
     // Dynamically tag overdue transactions for the UI
@@ -642,7 +651,7 @@ router.get('/users/:id/borrowing-info', protect, async (req, res) => {
       user: user._id, 
       status: { $in: ['active', 'overdue'] },
       returnDate: null
-    }).populate('book', 'title author isbn bookId category');
+    }).populate('book', 'title author isbn bookId category coverImageUrl');
 
     // Map borrowed books to append notes (safeguarded against deleted books / null population)
     const activeBorrowsWithNotes = transactions
@@ -697,7 +706,7 @@ router.get('/users/:id/history', protect, authorize('librarian'), async (req, re
     // Get all transactions for this user
     const transactions = await Transaction.find({ user: req.params.id })
       .sort({ issueDate: -1 })
-      .populate('book', 'title author isbn bookId category')
+      .populate('book', 'title author isbn bookId category coverImageUrl')
       .populate('issuedBy', 'name');
 
     // Calculate stats

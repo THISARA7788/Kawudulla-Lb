@@ -73,7 +73,7 @@ router.get('/pending', async (req, res) => {
       returnDate: null,
     })
       .populate('user', 'memberId name email role')
-      .populate('book', 'bookId title author')
+      .populate('book', 'bookId title author coverImageUrl')
       .populate('issuedBy', 'name');
 
     const existingFineTxIds = new Set(
@@ -128,7 +128,7 @@ router.post('/', async (req, res) => {
 
     const populated = await Fine.findById(fine._id)
       .populate('user', 'memberId name email role')
-      .populate('book', 'bookId title author');
+      .populate('book', 'bookId title author coverImageUrl');
 
     res.status(201).json({ fine: populated });
   } catch (err) {
@@ -146,7 +146,7 @@ router.get('/', async (req, res) => {
 
     const fines = await Fine.find(query)
       .populate('user', 'memberId name email role')
-      .populate('book', 'bookId title author')
+      .populate('book', 'bookId title author coverImageUrl')
       .populate('transaction', 'transactionId')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)

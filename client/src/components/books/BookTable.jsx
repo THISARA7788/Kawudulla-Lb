@@ -37,7 +37,7 @@ export default function BookTable({
         <span className="material-symbols-outlined mb-2" style={{ fontSize: 48, opacity: 0.3 }}>search_off</span>
         <p className="text-sm font-medium">No books found</p>
         {role === 'librarian' && (
-          <button onClick={openAdd} className="text-xs mt-2 font-semibold hover:underline" style={{ color: '#1a1245' }}>
+          <button onClick={openAdd} className="text-xs mt-2 font-semibold hover:underline" style={{ color: '#9E0D0D' }}>
             + Add your first book
           </button>
         )}
@@ -140,7 +140,7 @@ export default function BookTable({
                 key={book._id} 
                 onClick={() => onRowClick && onRowClick(book)}
                 className={`transition-colors cursor-pointer ${
-                  isSelected ? 'bg-indigo-50/20 hover:bg-indigo-50/30' : 'hover:bg-slate-50/60'
+                  isSelected ? 'bg-red-50/20 hover:bg-red-50/30' : 'hover:bg-slate-50/60'
                 }`} 
                 style={{ borderBottom: '1px solid #f1f5f9' }}
                 title={isSelectionMode ? 'Click to select book' : 'Click to view full book details profile'}
@@ -158,7 +158,7 @@ export default function BookTable({
                 )}
                 
                 {/* Unique Book Barcode/ID */}
-                <td className="py-3 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>
+                <td className="py-3 px-4 text-xs font-mono font-bold" style={{ color: '#9E0D0D' }}>
                   {book.bookId || '—'}
                 </td>
    
@@ -209,7 +209,15 @@ export default function BookTable({
                 {/* Copy counts (Turns Red when copies are zero/fully checked out, else Green) */}
                 <td className="py-3 px-4 whitespace-nowrap">
                   <span className="inline-flex items-center px-2 py-1 bg-slate-50 text-[11px] font-extrabold border border-slate-100 rounded-lg text-slate-700 select-none whitespace-nowrap">
-                    <span style={{ color: (book.availableCopies ?? 0) > 0 ? '#15803d' : '#b91c1c' }}>{book.availableCopies ?? 0}</span>
+                    <span style={{ 
+                      color: (book.availableCopies ?? 0) === 0 
+                        ? '#b91c1c' 
+                        : (book.availableCopies ?? 0) <= 2 
+                          ? '#D97706' 
+                          : '#15803d' 
+                    }}>
+                      {book.availableCopies ?? 0}
+                    </span>
                     <span className="text-slate-400 font-semibold">&nbsp;/&nbsp;{book.totalCopies ?? 0}</span>
                   </span>
                 </td>

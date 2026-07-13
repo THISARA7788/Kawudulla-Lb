@@ -131,7 +131,7 @@ function PieChart({ data, size = 120, centerText }) {
         textAnchor="middle" 
         dominantBaseline="central" 
         className="text-xl font-black" 
-        fill="#1a1245"
+        fill="#1E2A4A"
         style={{ fontFamily: "'Manrope', sans-serif" }}
       >
         {centerText !== undefined ? centerText : total}
@@ -142,10 +142,10 @@ function PieChart({ data, size = 120, centerText }) {
 
 
 const quickActionColors = {
-  "Issue Book Center": { bg: '#DCFCE7', icon: '#166534' },
-  "Return Book": { bg: '#DBEAFE', icon: '#1D4ED8' },
-  "Add New Book": { bg: '#FFF3E0', icon: '#E65100' },
-  "View Reports": { bg: '#F3E8FF', icon: '#7C3AED' },
+  "Issue Book Center": { bg: '#FDF2F2', icon: '#9E0D0D' },
+  "Return Book": { bg: '#FEF3C7', icon: '#B45309' },
+  "Add New Book": { bg: '#ECFDF5', icon: '#047857' },
+  "View Reports": { bg: '#F8FAFC', icon: '#475569' },
 }
 
 function QuickAction({ icon, label, onClick }) {
@@ -352,8 +352,8 @@ export default function LibrarianDashboardMain() {
           className="p-2.5 rounded-xl border bg-white cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between w-full relative"
           style={{ borderColor: '#e2e8f0', minHeight: 114 }}
         >
-          <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-            <span className="material-symbols-outlined text-indigo-600" style={{ fontSize: 16 }}>library_books</span>
+          <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-[#9E0D0D]" style={{ fontSize: 16 }}>library_books</span>
           </div>
           <div>
             <span 
@@ -395,8 +395,8 @@ export default function LibrarianDashboardMain() {
           className="p-2.5 rounded-xl border bg-white cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between w-full"
           style={{ borderColor: '#e2e8f0', minHeight: 114 }}
         >
-          <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-            <span className="material-symbols-outlined text-blue-600" style={{ fontSize: 16 }}>import_contacts</span>
+          <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-[#D97706]" style={{ fontSize: 16 }}>import_contacts</span>
           </div>
           <div>
             <span 
@@ -415,8 +415,8 @@ export default function LibrarianDashboardMain() {
           className="p-2.5 rounded-xl border bg-white cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between w-full"
           style={{ borderColor: '#e2e8f0', minHeight: 114 }}
         >
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: (!loading && dashboardStats?.overdueCount > 0) ? '#fee2e2' : '#f1f5f9' }}>
-            <span className={`material-symbols-outlined ${(!loading && dashboardStats?.overdueCount > 0) ? 'text-red-500' : 'text-slate-500'}`} style={{ fontSize: 16 }}>warning</span>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: (!loading && dashboardStats?.overdueCount > 0) ? '#FDF2F2' : '#f1f5f9' }}>
+            <span className={`material-symbols-outlined ${(!loading && dashboardStats?.overdueCount > 0) ? 'text-[#9E0D0D]' : 'text-slate-500'}`} style={{ fontSize: 16 }}>warning</span>
           </div>
           <div>
             <span 
@@ -435,8 +435,8 @@ export default function LibrarianDashboardMain() {
           className="p-2.5 rounded-xl border bg-white cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between w-full"
           style={{ borderColor: '#e2e8f0', minHeight: 114 }}
         >
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: (!loading && dashboardStats?.pendingRegistrations > 0) ? '#fef3c7' : '#f1f5f9' }}>
-            <span className={`material-symbols-outlined ${(!loading && dashboardStats?.pendingRegistrations > 0) ? 'text-amber-600' : 'text-slate-500'}`} style={{ fontSize: 16 }}>person_add</span>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: (!loading && dashboardStats?.pendingRegistrations > 0) ? '#FEF3C7' : '#f1f5f9' }}>
+            <span className={`material-symbols-outlined ${(!loading && dashboardStats?.pendingRegistrations > 0) ? 'text-[#D97706]' : 'text-slate-500'}`} style={{ fontSize: 16 }}>person_add</span>
           </div>
           <div>
             <span 
@@ -455,8 +455,8 @@ export default function LibrarianDashboardMain() {
           className="p-2.5 rounded-xl border bg-white cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between w-full relative"
           style={{ borderColor: '#e2e8f0', minHeight: 114 }}
         >
-          <div className="w-7 h-7 rounded-lg bg-purple-50 flex-shrink-0 flex items-center justify-center">
-            <span className="material-symbols-outlined text-purple-600" style={{ fontSize: 16 }}>payments</span>
+          <div className="w-7 h-7 rounded-lg bg-red-50 flex-shrink-0 flex items-center justify-center">
+            <span className="material-symbols-outlined text-[#9E0D0D]" style={{ fontSize: 16 }}>payments</span>
           </div>
           <div>
             <span 
@@ -468,7 +468,7 @@ export default function LibrarianDashboardMain() {
             <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight">Total Fines Due</span>
           </div>
           <div className="absolute right-2.5 top-2.5 text-right text-[8px] text-slate-400 font-bold leading-tight">
-            <div className="text-purple-600/95">Today: Rs. {loading ? '...' : (dashboardStats?.finesDueToday ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
+            <div className="text-[#9E0D0D]">Today: Rs. {loading ? '...' : (dashboardStats?.finesDueToday ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
             <div className="text-slate-500">Month: Rs. {loading ? '...' : (dashboardStats?.finesDueThisMonth ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
           </div>
         </div>
@@ -482,7 +482,7 @@ export default function LibrarianDashboardMain() {
 
           {/* Quick Actions */}
           <section>
-            <h3 className="text-base font-bold mb-2" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Quick Actions</h3>
+            <h3 className="text-base font-bold mb-2" style={{ color: '#1E2A4A', fontFamily: "'Manrope', sans-serif" }}>Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
               <QuickAction icon="book_5" label="Issue Book Center" onClick={() => navigate('/issue-book')} />
               <QuickAction icon="assignment_return" label="Return Book" onClick={() => navigate('/return-book')} />
@@ -495,13 +495,13 @@ export default function LibrarianDashboardMain() {
           <section className="rounded-xl p-4 border bg-white flex-grow flex flex-col justify-between" style={{ borderColor: '#f0f0f0' }}>
             <div>
               <div className="flex items-center justify-between mb-3.5">
-                <h3 className="text-base font-bold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
+                <h3 className="text-base font-bold" style={{ color: '#1E2A4A', fontFamily: "'Manrope', sans-serif" }}>
                   Recently Added Books
                 </h3>
                 <button 
                   onClick={() => navigate('/books')} 
                   className="text-xs font-semibold hover:underline"
-                  style={{ color: '#6366F1' }}
+                  style={{ color: '#9E0D0D' }}
                 >
                   View all
                 </button>
@@ -561,7 +561,7 @@ export default function LibrarianDashboardMain() {
                               </span>
                             </td>
                             <td className="py-2.5 px-2">
-                              <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold border uppercase tracking-wider bg-indigo-50 text-indigo-700 border-indigo-100 truncate inline-block max-w-full" title={b.category || 'General'}>
+                              <span className="px-2 py-0.5 rounded-full text-[8.5px] font-bold border uppercase tracking-wider bg-red-50 text-[#9E0D0D] border-red-100 truncate inline-block max-w-full" title={b.category || 'General'}>
                                 {b.category || 'General'}
                               </span>
                             </td>
@@ -586,7 +586,7 @@ export default function LibrarianDashboardMain() {
 
           {/* Category Breakdown */}
           <section className="rounded-xl p-4 border" style={{ backgroundColor: '#fff', borderColor: '#f0f0f0' }}>
-            <h3 className="text-base font-bold mb-3" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
+            <h3 className="text-base font-bold mb-3" style={{ color: '#1E2A4A', fontFamily: "'Manrope', sans-serif" }}>
               Book Categories
             </h3>
             {loading ? (
@@ -615,7 +615,7 @@ export default function LibrarianDashboardMain() {
                       <div key={cat} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getCategoryColor(cat).color }} />
-                          <span className="font-medium text-xs" style={{ color: '#2C2C3E' }}>{cat}</span>
+                           <span className="font-medium text-xs" style={{ color: '#2C2C3E' }}>{cat}</span>
                         </div>
                         <span className="font-bold text-xs pr-10" style={{ color: catCopies > 0 ? '#166534' : '#b31b25' }}>
                           {catCopies}
@@ -623,7 +623,7 @@ export default function LibrarianDashboardMain() {
                       </div>
                     ))}
                   {Object.keys(categories).length > 6 && (
-                    <button onClick={() => setShowAllCategories(s => !s)} className="text-xs font-semibold mt-1" style={{ color: '#6366F1' }}>
+                    <button onClick={() => setShowAllCategories(s => !s)} className="text-xs font-semibold mt-1" style={{ color: '#9E0D0D' }}>
                       {showAllCategories ? 'Show Less' : 'Show More'} ({Object.keys(categories).length - 6})
                     </button>
                   )}
@@ -635,13 +635,13 @@ export default function LibrarianDashboardMain() {
           {/* Pending User Approvals */}
           <section className="rounded-xl p-4 border bg-white flex-grow flex flex-col" style={{ borderColor: '#f0f0f0' }}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-bold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
+              <h3 className="text-base font-bold" style={{ color: '#1E2A4A', fontFamily: "'Manrope', sans-serif" }}>
                 Pending User Approvals
               </h3>
               <button 
                 onClick={() => navigate('/pending-registration')} 
                 className="text-xs font-semibold hover:underline"
-                style={{ color: '#6366F1' }}
+                style={{ color: '#9E0D0D' }}
               >
                 View all ({pendingApprovals.length})
               </button>

@@ -10,14 +10,14 @@ import React from 'react';
  * 
  * @param {Array} borrows - List of active transaction checkouts
  * @param {Object} selectedMember - Currently selected user profile context
- * @param {Object} selectedBorrow - Currently selected borrow record to return
+ * @param {Array} selectedBorrows - Currently selected borrow records to return
  * @param {Function} onSelect - Interactive click callback. If empty, the component defaults to read-only mode.
  * @param {string} maxHeight - Max vertical boundary scroll height
  */
 export default function ActiveBorrowsList({
   borrows = [],
   selectedMember,
-  selectedBorrow,
+  selectedBorrows = [],
   onSelect,
   maxHeight = '340px'
 }) {
@@ -46,60 +46,57 @@ export default function ActiveBorrowsList({
   const isInteractive = typeof onSelect === 'function';
 
   return (
-    <div className="space-y-2 overflow-y-auto" style={{ maxHeight }}>
+    <div className="space-y-1.5 overflow-y-auto pr-1" style={{ maxHeight }}>
       {borrows.map((b, i) => {
         // Calculate overdue dates and count days overdue
         const isOverdue = new Date(b.dueDate) < new Date();
         const daysOverdue = isOverdue ? Math.floor((Date.now() - new Date(b.dueDate)) / 86400000) : 0;
         const book = b.book || {};
-        const isSelected = selectedBorrow && selectedBorrow.book?._id === book._id;
+        const isSelected = selectedBorrows.some(sel => sel._id === b._id);
 
         // MODE 1: Interactive selector list (used on the Return Book page)
         if (isInteractive) {
           return (
             <button
-              key={i}
+              key={b._id || i}
               type="button"
-              onClick={() => onSelect(isSelected ? null : b)}
-              className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all border-2 ${
-                isSelected ? 'border-amber-400' : 'border-gray-100 hover:border-amber-200'
+              onClick={() => onSelect(b)}
+              className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all border ${
+                isSelected ? 'border-amber-400 bg-amber-50/45 shadow-sm' : 'border-slate-100 hover:border-amber-200 bg-slate-50/20'
               }`}
-              style={{ backgroundColor: isSelected ? '#FFFBEB' : '#FAFBFC' }}
             >
-              {/* Overdue alert indicator style */}
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: isOverdue ? '#FEE2E2' : '#FEF3C7' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: isOverdue ? '#DC2626' : '#F59E0B' }}>menu_book</span>
-              </div>
-              
-              {/* Book Details */}
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold truncate" style={{ color: '#1a1245' }}>{book.title || 'Book'}</div>
-                <div className="text-[11px]" style={{ color: '#9CA3AF' }}>
-                  {book.author} • {book.bookId || '—'} • {book.category || ''}
-                </div>
-                {/* Overdue/Active badge helper */}
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isOverdue ? 'text-red-600 bg-red-100' : 'text-green-700 bg-green-100'}`}>
-                    {isOverdue ? `Overdue (${daysOverdue}d)` : 'Active'}
-                  </span>
-                </div>
-                <div className="text-[10px] mt-1" style={{ color: '#9CA3AF' }}>
-                  Due: {new Date(b.dueDate).toLocaleDateString()}
-                </div>
-                {b.notes && (
-                  <div className="mt-1.5 pt-1.5 border-t border-dashed border-slate-200 text-[10px] text-slate-500 flex items-start gap-1">
-                    <span className="material-symbols-outlined text-[12px] mt-0.5" style={{ color: '#9CA3AF' }}>notes</span>
-                    <span className="italic truncate">{b.notes}</span>
-                  </div>
+              {/* Book Cover Thumbnail (w-11 h-15 for clear visibility) */}
+              <div className="w-11 h-15 rounded-lg bg-amber-50 border border-slate-200/80 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
+                {book.coverImageUrl ? (
+                  <img src={book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="material-symbols-outlined text-amber-500 text-lg" style={{ color: isOverdue ? '#DC2626' : '#F59E0B' }}>menu_book</span>
                 )}
               </div>
               
-              {/* Radio check selection ring */}
-              <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                isSelected ? 'border-amber-400 bg-amber-400' : 'border-gray-300'
+              {/* Book Details */}
+              <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="text-sm font-black text-slate-800 line-clamp-2 leading-snug mb-1 flex-grow">{book.title || 'Book'}</div>
+                  <span className="text-[9px] font-bold text-slate-455 whitespace-nowrap bg-slate-50 border border-slate-150 px-1.5 py-0.5 rounded-md flex-shrink-0 mt-0.5">
+                    {new Date(b.dueDate).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                {/* Overdue/Active badge helper */}
+                <div className="flex items-center select-none">
+                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider ${isOverdue ? 'text-red-600 bg-red-100/60' : 'text-emerald-700 bg-emerald-100/60'}`}>
+                    {isOverdue ? `Overdue (${daysOverdue}d)` : 'Active'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Checkbox selector indicator */}
+              <div className={`w-4.5 h-4.5 rounded-md border flex-shrink-0 flex items-center justify-center transition-all ${
+                isSelected ? 'border-amber-400 bg-amber-400 shadow-sm' : 'border-slate-350 bg-white'
               }`}>
-                {isSelected && <span className="material-symbols-outlined text-white" style={{ fontSize: 14 }}>check</span>}
-              </span>
+                {isSelected && <span className="material-symbols-outlined text-white text-xs font-bold">check</span>}
+              </div>
             </button>
           );
         }
@@ -109,17 +106,11 @@ export default function ActiveBorrowsList({
           <div key={i} className="p-2 rounded-lg text-xs" style={{ backgroundColor: isOverdue ? '#FEF2F2' : '#F9FAFB' }}>
             <div className="flex items-center justify-between">
               <span className="font-semibold truncate" style={{ color: '#1a1245' }}>{book.title || 'Book'}</span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ml-1 ${isOverdue ? 'text-red-600 bg-red-100' : 'text-green-700 bg-green-100'}`}>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ml-1 ${isOverdue ? 'text-red-650 bg-red-100' : 'text-green-700 bg-green-100'}`}>
                 {isOverdue ? 'Overdue' : 'Active'}
               </span>
             </div>
             <div className="mt-0.5" style={{ color: '#9CA3AF' }}>Due: {new Date(b.dueDate).toLocaleDateString()}</div>
-            {b.notes && (
-              <div className="mt-1 pt-1 border-t border-dashed border-slate-200 text-[10px] text-slate-500 flex items-start gap-1">
-                <span className="material-symbols-outlined text-[12px] mt-0.5" style={{ color: '#9CA3AF' }}>notes</span>
-                <span className="italic truncate">{b.notes}</span>
-              </div>
-            )}
           </div>
         );
       })}

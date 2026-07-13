@@ -101,7 +101,7 @@ export default function TopBar({ onMenuToggle }) {
         {/* Dynamic Page Title on Left */}
         {pageTitle && (
           <div className="hidden sm:flex flex-col justify-center">
-            <h1 className="text-xl font-extrabold tracking-tight leading-tight" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
+            <h1 className="text-xl font-extrabold tracking-tight leading-tight" style={{ color: '#1E2A4A', fontFamily: "'Manrope', sans-serif" }}>
               {pageTitle}
             </h1>
             {pageSubtitle && (

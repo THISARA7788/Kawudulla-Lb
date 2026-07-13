@@ -357,11 +357,11 @@ export default function BookManagement() {
   return (
     <DashboardLayout>
       {/* Top Control Panel Header (Fixed below top navbar on desktop, relative flow on mobile) */}
-      <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-[#F5F3FC] pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/30">
+      <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-[#F8FAFC] pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/30">
         <div className="flex flex-col xl:flex-row gap-4 items-stretch xl:items-center justify-between" style={{ fontFamily: "'Inter', sans-serif" }}>
           {/* Search */}
           <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-200" style={{ color: searchFocused ? '#6366f1' : '#94a3b8', fontSize: 20 }}>
+            <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-200" style={{ color: searchFocused ? '#D97706' : '#94a3b8', fontSize: 20 }}>
               {searchFocused ? 'qr_code_scanner' : 'search'}
             </span>
             <input
@@ -372,7 +372,7 @@ export default function BookManagement() {
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               placeholder="Search catalog by title, author, ISBN, or ID..."
-              className="w-full py-1.5 pl-10 pr-4 text-sm rounded-2xl outline-none border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white shadow-sm"
+              className="w-full py-1.5 pl-10 pr-4 text-sm rounded-2xl outline-none border border-slate-200 focus:border-[#D97706] focus:ring-4 focus:ring-[#D97706]/10 transition-all bg-white shadow-sm"
             />
           </div>
           
@@ -470,7 +470,7 @@ export default function BookManagement() {
               <button
                 onClick={openAdd}
                 className="px-4 py-1.5 rounded-2xl text-sm font-bold flex items-center gap-2 hover:opacity-95 hover:shadow-lg transition-all whitespace-nowrap active:scale-95"
-                style={{ backgroundColor: '#1a1245', color: '#fff', boxShadow: '0 4px 12px rgba(26,18,69,0.2)' }}
+                style={{ backgroundColor: '#9E0D0D', color: '#fff', boxShadow: '0 4px 12px rgba(158,13,13,0.2)' }}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
                 Add New Book
@@ -641,8 +641,8 @@ export default function BookManagement() {
             {/* Header */}
             <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-slate-50/50">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#1a1245]" style={{ fontSize: 20 }}>menu_book</span>
-                <span className="text-xs font-black uppercase text-[#1a1245] tracking-wider">Book Profile Details</span>
+                <span className="material-symbols-outlined text-[#1E2A4A]" style={{ fontSize: 20 }}>menu_book</span>
+                <span className="text-xs font-black uppercase text-[#1E2A4A] tracking-wider">Book Profile Details</span>
               </div>
               <button 
                 onClick={() => setSelectedBookProfile(null)}
@@ -765,7 +765,7 @@ export default function BookManagement() {
                     setSelectedBookProfile(null);
                     openEdit(bookToEdit);
                   }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#1a1245] hover:bg-[#2c206d] transition-all hover:shadow active:scale-95 cursor-pointer flex items-center gap-1"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#9E0D0D] hover:bg-[#7F0A0A] transition-all hover:shadow active:scale-95 cursor-pointer flex items-center gap-1"
                 >
                   <span className="material-symbols-outlined text-sm">edit</span>
                   Edit Details

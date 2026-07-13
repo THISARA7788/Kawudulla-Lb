@@ -107,7 +107,7 @@ router.get('/circulation', async (req, res) => {
 
     const transactions = await Transaction.find(query)
       .populate('user', 'memberId name email role')
-      .populate('book', 'bookId title author')
+      .populate('book', 'bookId title author coverImageUrl')
       .populate('issuedBy', 'name')
       .sort({ updatedAt: -1 }); // Sort by most recent activity (issue or return)
 
@@ -241,7 +241,7 @@ router.get('/fines', async (req, res) => {
 
     const fines = await Fine.find(query)
       .populate('user', 'memberId name email role')
-      .populate('book', 'bookId title author')
+      .populate('book', 'bookId title author coverImageUrl')
       .populate('transaction', 'transactionId')
       .sort({ createdAt: -1 });
 

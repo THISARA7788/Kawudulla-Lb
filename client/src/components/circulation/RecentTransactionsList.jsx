@@ -14,7 +14,7 @@ export default function RecentTransactionsList({
   }
 
   return (
-    <div className="space-y-1.5 overflow-y-auto" style={{ maxHeight }}>
+    <div className="space-y-2 overflow-y-auto flex-1 min-h-0" style={{ maxHeight }}>
       {transactions.map((tx, idx) => {
         const isOverdue = new Date(tx.dueDate) < new Date();
         const dueSoon = !isOverdue && new Date(tx.dueDate) - Date.now() < 3 * 86400000;
@@ -25,32 +25,45 @@ export default function RecentTransactionsList({
           return (
             <div
               key={tx._id || idx}
-              className="p-2 rounded-lg"
+              className="p-2.5 rounded-xl border transition-all space-y-1.5 animate-fadeIn"
               style={{
-                backgroundColor: isOverdue ? '#FEF2F2' : dueSoon ? '#FFFBEB' : '#F9FAFB',
-                border: '1px solid #F3F4F6'
+                backgroundColor: isOverdue ? '#FFF5F5' : dueSoon ? '#FFFDF5' : '#FAFCFD',
+                borderColor: isOverdue ? '#FEE2E2' : dueSoon ? '#FEF3C7' : '#F1F5F9',
               }}
             >
-              <div className="text-xs font-semibold truncate" style={{ color: '#1a1245' }}>
+              {/* Header: Book Title */}
+              <div className="text-xs font-black text-slate-700 truncate leading-snug">
                 {book.title || 'Unknown Book'}
               </div>
-              <div className="text-[11px]" style={{ color: '#9CA3AF' }}>
-                {user.name || 'Unknown User'}
-              </div>
-              <div className="flex items-center justify-between mt-0.5">
-                <span className="text-[10px]" style={{ color: '#9CA3AF' }}>
-                  Issued: {new Date(tx.issueDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })} • Due: {new Date(tx.dueDate).toLocaleDateString()}
+
+              {/* User details */}
+              <div className="text-[10px] text-slate-500 font-bold flex items-center justify-between gap-2 select-none">
+                <div className="flex items-center gap-1 truncate">
+                  <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">person</span>
+                  <span className="truncate">{user.name || 'Unknown User'}</span>
+                </div>
+                <span className="text-[8.5px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                  {user.role === 'student' 
+                    ? (user.grade && user.class ? `Gr.${user.grade.replace('Grade ', '')}-${user.class}` : (user.grade ? `Gr.${user.grade.replace('Grade ', '')}` : 'Student'))
+                    : (user.role === 'teacher' ? 'Teacher' : (user.role || ''))
+                  }
                 </span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                  isOverdue ? 'text-red-600 bg-red-100' :
-                  dueSoon ? 'text-amber-700 bg-amber-100' :
-                  'text-green-700 bg-green-100'
-                }`}>
-                  {isOverdue ? 'Overdue' : dueSoon ? 'Due Soon' : 'Active'}
+              </div>
+
+              {/* Dates grid */}
+              <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[9px] font-semibold text-slate-400 select-none">
+                <span className="flex items-center gap-0.5">
+                  <span className="material-symbols-outlined text-[10px] text-slate-350">event</span>
+                  {new Date(tx.issueDate).toLocaleDateString()} {new Date(tx.issueDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                </span>
+                <span className={`flex items-center gap-0.5 font-bold ${isOverdue ? 'text-red-500' : 'text-slate-450'}`}>
+                  <span className="material-symbols-outlined text-[10px] current-color">schedule</span>
+                  {new Date(tx.dueDate).toLocaleDateString()}
                 </span>
               </div>
+              
               {tx.notes && (
-                <div className="mt-1.5 pt-1 border-t border-dashed border-slate-200 text-[9px] text-slate-500 flex items-start gap-1">
+                <div className="pt-1 border-t border-dashed border-slate-200 text-[9px] text-slate-500 flex items-start gap-1">
                   <span className="material-symbols-outlined text-[11px] mt-0.5" style={{ color: '#9CA3AF' }}>notes</span>
                   <span className="italic truncate">{tx.notes}</span>
                 </div>
@@ -63,32 +76,38 @@ export default function RecentTransactionsList({
         return (
           <div
             key={tx._id || idx}
-            className="p-2 rounded-lg"
-            style={{ backgroundColor: '#F9FAFB', border: '1px solid #F3F4F6' }}
+            className="p-2.5 rounded-xl border border-slate-100 bg-[#FAFCFD] transition-all space-y-1.5 animate-fadeIn"
           >
-            <div className="text-xs font-semibold truncate" style={{ color: '#1a1245' }}>
+            {/* Header: Book Title */}
+            <div className="text-xs font-black text-slate-700 truncate leading-snug">
               {book.title || 'Unknown Book'}
             </div>
-            <div className="text-[11px]" style={{ color: '#9CA3AF' }}>
-              {user.name || 'Unknown User'}
-            </div>
-            <div className="flex items-center justify-between mt-0.5">
-              <span className="text-[10px]" style={{ color: '#9CA3AF' }}>
-                Returned: {tx.returnDate ? new Date(tx.returnDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
-              </span>
-              <div className="flex items-center gap-1">
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-green-700 bg-green-100">
-                  Returned
-                </span>
-                {tx.overdueDays > 0 && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-red-600 bg-red-100">
-                    Overdue {tx.overdueDays}d
-                  </span>
-                )}
+
+            {/* User details */}
+            <div className="text-[10px] text-slate-500 font-bold flex items-center justify-between gap-2 select-none">
+              <div className="flex items-center gap-1 truncate">
+                <span className="material-symbols-outlined text-[12px] text-slate-400 flex-shrink-0">person</span>
+                <span className="truncate">{user.name || 'Unknown User'}</span>
               </div>
+              <span className="text-[8.5px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                {user.role === 'student' 
+                  ? (user.grade && user.class ? `Gr.${user.grade.replace('Grade ', '')}-${user.class}` : (user.grade ? `Gr.${user.grade.replace('Grade ', '')}` : 'Student'))
+                  : (user.role === 'teacher' ? 'Teacher' : (user.role || ''))
+                }
+              </span>
+            </div>
+
+            {/* Dates row */}
+            <div className="pt-1.5 border-t border-slate-100 flex justify-between items-center text-[9.5px] font-bold text-slate-400 select-none">
+              <span className="text-left">
+                {tx.returnDate ? new Date(tx.returnDate).toLocaleDateString() : '—'}
+              </span>
+              <span className="text-right font-mono font-black text-slate-500">
+                {tx.returnDate ? new Date(tx.returnDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}
+              </span>
             </div>
             {tx.notes && (
-              <div className="mt-1.5 pt-1 border-t border-dashed border-slate-200 text-[9px] text-slate-500 flex items-start gap-1">
+              <div className="pt-1 border-t border-dashed border-slate-200 text-[9px] text-slate-500 flex items-start gap-1">
                 <span className="material-symbols-outlined text-[11px] mt-0.5" style={{ color: '#9CA3AF' }}>notes</span>
                 <span className="italic truncate">{tx.notes}</span>
               </div>

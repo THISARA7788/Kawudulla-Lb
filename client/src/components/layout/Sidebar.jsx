@@ -77,10 +77,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen w-64 flex flex-col z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+      className={`fixed left-0 top-0 h-screen w-64 flex flex-col z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-slate-100 bg-white ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
-      style={{ background: 'linear-gradient(180deg, #1E2A4A 0%, #0F1A33 100%)', padding: '1rem', fontFamily: "'Inter', sans-serif" }}
+      style={{ padding: '1rem', fontFamily: "'Inter', sans-serif" }}
     >
       {/* Profile / Brand Header */}
       <div className="flex items-center justify-between gap-3 px-2 mb-8">
@@ -91,10 +91,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             className="w-10 h-10 object-contain flex-shrink-0 transition-transform duration-300 hover:scale-105"
           />
           <div className="flex flex-col select-none">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-white" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.05em' }}>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#1E2A4A]" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.05em' }}>
               KAWUDULLA MV
             </h2>
-            <span className="text-[10px] font-black text-sky-400 tracking-widest uppercase mt-0.5" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.15em' }}>
+            <span className="text-[10px] font-black text-[#9E0D0D] tracking-widest uppercase mt-0.5" style={{ fontFamily: "'Manrope', sans-serif", letterSpacing: '0.15em' }}>
               LIBRARY PORTAL
             </span>
           </div>
@@ -102,8 +102,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         {/* Close mobile drawer toggle */}
         <button
           onClick={() => setIsOpen(false)}
-          className="lg:hidden p-1.5 rounded-xl hover:bg-white/10"
-          style={{ color: '#B0C4DE' }}
+          className="lg:hidden p-1.5 rounded-xl hover:bg-slate-100"
+          style={{ color: '#64748B' }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: 22 }}>close</span>
         </button>
@@ -131,31 +131,21 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             <button
               key={item.label}
               onClick={() => handleNav(item.route)}
-              className={`flex items-center gap-3 transition-all duration-300 text-sm w-full text-left ${isActive ? 'font-semibold' : 'font-normal'}`}
+              className={`flex items-center gap-3 transition-all duration-300 text-sm w-full text-left cursor-pointer border border-transparent ${
+                isActive 
+                  ? 'font-bold bg-[#9E0D0D] text-white shadow-lg shadow-red-900/15' 
+                  : 'font-semibold text-[#334155] hover:text-[#9E0D0D] hover:bg-slate-50'
+              }`}
               style={{
-                padding: '0.55rem 0.85rem',
+                padding: '0.6rem 0.85rem',
                 margin: '0',
-                color: isActive ? '#fff' : '#B0C4DE',
-                backgroundColor: isActive ? '#4062BB' : 'transparent',
                 borderRadius: '12px',
-                boxShadow: isActive ? '0 2px 8px rgba(64,98,187,0.4)' : 'none',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                }
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: 22, color: isActive ? '#fff' : '#B0C4DE', ...ms }}>{item.icon}</span>
+              <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'inherit', ...ms }}>{item.icon}</span>
               <span className="flex-1 truncate">{item.label}</span>
               {item.route === '/pending-registration' && pendingCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[8px] font-black flex items-center justify-center flex-shrink-0 animate-pulse">
+                <span className="w-5 h-5 rounded-full bg-[#B91C1C] text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0">
                   {pendingCount}
                 </span>
               )}
@@ -165,38 +155,38 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
       </nav>
 
-      {/* User Info Profile Card & Logout */}
-      <div className="mt-auto pt-3 border-t border-white/10 flex items-center justify-between gap-2 px-1">
+      {/* User Info Profile Card & Dropdown Chevron */}
+      <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between gap-2 px-1">
         <div 
           onClick={() => handleNav('/profile')}
           className={`flex items-center gap-3 cursor-pointer p-1.5 rounded-xl flex-1 min-w-0 transition-all duration-300 ${
             isProfileActive 
-              ? 'bg-[#4062BB] shadow-[0_2px_8px_rgba(64,98,187,0.4)]' 
-              : 'hover:bg-white/5'
+              ? 'bg-[#9E0D0D] text-white shadow-lg shadow-red-900/15' 
+              : 'hover:bg-slate-50'
           }`}
         >
           <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 transition-all duration-300 ${
-            isProfileActive ? 'bg-white text-[#1E2A4A]' : 'bg-[#facc15] text-[#1e293b]'
+            isProfileActive ? 'bg-white text-[#9E0D0D]' : 'bg-[#9E0D0D] text-white'
           }`}>
             {getInitials(user?.name)}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className={`text-xs truncate leading-tight transition-all duration-300 ${isProfileActive ? 'font-semibold text-white' : 'text-slate-200 truncate leading-tight font-normal'}`}>
+            <span className={`text-xs truncate leading-tight transition-all duration-300 ${isProfileActive ? 'font-bold text-white' : 'text-slate-700 truncate leading-tight font-bold'}`}>
               {user?.name || 'User'}
             </span>
-            <span className={`text-[10px] capitalize mt-0.5 leading-none transition-all duration-300 ${isProfileActive ? 'text-white/85' : 'text-slate-400'}`}>
+            <span className={`text-[10px] capitalize mt-0.5 leading-none transition-all duration-300 ${isProfileActive ? 'text-white/90' : 'text-slate-400 font-semibold'}`}>
               {user?.role || 'Member'}
             </span>
           </div>
         </div>
         
-        {/* Logout button */}
-        <button
-          onClick={() => { logout(); navigate('/login', { replace: true }) }}
-          className="p-2 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex-shrink-0"
+        {/* Logout Button */}
+        <button 
+          onClick={logout}
+          className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#9E0D0D] hover:bg-red-50/50 transition-all cursor-pointer flex-shrink-0"
           title="Logout"
         >
-          <span className="material-symbols-outlined" style={{ fontSize: 20, ...msOutline }}>logout</span>
+          <span className="material-symbols-outlined text-lg" style={msOutline}>logout</span>
         </button>
       </div>
     </aside>
