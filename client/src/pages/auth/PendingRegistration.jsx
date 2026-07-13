@@ -186,8 +186,8 @@ function PendingRegistration() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                            style={{ background: 'linear-gradient(135deg, #1a1245 0%, #4062BB 100%)' }}
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                            style={{ background: 'linear-gradient(135deg, #9E0D0D 0%, #4C0000 100%)' }}
                           >
                             {u.name?.charAt(0).toUpperCase() || '?'}
                           </div>

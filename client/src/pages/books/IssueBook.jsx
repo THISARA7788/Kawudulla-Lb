@@ -814,7 +814,7 @@ export default function IssueBook() {
                         className="w-full p-3.5 flex items-center justify-between gap-4 text-left hover:bg-slate-50/50 transition-colors cursor-pointer"
                       >
                         <div className="flex gap-3 items-center min-w-0">
-                          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-500 font-black">
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white font-black" style={{ background: 'linear-gradient(135deg, #9E0D0D 0%, #4C0000 100%)' }}>
                             {getInitials(u.name)}
                           </div>
                           <div className="min-w-0">

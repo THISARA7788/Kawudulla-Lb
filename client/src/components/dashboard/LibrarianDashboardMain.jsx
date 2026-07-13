@@ -669,11 +669,10 @@ export default function LibrarianDashboardMain() {
                   </thead>
                   <tbody>
                     {pendingApprovals.slice(0, 2).map((u) => {
-                      const avatar = getAvatarColor(u.name);
                       return (
                         <tr key={u._id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/20 transition-colors">
                           <td className="py-2.5 flex items-center gap-2">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] flex-shrink-0 ${avatar.bg}`}>
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] flex-shrink-0 text-white" style={{ background: 'linear-gradient(135deg, #9E0D0D 0%, #4C0000 100%)' }}>
                               {getInitials(u.name)}
                             </div>
                             <span className="font-bold text-slate-800 text-xs truncate max-w-[90px]" title={u.name}>{u.name}</span>

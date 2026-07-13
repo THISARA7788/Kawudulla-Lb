@@ -170,7 +170,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               : 'hover:bg-white/5'
           }`}
         >
-          <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 transition-all duration-300 bg-[#D97706] text-white">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 transition-all duration-300 text-white" style={{ background: 'linear-gradient(135deg, #9E0D0D 0%, #4C0000 100%)' }}>
             {getInitials(user?.name)}
           </div>
           <div className="flex flex-col min-w-0">

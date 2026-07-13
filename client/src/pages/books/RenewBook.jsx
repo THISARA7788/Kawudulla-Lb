@@ -267,7 +267,7 @@ export default function RenewBook() {
             {selectedMember && (
               <div className="mt-4 p-4 rounded-xl border border-red-100 bg-red-50/5 text-left animate-fadeIn">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm" style={{ background: 'linear-gradient(135deg, #4C0000 0%, #9E0D0D 100%)' }}>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0" style={{ background: 'linear-gradient(135deg, #4C0000 0%, #9E0D0D 100%)' }}>
                     {selectedMember.name?.charAt(0).toUpperCase()}
                   </div>
                   <div>
