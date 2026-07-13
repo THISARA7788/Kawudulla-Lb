@@ -42,7 +42,12 @@ router.post('/register', async (req, res) => {
     const sanitizedEmail = email ? email.trim().toLowerCase() : '';
     const userExists = await User.findOne({ email: sanitizedEmail });
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists with this email' });
+      if (userExists.status !== 'active') {
+        // If the previous registration is not active (pending or rejected), delete it so they can register again
+        await User.deleteOne({ _id: userExists._id });
+      } else {
+        return res.status(400).json({ message: 'User already exists with this email' });
+      }
     }
 
     // Unified password validation on the server layer for all registrations (students, teachers, etc.)
