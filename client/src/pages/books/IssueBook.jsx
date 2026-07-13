@@ -1064,7 +1064,11 @@ export default function IssueBook() {
                             <input
                               type="date"
                               value={dueDate}
-                              onChange={(e) => setDueDate(e.target.value)}
+                              onChange={(e) => {
+                                const newDateStr = e.target.value;
+                                setDueDate(newDateStr);
+                                setCart(cart.map(item => ({ ...item, dueDate: newDateStr })));
+                              }}
                               className="w-full px-2 py-1.5 text-xs rounded-xl border border-slate-200 outline-none bg-white font-medium focus:border-[#D97706]"
                             />
                           </div>
