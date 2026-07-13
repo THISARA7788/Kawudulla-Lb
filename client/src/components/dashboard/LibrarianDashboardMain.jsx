@@ -142,10 +142,10 @@ function PieChart({ data, size = 120, centerText }) {
 
 
 const quickActionColors = {
-  "Issue Book Center": { bg: '#FDF2F2', icon: '#9E0D0D' },
-  "Return Book": { bg: '#FEF3C7', icon: '#B45309' },
-  "Add New Book": { bg: '#ECFDF5', icon: '#047857' },
-  "View Reports": { bg: '#F8FAFC', icon: '#475569' },
+  "Issue Book Center": { bg: '#EAFDF3', icon: '#1E7A4A' },
+  "Return Book": { bg: '#EFF6FF', icon: '#1D4ED8' },
+  "Add New Book": { bg: '#FFF7ED', icon: '#D97706' },
+  "View Reports": { bg: '#FAF5FF', icon: '#8B5CF6' },
 }
 
 function QuickAction({ icon, label, onClick }) {
@@ -154,16 +154,15 @@ function QuickAction({ icon, label, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 py-1.5 px-2.5 rounded-xl border bg-transparent transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group w-full justify-center"
-      style={{ backgroundColor: colors.bg, borderColor: `${colors.icon}33` }}
+      className="flex items-center gap-3 py-2.5 px-3 rounded-full border bg-transparent transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group w-full justify-start pl-4 cursor-pointer"
+      style={{ backgroundColor: colors.bg, borderColor: `${colors.icon}22` }}
     >
       <div
-        className="w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 flex-shrink-0"
-        style={{ backgroundColor: 'rgba(255,255,255,0.75)' }}
+        className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 flex-shrink-0 bg-white shadow-sm border border-slate-100/50"
       >
         <span className="material-symbols-outlined transition-transform duration-300" style={{ color: colors.icon, fontSize: 16 }}>{icon}</span>
       </div>
-      <span className="text-[10px] font-extrabold uppercase tracking-wider transition-colors duration-300 whitespace-nowrap" style={{ color: colors.icon }}>{label}</span>
+      <span className="text-[10px] font-black uppercase tracking-wider transition-colors duration-300 whitespace-nowrap" style={{ color: colors.icon }}>{label}</span>
     </button>
   )
 }
