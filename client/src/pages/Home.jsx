@@ -59,7 +59,12 @@ export default function Home() {
           <h2 className="text-4xl sm:text-5xl font-black leading-[1.15] tracking-tight mb-5" style={{ color: '#1E2A4A', fontFamily: "'Manrope', sans-serif" }}>
             Smartly<br />
             Discover Knowledge<br />
-            <span style={{ color: '#D97706' }}>Borrow with Ease</span>
+            <span style={{
+              background: 'linear-gradient(90deg, #9E0D0D 0%, #D97706 50%, #F59E0B 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              display: 'inline-block'
+            }}>Borrow with Ease</span>
           </h2>
 
           {/* Slogans paragraphs */}
