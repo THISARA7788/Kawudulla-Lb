@@ -640,7 +640,7 @@ export default function ReturnBook() {
               <div 
                 className="rounded-2xl p-5 bg-white border transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 select-none animate-fadeIn"
                 style={{ 
-                  borderColor: scannerFocused ? '#10B981' : '#E2E8F0',
+                  borderColor: scannerFocused ? '#9E0D0D' : '#E2E8F0',
                   boxShadow: scannerFocused ? '0 10px 25px -5px rgba(16, 185, 129, 0.1), 0 8px 10px -6px rgba(16, 185, 129, 0.05)' : '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
                 }}
               >
@@ -648,7 +648,7 @@ export default function ReturnBook() {
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all ${
                       scannerFocused 
-                        ? 'bg-emerald-500 text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)]' 
+                        ? 'bg-[#9E0D0D] text-white shadow-[0_4px_12px_rgba(16,185,129,0.25)]' 
                         : 'bg-slate-100 text-slate-500'
                     }`}>
                       <span className="material-symbols-outlined text-xl">qr_code_scanner</span>
@@ -672,21 +672,21 @@ export default function ReturnBook() {
                       }}
                       onBlur={() => setScannerFocused(false)}
                       placeholder="Scan barcode or type name, title, member ID..."
-                      className="w-full py-2.5 pl-10 pr-4 text-xs border border-slate-200 outline-none rounded-xl bg-slate-50/20 focus:bg-white focus:border-[#10B981] focus:shadow-[0_2px_8px_rgba(16,185,129,0.05)] transition-all font-medium text-slate-800 placeholder-slate-400"
+                      className="w-full py-2.5 pl-10 pr-4 text-xs border border-slate-200 outline-none rounded-xl bg-slate-50/20 focus:bg-white focus:border-[#9E0D0D] focus:shadow-[0_2px_8px_rgba(16,185,129,0.05)] transition-all font-medium text-slate-800 placeholder-slate-400"
                     />
                   </form>
                 </div>
 
                 <div className="flex flex-row md:flex-col items-center md:items-end gap-3 justify-between md:justify-center flex-shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-5">
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border select-none transition-all" style={{ 
-                    backgroundColor: scannerFocused ? '#E6FBF3' : '#F8FAFC', 
-                    borderColor: scannerFocused ? '#A7F3D0' : '#E2E8F0' 
+                    backgroundColor: scannerFocused ? '#FDF2F2' : '#F8FAFC', 
+                    borderColor: scannerFocused ? '#FECACA' : '#E2E8F0' 
                   }}>
                     <span className="relative flex h-2 w-2">
                       {scannerFocused && (
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       )}
-                      <span className={`relative inline-flex rounded-full h-2 w-2 ${scannerFocused ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${scannerFocused ? 'bg-[#9E0D0D]' : 'bg-slate-400'}`}></span>
                     </span>
                     <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500">
                       {scannerFocused ? 'Scanner Ready' : 'Click Input'}
@@ -694,10 +694,10 @@ export default function ReturnBook() {
                   </div>
 
                   <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setAutoSubmit(!autoSubmit)}>
-                    <div className={`relative w-8 h-4 rounded-full transition-colors duration-200 ${autoSubmit ? 'bg-[#10B981]' : 'bg-slate-200'}`}>
+                    <div className={`relative w-8 h-4 rounded-full transition-colors duration-200 ${autoSubmit ? 'bg-[#9E0D0D]' : 'bg-slate-200'}`}>
                       <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-200 ${autoSubmit ? 'translate-x-4' : ''}`} />
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-wider transition-colors duration-200" style={{ color: autoSubmit ? '#10B981' : '#6B7280' }}>
+                    <span className="text-[10px] font-black uppercase tracking-wider transition-colors duration-200" style={{ color: autoSubmit ? '#9E0D0D' : '#6B7280' }}>
                       ⚡ Auto-Submit Return
                     </span>
                   </div>
@@ -709,13 +709,13 @@ export default function ReturnBook() {
             {selectedMember && (
               <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fadeIn">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#10B981] flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+                  <div className="w-12 h-12 rounded-full bg-[#9E0D0D] flex items-center justify-center text-white flex-shrink-0 shadow-sm">
                     <span className="material-symbols-outlined text-2xl">person</span>
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-extrabold text-slate-800">{selectedMember.name}</h3>
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-200">Active</span>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">Active</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                       <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-655 uppercase">
@@ -736,7 +736,7 @@ export default function ReturnBook() {
                 {/* Search another member */}
                 <button 
                   onClick={clearMember}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-white border border-[#10B981] text-[#10B981] hover:bg-emerald-50/50 transition-all hover:shadow-sm active:scale-95 flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-white border border-[#9E0D0D] text-[#9E0D0D] hover:bg-red-50/50 transition-all hover:shadow-sm active:scale-95 flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-sm">person_search</span>
                   Search another member or book
@@ -749,7 +749,7 @@ export default function ReturnBook() {
               <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col h-[460px] animate-fadeIn relative justify-center">
                 {searchLoading ? (
                   <div className="flex flex-col items-center justify-center flex-grow select-none animate-fadeIn">
-                    <span className="material-symbols-outlined text-4xl text-[#10B981] animate-spin">sync</span>
+                    <span className="material-symbols-outlined text-4xl text-[#9E0D0D] animate-spin">sync</span>
                     <p className="text-xs text-slate-400 mt-2 font-bold uppercase tracking-wider animate-pulse">Loading search results...</p>
                   </div>
                 ) : (
@@ -759,7 +759,7 @@ export default function ReturnBook() {
                   {/* Left Column: Members List */}
                   <div className="flex flex-col min-h-0">
                     <div className="flex items-center gap-2 mb-3 select-none flex-shrink-0">
-                      <span className="material-symbols-outlined text-[#10B981] text-lg font-black">group</span>
+                      <span className="material-symbols-outlined text-[#9E0D0D] text-lg font-black">group</span>
                       <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
                         {searchResults ? `Matching Members (${searchResults.members.length})` : 'Members Search'}
                       </h3>
@@ -778,7 +778,7 @@ export default function ReturnBook() {
                               setSearchResults(null);
                               setScanInput('');
                             }}
-                            className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/30 hover:border-emerald-450 hover:bg-emerald-50/20 transition-all text-left cursor-pointer animate-fadeIn"
+                            className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/30 hover:border-red-200 hover:bg-red-50/20 transition-all text-left cursor-pointer animate-fadeIn"
                           >
                             <div className="min-w-0">
                               <div className="text-xs font-bold text-slate-800 truncate">{member.name}</div>
@@ -795,7 +795,7 @@ export default function ReturnBook() {
                         ))
                       ) : (
                         <div className="flex flex-col items-center justify-center text-center py-12 text-slate-350 select-none animate-fadeIn">
-                          <span className="material-symbols-outlined text-4xl mb-2 text-[#10B981] animate-pulse">person_search</span>
+                          <span className="material-symbols-outlined text-4xl mb-2 text-[#9E0D0D] animate-pulse">person_search</span>
                           <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Search Members</h4>
                           <p className="text-[10px] text-slate-400 max-w-[200px] leading-relaxed">
                             Type a member's name or ID in the search bar above to list profiles.
@@ -840,7 +840,7 @@ export default function ReturnBook() {
                                   setScanInput('');
                                 }
                               }}
-                              className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/30 hover:border-emerald-450 hover:bg-emerald-50/20 transition-all text-left cursor-pointer"
+                              className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/30 hover:border-red-200 hover:bg-red-50/20 transition-all text-left cursor-pointer"
                             >
                               <div className="min-w-0 flex-1 mr-2">
                                 <div className="text-xs font-bold text-slate-800 truncate">"{book.title}"</div>
@@ -848,7 +848,7 @@ export default function ReturnBook() {
                                   Borrower: {borrower.name}
                                 </div>
                               </div>
-                              <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wide ${isOverdue ? 'text-red-655 bg-red-55' : 'text-emerald-705 bg-emerald-50'}`}>
+                              <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wide ${isOverdue ? 'text-red-655 bg-red-55' : 'text-emerald-705 bg-red-50'}`}>
                                 {isOverdue ? 'Overdue' : 'Active'}
                               </span>
                             </button>
@@ -926,7 +926,7 @@ export default function ReturnBook() {
                                   setSelectedBorrows([tx]);
                                 }
                               }}
-                              className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-[#10B981] hover:bg-slate-50/50 transition-all text-left animate-fadeIn cursor-pointer"
+                              className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-[#9E0D0D] hover:bg-slate-50/50 transition-all text-left animate-fadeIn cursor-pointer"
                               style={{ backgroundColor: '#FAFCFD' }}
                             >
                               <div className="min-w-0">
@@ -966,12 +966,12 @@ export default function ReturnBook() {
                       
                       <div className="flex items-center justify-between mb-3 select-none flex-shrink-0">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-500">
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-[#9E0D0D]">
                             <span className="material-symbols-outlined text-white text-base">assignment_turned_in</span>
                           </div>
                           <h2 className="text-xs font-black uppercase tracking-wider text-slate-700">Confirm Return</h2>
                         </div>
-                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-55 text-emerald-700 border border-emerald-100">
+                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-55 text-[#7F0A0A] border border-red-100">
                           {selectedBorrows.length} Book{selectedBorrows.length > 1 ? 's' : ''} Selected
                         </span>
                       </div>
@@ -987,12 +987,25 @@ export default function ReturnBook() {
                           const fine = days * 10;
                           return (
                             <div className="flex flex-col items-center flex-grow justify-center min-h-0 select-none animate-fadeIn my-2">
-                              {/* Big cover shadow card */}
-                              <div className="w-32 h-44 rounded-2xl bg-amber-50 border border-slate-250 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-lg mb-4">
-                                {book.coverImageUrl ? (
-                                  <img src={book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
-                                ) : (
-                                  <span className="material-symbols-outlined text-amber-500 text-4xl">menu_book</span>
+                              {/* Wrapper with relative positioning, allowing overflow */}
+                              <div className="relative mb-4">
+                                {/* Book cover container (clipped) */}
+                                <div className="w-32 h-44 rounded-2xl bg-amber-50 border border-slate-250 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-lg">
+                                  {book.coverImageUrl ? (
+                                    <img src={book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="material-symbols-outlined text-amber-500 text-4xl">menu_book</span>
+                                  )}
+                                </div>
+                                {/* Big Warning Badge in the middle, overflowing outline */}
+                                {days > 0 && (
+                                  <div 
+                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#DC2626] text-white py-2 px-3 rounded-xl shadow-2xl flex flex-col items-center justify-center gap-1 border-2 border-white animate-pulse min-w-[130px] z-10"
+                                    style={{ transform: 'translate(-50%, -50%) rotate(-8deg)', boxShadow: '0 10px 25px rgba(220, 38, 38, 0.4)' }}
+                                  >
+                                    <span className="material-symbols-outlined text-[#FBBF24] text-xl font-bold leading-none">warning</span>
+                                    <span className="font-black text-[10px] tracking-wider uppercase whitespace-nowrap">{days}d Overdue</span>
+                                  </div>
                                 )}
                               </div>
                               
@@ -1005,7 +1018,7 @@ export default function ReturnBook() {
                                 <div className="flex justify-center gap-2 mt-2 text-[9.5px] font-semibold text-slate-455">
                                   <span>Borrowed: <span className="font-bold text-slate-600">{new Date(borrow.borrowDate).toLocaleDateString()}</span></span>
                                   <span>•</span>
-                                  <span>Due: <span className={`font-bold ${days > 0 ? 'text-red-500' : 'text-emerald-600'}`}>{new Date(borrow.dueDate).toLocaleDateString()}</span></span>
+                                  <span>Due: <span className={`font-bold ${days > 0 ? 'text-red-500' : 'text-[#9E0D0D]'}`}>{new Date(borrow.dueDate).toLocaleDateString()}</span></span>
                                 </div>
 
                                 {days > 0 && (
@@ -1027,12 +1040,22 @@ export default function ReturnBook() {
                             const days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
                             const book = borrow.book || {};
                             return (
-                              <div key={borrow._id} className="flex gap-3 items-center p-2 rounded-xl bg-slate-50/50 border border-slate-100 shadow-xs relative">
-                                <div className="w-10 h-12 rounded bg-amber-50 border border-amber-205 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                  {book.coverImageUrl ? (
-                                    <img src={book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
-                                  ) : (
-                                    <span className="material-symbols-outlined text-amber-500 text-lg">menu_book</span>
+                              <div key={borrow._id} className={`flex gap-3 items-center p-2 rounded-xl border shadow-xs relative ${days > 0 ? 'bg-red-50/40 border-red-100' : 'bg-slate-50/50 border-slate-100'}`}>
+                                <div className="relative flex-shrink-0">
+                                  <div className="w-10 h-12 rounded bg-amber-50 border border-amber-205 flex items-center justify-center overflow-hidden">
+                                    {book.coverImageUrl ? (
+                                      <img src={book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="material-symbols-outlined text-amber-500 text-lg">menu_book</span>
+                                    )}
+                                  </div>
+                                  {days > 0 && (
+                                    <div 
+                                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#DC2626] text-white p-0.5 rounded shadow-lg flex items-center justify-center border border-white animate-pulse z-10"
+                                      style={{ transform: 'translate(-50%, -50%) rotate(-5deg)' }}
+                                    >
+                                      <span className="material-symbols-outlined text-[#FBBF24] font-bold leading-none" style={{ fontSize: 10 }}>warning</span>
+                                    </div>
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -1101,7 +1124,7 @@ export default function ReturnBook() {
                           onClick={handleReturnSelected} 
                           disabled={saving}
                           className="flex-grow py-2 rounded-xl font-bold text-xs text-white transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-emerald-900/10 cursor-pointer"
-                          style={{ backgroundColor: !saving ? '#059669' : '#CBD5E1' }}
+                          style={{ backgroundColor: !saving ? '#4C0000' : '#CBD5E1' }}
                         >
                           <span className="material-symbols-outlined text-sm">assignment_returned</span>
                           {saving ? 'Processing...' : `Confirm Return (${selectedBorrows.length} Book${selectedBorrows.length > 1 ? 's' : ''})`}
@@ -1142,12 +1165,12 @@ export default function ReturnBook() {
             {selectedMember && (
               <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm animate-fadeIn select-none">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="material-symbols-outlined text-[#10B981] text-lg font-black">person</span>
+                  <span className="material-symbols-outlined text-[#9E0D0D] text-lg font-black">person</span>
                   <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Borrower Info</span>
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-emerald-50 text-[#10B981]">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-red-50 text-[#9E0D0D]">
                     <span className="material-symbols-outlined text-xl">person</span>
                   </div>
                   <div className="min-w-0">
@@ -1170,7 +1193,7 @@ export default function ReturnBook() {
             {/* Recent Returns sidebar item */}
             <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col min-h-0 max-h-[460px] flex-grow">
               <div className="flex items-center gap-2 mb-3 select-none">
-                <span className="material-symbols-outlined text-[#10B981] text-lg font-black">assignment_returned</span>
+                <span className="material-symbols-outlined text-[#9E0D0D] text-lg font-black">assignment_returned</span>
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Recent Returns</span>
               </div>
               
@@ -1183,7 +1206,7 @@ export default function ReturnBook() {
               {recentReturns.length >= 10 && (
                 <Link
                   to="/circulation"
-                  className="mt-3 pt-2.5 border-t border-slate-100 text-center text-[10px] font-extrabold uppercase tracking-wider text-[#10B981] hover:text-emerald-700 transition-all hover:shadow-xs flex items-center justify-center gap-1 cursor-pointer select-none"
+                  className="mt-3 pt-2.5 border-t border-slate-100 text-center text-[10px] font-extrabold uppercase tracking-wider text-[#9E0D0D] hover:text-[#7F0A0A] transition-all hover:shadow-xs flex items-center justify-center gap-1 cursor-pointer select-none"
                 >
                   <span>View more in circulation</span>
                   <span className="material-symbols-outlined text-xs">arrow_forward</span>
@@ -1217,13 +1240,13 @@ export default function ReturnBook() {
             }
           `}</style>
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl transition-all border border-slate-100 flex flex-col items-center text-center relative overflow-hidden animate-scaleUp">
-            <div className="absolute top-0 left-0 right-0 h-2 bg-[#10B981]" />
+            <div className="absolute top-0 left-0 right-0 h-2 bg-[#9E0D0D]" />
             
-            <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4 mt-2 animate-bounce">
+            <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center text-[#9E0D0D] mb-4 mt-2 animate-bounce">
               <span className="material-symbols-outlined text-4xl font-bold">assignment_turned_in</span>
             </div>
 
-            <h3 className="text-xl font-extrabold mb-1" style={{ color: '#1A1245', fontFamily: "'Inter', sans-serif" }}>
+            <h3 className="text-xl font-extrabold mb-1" style={{ color: '#4C0000', fontFamily: "'Inter', sans-serif" }}>
               Book Returned Successfully!
             </h3>
             <p className="text-slate-400 text-xs mb-5">Return transaction completed and recorded</p>
@@ -1295,7 +1318,7 @@ export default function ReturnBook() {
                   }
                 }}
                 className="flex-1 py-3 rounded-xl text-xs font-extrabold text-white transition-all hover:opacity-90 flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-700/20 cursor-pointer"
-                style={{ backgroundColor: '#10B981' }}
+                style={{ backgroundColor: '#9E0D0D' }}
               >
                 <span className="material-symbols-outlined text-sm font-bold">qr_code_scanner</span>
                 Scan Next Book (Enter)

@@ -56,14 +56,20 @@ export default function ActiveBorrowsList({
 
         // MODE 1: Interactive selector list (used on the Return Book page)
         if (isInteractive) {
+          const cardClass = isOverdue
+            ? isSelected 
+              ? 'border-red-400 bg-red-100/40 shadow-sm' 
+              : 'border-red-100 hover:border-red-300 bg-red-50/40'
+            : isSelected 
+              ? 'border-amber-400 bg-amber-50/45 shadow-sm' 
+              : 'border-slate-100 hover:border-amber-200 bg-slate-50/20';
+
           return (
             <button
               key={b._id || i}
               type="button"
               onClick={() => onSelect(b)}
-              className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all border ${
-                isSelected ? 'border-amber-400 bg-amber-50/45 shadow-sm' : 'border-slate-100 hover:border-amber-200 bg-slate-50/20'
-              }`}
+              className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all border ${cardClass}`}
             >
               {/* Book Cover Thumbnail (w-11 h-15 for clear visibility) */}
               <div className="w-11 h-15 rounded-lg bg-amber-50 border border-slate-200/80 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
@@ -85,15 +91,24 @@ export default function ActiveBorrowsList({
                 
                 {/* Overdue/Active badge helper */}
                 <div className="flex items-center select-none">
-                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider ${isOverdue ? 'text-red-600 bg-red-100/60' : 'text-emerald-700 bg-emerald-100/60'}`}>
-                    {isOverdue ? `Overdue (${daysOverdue}d)` : 'Active'}
-                  </span>
+                  {isOverdue ? (
+                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-50 border border-red-200 text-red-600 mt-1 shadow-sm">
+                      <span className="material-symbols-outlined text-xs font-bold leading-none text-red-650" style={{ fontSize: 13 }}>warning</span>
+                      <span>{daysOverdue}d Overdue (LKR {(daysOverdue * 10).toFixed(2)} fine)</span>
+                    </div>
+                  ) : (
+                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider text-emerald-700 bg-emerald-100/60 mt-1">
+                      Active
+                    </span>
+                  )}
                 </div>
               </div>
               
               {/* Checkbox selector indicator */}
-              <div className={`w-4.5 h-4.5 rounded-md border flex-shrink-0 flex items-center justify-center transition-all ${
-                isSelected ? 'border-amber-400 bg-amber-400 shadow-sm' : 'border-slate-350 bg-white'
+              <div className={`w-4.5 h-4.5 rounded-md border flex-shrink-0 flex-shrink-0 flex items-center justify-center transition-all ${
+                isSelected 
+                  ? isOverdue ? 'border-red-500 bg-red-500 shadow-sm' : 'border-amber-400 bg-amber-400 shadow-sm' 
+                  : 'border-slate-350 bg-white'
               }`}>
                 {isSelected && <span className="material-symbols-outlined text-white text-xs font-bold">check</span>}
               </div>
@@ -103,14 +118,26 @@ export default function ActiveBorrowsList({
 
         // MODE 2: Read-only compact summary list (used on the Issue Book page)
         return (
-          <div key={i} className="p-2 rounded-lg text-xs" style={{ backgroundColor: isOverdue ? '#FEF2F2' : '#F9FAFB' }}>
+          <div key={i} className="p-2.5 rounded-xl text-xs border" style={{ 
+            backgroundColor: isOverdue ? '#FEF2F2' : '#F9FAFB',
+            borderColor: isOverdue ? '#FEE2E2' : '#E5E7EB'
+          }}>
             <div className="flex items-center justify-between">
-              <span className="font-semibold truncate" style={{ color: '#1a1245' }}>{book.title || 'Book'}</span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ml-1 ${isOverdue ? 'text-red-650 bg-red-100' : 'text-green-700 bg-green-100'}`}>
+              <span className="font-bold truncate text-slate-800">{book.title || 'Book'}</span>
+              <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded-full flex-shrink-0 ml-1 uppercase tracking-wide ${
+                isOverdue ? 'text-red-700 bg-red-100' : 'text-emerald-700 bg-emerald-100'
+              }`}>
                 {isOverdue ? 'Overdue' : 'Active'}
               </span>
             </div>
-            <div className="mt-0.5" style={{ color: '#9CA3AF' }}>Due: {new Date(b.dueDate).toLocaleDateString()}</div>
+            {isOverdue ? (
+              <div className="mt-1.5 flex items-center gap-1 text-[9px] font-bold text-red-600 bg-red-50/50 p-1 rounded-lg border border-red-100 w-max">
+                <span className="material-symbols-outlined" style={{ fontSize: 11 }}>warning</span>
+                <span>{daysOverdue}d Overdue (LKR {(daysOverdue * 10).toFixed(2)} fine)</span>
+              </div>
+            ) : (
+              <div className="mt-1 text-[9px] text-slate-400 font-semibold">Due: {new Date(b.dueDate).toLocaleDateString()}</div>
+            )}
           </div>
         );
       })}
