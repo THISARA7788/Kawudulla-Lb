@@ -12,6 +12,9 @@ function PendingRegistration() {
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(null); // userId of user being acted on
   const [toast, setToast] = useState(null);
+  const [modal, setModal] = useState({ show: false, type: '', userId: '', userName: '' });
+  const [rejectReason, setRejectReason] = useState('');
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => {
@@ -41,9 +44,23 @@ function PendingRegistration() {
     }
   };
 
-  const handleApprove = async (userId, userName) => {
-    if (!window.confirm(`Approve ${userName}? They will be able to log in.`)) return;
+  const triggerApprove = (userId, userName) => {
+    setModal({ show: true, type: 'approve', userId, userName });
+  };
 
+  const triggerReject = (userId, userName) => {
+    setModal({ show: true, type: 'reject', userId, userName });
+    setRejectReason('');
+  };
+
+  const closeModal = () => {
+    setModal({ show: false, type: '', userId: '', userName: '' });
+    setRejectReason('');
+  };
+
+  const executeApprove = async () => {
+    const { userId, userName } = modal;
+    closeModal();
     try {
       setActionLoading(userId);
       await api.put(`/auth/approve/${userId}`);
@@ -57,13 +74,12 @@ function PendingRegistration() {
     }
   };
 
-  const handleReject = async (userId, userName) => {
-    const reason = window.prompt('Enter reason for rejection (optional):');
-    if (reason === null) return; // User cancelled
-
+  const executeReject = async () => {
+    const { userId, userName } = modal;
+    closeModal();
     try {
       setActionLoading(userId);
-      await api.put(`/auth/reject/${userId}`, { reason });
+      await api.put(`/auth/reject/${userId}`, { reason: rejectReason });
       fetchPendingUsers();
       showToast(`Rejected ${userName}.`, 'delete');
     } catch (err) {
@@ -197,7 +213,7 @@ function PendingRegistration() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleApprove(u._id, u.name)}
+                            onClick={() => triggerApprove(u._id, u.name)}
                             disabled={actionLoading === u._id}
                             className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-[#1a1245] hover:bg-[#4062BB] active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-50"
                           >
@@ -211,7 +227,7 @@ function PendingRegistration() {
                             )}
                           </button>
                           <button
-                            onClick={() => handleReject(u._id, u.name)}
+                            onClick={() => triggerReject(u._id, u.name)}
                             disabled={actionLoading === u._id}
                             className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-[#D9645E] hover:bg-[#B84A45] active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-50"
                           >
@@ -257,6 +273,79 @@ function PendingRegistration() {
               {toast.type === 'error' ? 'warning' : toast.type === 'delete' ? 'delete_forever' : 'check_circle'}
             </span>
             <span className="text-xs font-bold">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation / Rejection Modal */}
+      {modal.show && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={closeModal}></div>
+          
+          {/* Modal Panel */}
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden relative z-10 p-6 animate-[toast-enter_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+            <div className="flex flex-col items-center text-center">
+              {modal.type === 'approve' ? (
+                <>
+                  <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4 border border-emerald-100">
+                    <span className="material-symbols-outlined text-2xl font-bold">check_circle</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-[#1a1245] mb-2">Approve User Registration?</h3>
+                  <p className="text-sm text-slate-500 mb-6">
+                    Are you sure you want to approve <strong className="text-slate-800">{modal.userName}</strong>? They will be granted access to log into the library system.
+                  </p>
+                  
+                  <div className="flex gap-3 w-full">
+                    <button
+                      onClick={closeModal}
+                      className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={executeApprove}
+                      className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md active:scale-[0.98] transition-all cursor-pointer"
+                    >
+                      Approve
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 mb-4 border border-rose-100">
+                    <span className="material-symbols-outlined text-2xl font-bold">cancel</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-[#1a1245] mb-2">Reject User Registration?</h3>
+                  <p className="text-sm text-slate-500 mb-4">
+                    Please provide a reason for rejecting <strong className="text-slate-800">{modal.userName}</strong>.
+                  </p>
+                  
+                  <input
+                    type="text"
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="Enter reason (optional)"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm mb-6 focus:outline-none focus:ring-2 focus:ring-[#1a1245]/20 focus:border-[#1a1245] transition-all"
+                  />
+                  
+                  <div className="flex gap-3 w-full">
+                    <button
+                      onClick={closeModal}
+                      className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-slate-50 active:scale-[0.98] transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={executeReject}
+                      className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md active:scale-[0.98] transition-all cursor-pointer"
+                    >
+                      Reject User
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
