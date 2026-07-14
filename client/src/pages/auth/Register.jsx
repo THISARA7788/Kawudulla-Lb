@@ -1,10 +1,10 @@
-// =========================================================================
+// ==================================================================================
+// 👤 MEMBER 1: AUTHENTICATION (REGISTRATION / SIGN UP)
 // WHAT DOES THIS FILE DO?
-// This page handles new member registration (sign up). It splits the viewport into
-// a responsive visual presentation deck (left) and a multi-step user registration
-// form (right). It matches role specifications (student/teacher) to show matching
-// school grade, class sections, and streams fields.
-// =========================================================================
+// This is the Register (Sign Up) page. It allows Students and Teachers to sign up 
+// by entering their Name, Email, Password, Grade, and Class.
+// When they sign up, their request is sent to the pending list for the librarian to approve.
+// ==================================================================================
 
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -611,6 +611,12 @@ const Register = () => {
 
               {/* Submission button */}
               <div className="pt-3">
+                {/* -------------------------------------------------------------
+                    🔴 BUTTON: Form "Register" Submit Button
+                    To change the color of this button:
+                    - Modify "bg-[#9E0D0D]" to your color (e.g. bg-blue-600 or bg-[#1e40af])
+                    - Modify "hover:bg-[#7F0A0A]" for the hover state color
+                   ------------------------------------------------------------- */}
                 <button
                   type="submit"
                   disabled={loading}

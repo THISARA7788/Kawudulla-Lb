@@ -1,3 +1,10 @@
+// ==================================================================================
+// 👤 MEMBER 3: BOOK CATALOG & MANAGEMENT
+// WHAT DOES THIS FILE DO?
+// This page is where the Librarian manages the library books inventory.
+// - It displays all books in the catalog.
+// - It allows the librarian to search, add new books, edit existing books, and delete books.
+// ==================================================================================
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
@@ -470,6 +477,12 @@ export default function BookManagement() {
 
             {/* Add New Book Action */}
             {user?.role === 'librarian' && (
+              {/* -------------------------------------------------------------
+                  🔴 BUTTON: "Add New Book" Action Button
+                  To change the color of this button:
+                  - Modify "#9E0D0D" to your HEX color (e.g. "#1e40af" for blue)
+                  - Modify the border or shadow color inside "rgba(158,13,13,0.2)"
+                 ------------------------------------------------------------- */}
               <button
                 onClick={openAdd}
                 className="px-4 py-1.5 rounded-2xl text-sm font-bold flex items-center gap-2 hover:opacity-95 hover:shadow-lg transition-all whitespace-nowrap active:scale-95"

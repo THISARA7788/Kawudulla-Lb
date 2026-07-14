@@ -1,10 +1,10 @@
-// =========================================================================
+// ==================================================================================
+// 👤 MEMBER 1: AUTHENTICATION (LOGIN)
 // WHAT DOES THIS FILE DO?
-// This page handles user authentication (login). It splits the viewport into
-// a responsive visual presentation deck (left) and an auth form card (right).
-// Supports role switching (Student, Teacher, Librarian) using a sliding tab bar
-// and queries the backend REST endpoints to authenticate credentials.
-// =========================================================================
+// This is the Login page. It lets Students, Teachers, and Librarians log into 
+// the system using their Email and Password. It also checks their role to redirect
+// them to the correct dashboard.
+// ==================================================================================
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -306,6 +306,12 @@ const Login = () => {
 
             {/* Login Action Button */}
             <div className="pt-3">
+              {/* -------------------------------------------------------------
+                  🔴 BUTTON: Form "Login" Submit Button
+                  To change the color of this button:
+                  - Modify "bg-[#9E0D0D]" to your color (e.g. bg-blue-600 or bg-[#1e40af])
+                  - Modify "hover:bg-[#7F0A0A]" for the hover state color
+                 ------------------------------------------------------------- */}
               <button
                 type="submit"
                 disabled={loading}

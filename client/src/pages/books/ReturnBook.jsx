@@ -1,3 +1,11 @@
+// ==================================================================================
+// 👤 MEMBER 5: RETURN BOOK
+// WHAT DOES THIS FILE DO?
+// This page handles returning borrowed books.
+// - It looks up the borrower (student/teacher).
+// - Shows their active borrowed books.
+// - Lets the librarian check the book back in and automatically calculates fines if overdue.
+// ==================================================================================
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -1120,6 +1128,12 @@ export default function ReturnBook() {
                       </div>
 
                       <div className="flex gap-2 w-full select-none">
+                        {/* -------------------------------------------------------------
+                            🔴 BUTTON: "Confirm Return" Button
+                            To change the color of this button:
+                            - Modify "#4C0000" to your HEX color (e.g. "#059669" for green)
+                            - Modify "#CBD5E1" (disabled gray color) if needed
+                           ------------------------------------------------------------- */}
                         <button 
                           onClick={handleReturnSelected} 
                           disabled={saving}

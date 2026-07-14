@@ -1,3 +1,10 @@
+// ==================================================================================
+// 👤 MEMBER 1: LANDING PAGE
+// WHAT DOES THIS FILE DO?
+// This is the public homepage (Landing Page) of the Library Portal that anyone sees.
+// It shows school details (Kawudulla MV), welcome messages, and a "Get Started" 
+// button to redirect users to login or register.
+// ==================================================================================
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -74,6 +81,12 @@ export default function Home() {
 
           {/* CTA login redirect button */}
           <div>
+            {/* -------------------------------------------------------------
+                🔴 BUTTON: Main Landing Page "Login" Button
+                To change the color of this button:
+                - Modify "bg-[#9E0D0D]" to your color (e.g. bg-blue-600 or bg-[#1e40af])
+                - Modify "hover:bg-[#7F0A0A]" for the hover state color
+               ------------------------------------------------------------- */}
             <button
               onClick={() => navigate('/login')}
               className="px-12 py-3 bg-[#9E0D0D] hover:bg-[#7F0A0A] text-white rounded-xl font-bold text-sm tracking-widest active:scale-[0.98] transform transition-all duration-150 shadow-lg shadow-red-900/10"

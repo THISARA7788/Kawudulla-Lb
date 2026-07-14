@@ -1,3 +1,11 @@
+// ==================================================================================
+// 👤 MEMBER 4: ISSUE BOOK
+// WHAT DOES THIS FILE DO?
+// This page handles checkout transactions for borrowing books.
+// - Step 1: Find a student or teacher (Member).
+// - Step 2: Search or scan a barcode/QR code to find the book.
+// - Step 3: Set due date and confirm the checkout to issue the book.
+// ==================================================================================
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
@@ -1253,6 +1261,12 @@ export default function IssueBook() {
                       Clear Cart
                     </button>
 
+                    {/* -------------------------------------------------------------
+                        🔴 BUTTON: Final "Issue Books" Checkout Button
+                        To change the color of this button:
+                        - Modify "#9E0D0D" to your HEX color (e.g. "#1e40af" for blue)
+                        - Modify the hover or disabled color "#D1D5DB" (gray) if needed
+                       ------------------------------------------------------------- */}
                     <button
                       onClick={handleIssue}
                       disabled={!canIssue || saving}

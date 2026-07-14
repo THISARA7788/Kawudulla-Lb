@@ -1,3 +1,11 @@
+// ==================================================================================
+// 👤 MEMBER 2: LIBRARIAN DASHBOARD
+// WHAT DOES THIS FILE DO?
+// This is the main dashboard that the Librarian sees after logging in.
+// It loads statistics from the database, such as:
+// - Total Books, Active Borrows, Overdue Books, Total Fines.
+// - It also shows visual charts and recent activity lists.
+// ==================================================================================
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
@@ -141,6 +149,11 @@ function PieChart({ data, size = 120, centerText }) {
 }
 
 
+{/* -------------------------------------------------------------
+    🔴 CONFIG: Dashboard "Quick Action" Button Colors
+    To change the background or icon color of the dashboard buttons:
+    - Edit the "bg" (background HEX) or "icon" (icon/text HEX) value below.
+   ------------------------------------------------------------- */}
 const quickActionColors = {
   "Issue Book Center": { bg: '#EAFDF3', icon: '#1E7A4A' },
   "Return Book": { bg: '#EFF6FF', icon: '#1D4ED8' },

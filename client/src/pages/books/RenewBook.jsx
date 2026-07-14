@@ -1,3 +1,11 @@
+// ==================================================================================
+// 👤 MEMBER 5: RENEW BOOK
+// WHAT DOES THIS FILE DO?
+// This page handles renewing borrowed books to extend their return deadline.
+// - It looks up the borrower.
+// - Shows their active borrowed books.
+// - Lets the librarian extend the borrowing period (adds 14 days by default).
+// ==================================================================================
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
@@ -425,6 +433,12 @@ export default function RenewBook() {
                 >
                   Cancel
                 </button>
+                {/* -------------------------------------------------------------
+                    🔴 BUTTON: "Confirm Renewal" Button
+                    To change the color of this button:
+                    - Modify "bg-[#9E0D0D]" to your color (e.g. bg-blue-600)
+                    - Modify "hover:bg-[#7F0A0A]" for the hover state color
+                   ------------------------------------------------------------- */}
                 <button
                   onClick={executeRenewal}
                   disabled={saving || !newDueDate}
