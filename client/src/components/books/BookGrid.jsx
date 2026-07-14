@@ -6,8 +6,6 @@ import React from 'react';
 export default function BookGrid({ 
   loading, 
   filtered, 
-  openEdit, 
-  handleDelete, 
   openAdd, 
   role, 
   onCardClick,

@@ -220,16 +220,19 @@ export default function IssueBook() {
     // Check if book is already in cart
     if (cart.some(item => item.book._id === b._id)) {
       setBookError(`"${b.title}" is already in the checkout cart.`);
+      setBookSearch('');
       return;
     }
     // Check if user already has this book borrowed
     if (activeBorrows.some(item => item.book && item.book._id === b._id)) {
       setBookError(`Member already has "${b.title}" borrowed.`);
+      setBookSearch('');
       return;
     }
     // Check if cart + activeBorrows exceeds limit
     if (activeBorrows.length + cart.length >= borrowLimit) {
       setBookError(`Cannot add book. Borrower has reached their limit (${borrowLimit} books).`);
+      setBookSearch('');
       return;
     }
 
@@ -321,6 +324,7 @@ export default function IssueBook() {
         setMemberError('');
       } else {
         setMemberError(`No member found matching ID "${query}"`);
+        setBookSearch('');
       }
     } else {
       // Treat as Book search / ISBN
@@ -333,6 +337,7 @@ export default function IssueBook() {
       if (book) {
         if (book.availableCopies <= 0) {
           setBookError(`Book "${book.title}" has no copies available.`);
+          setBookSearch('');
           return;
         }
         handleSelectBook(book);
@@ -344,6 +349,7 @@ export default function IssueBook() {
           const firstBook = bookResults[0];
           if (firstBook.availableCopies <= 0) {
             setBookError(`Book "${firstBook.title}" has no copies available.`);
+            setBookSearch('');
             return;
           }
           handleSelectBook(firstBook);
@@ -352,6 +358,7 @@ export default function IssueBook() {
         } else {
           if (cleanQuery.startsWith('BK') || /^\d{6,}/.test(query)) {
             setBookError(`No book found matching barcode/ISBN "${query}".`);
+            setBookSearch('');
           }
         }
       }
@@ -965,56 +972,123 @@ export default function IssueBook() {
                 {/* Right side checkout cart details */}
                 <div className="xl:col-span-5 space-y-4">
                   <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between h-[380px] relative">
-                    <div>
-                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                    <div className="flex-1 flex flex-col min-h-0">
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100 flex-shrink-0">
                         <span className="material-symbols-outlined text-[#9E0D0D] text-xl">shopping_cart</span>
                         <div>
                           <h3 className="text-sm font-extrabold text-slate-705">Checkout Cart ({cart.length})</h3>
-                          <p className="text-[10px] text-slate-400">Selected books</p>
                         </div>
                       </div>
 
-                      {/* Selected Books list */}
-                      <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1">
-                        {cart.length === 0 ? (
-                          <div className="text-center py-6">
-                            <span className="material-symbols-outlined text-slate-300 text-3xl mb-1.5">local_library</span>
-                            <p className="text-[11px] text-slate-400 font-medium">Cart is empty</p>
-                            <p className="text-[9px] text-slate-400 mt-0.5">Select books from the list on the left.</p>
-                          </div>
-                        ) : (
-                          cart.map((item) => (
-                            <div key={item.book._id} className="p-2.5 bg-slate-50/50 border border-slate-100 rounded-xl flex items-center justify-between gap-3 animate-fadeIn">
-                              <div className="flex gap-2 items-center min-w-0">
-                                <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-250 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                  {item.book.coverImageUrl ? (
-                                    <img src={item.book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
-                                  ) : (
-                                    <span className="material-symbols-outlined text-amber-650 text-lg">menu_book</span>
-                                  )}
-                                </div>
-                                <div className="min-w-0">
-                                  <h4 className="text-xs font-black text-slate-700 truncate">{item.book.title}</h4>
-                                </div>
-                              </div>
-
-                              <button
-                                onClick={() => removeFromCart(item.book._id)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0 cursor-pointer"
-                              >
-                                <span className="material-symbols-outlined text-base">close</span>
-                              </button>
+                      {/* Cart Contents */}
+                      {cart.length === 1 ? (
+                        <div className="animate-fadeIn space-y-2.5 flex-1 flex flex-col min-h-0 overflow-y-auto pr-1">
+                          <div className="flex gap-4 items-start">
+                            {/* Larger Cover Image */}
+                            <div className="w-[104px] h-[136px] rounded-xl bg-amber-50 border border-amber-250 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-md">
+                              {cart[0].book.coverImageUrl ? (
+                                <img src={cart[0].book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="material-symbols-outlined text-amber-650 text-4xl">menu_book</span>
+                              )}
                             </div>
-                          ))
-                        )}
-                      </div>
+                            {/* Book Basic Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-start gap-2">
+                                <h4 className="text-xs font-black text-slate-800 line-clamp-2 leading-tight">{cart[0].book.title}</h4>
+                                <button
+                                  onClick={() => removeFromCart(cart[0].book._id)}
+                                  className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0 cursor-pointer"
+                                  title="Remove book"
+                                >
+                                  <span className="material-symbols-outlined text-base">delete</span>
+                                </button>
+                              </div>
+                              <p className="text-[10px] text-slate-500 font-bold mt-1 truncate">{cart[0].book.author}</p>
+                              
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 uppercase">
+                                  {cart[0].book.category}
+                                </span>
+                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                  {cart[0].book.availableCopies} Available
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Extra Detailed Fields */}
+                          <div className="space-y-1.5 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100 text-[10px]">
+                            <div className="grid grid-cols-2 gap-2 border-b border-slate-100 pb-1.5">
+                              <div>
+                                <span className="text-slate-400 font-semibold block text-[8px] uppercase">Book Barcode</span>
+                                <span className="font-mono font-bold text-slate-700">{cart[0].book.bookId}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-semibold block text-[8px] uppercase">ISBN</span>
+                                <span className="font-mono font-bold text-slate-750">{cart[0].book.isbn || '—'}</span>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 pt-0.5">
+                              <div>
+                                <span className="text-slate-400 font-semibold block text-[8px] uppercase">Publisher</span>
+                                <span className="font-bold text-slate-700 truncate block">{cart[0].book.publisher || '—'}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-semibold block text-[8px] uppercase">Published Year</span>
+                                <span className="font-bold text-slate-700">{cart[0].book.publishedYear || '—'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {cart[0].book.description && (
+                            <div className="text-[10px] text-slate-500 italic bg-slate-50/30 p-2 rounded-lg border border-slate-100/50 line-clamp-2 leading-relaxed">
+                              "{cart[0].book.description}"
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* Selected Books list for multiple books or empty cart */
+                        <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1">
+                          {cart.length === 0 ? (
+                            <div className="text-center py-6">
+                              <span className="material-symbols-outlined text-slate-300 text-3xl mb-1.5">local_library</span>
+                              <p className="text-[11px] text-slate-400 font-medium">Cart is empty</p>
+                              <p className="text-[9px] text-slate-400 mt-0.5">Select books from the list on the left.</p>
+                            </div>
+                          ) : (
+                            cart.map((item) => (
+                              <div key={item.book._id} className="p-2.5 bg-slate-50/50 border border-slate-100 rounded-xl flex items-center justify-between gap-3 animate-fadeIn">
+                                <div className="flex gap-2 items-center min-w-0">
+                                  <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-250 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                    {item.book.coverImageUrl ? (
+                                      <img src={item.book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="material-symbols-outlined text-amber-650 text-lg">menu_book</span>
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h4 className="text-xs font-black text-slate-700 truncate">{item.book.title}</h4>
+                                  </div>
+                                </div>
+
+                                <button
+                                  onClick={() => removeFromCart(item.book._id)}
+                                  className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0 cursor-pointer"
+                                >
+                                  <span className="material-symbols-outlined text-base">close</span>
+                                </button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {cart.length > 0 && (
                       <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
                         {/* Preset dates */}
                         <div>
-                          <span className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">Due Date Presets</span>
                           <div className="flex items-center gap-1.5">
                             {[
                               { label: '1 week', days: 7 },

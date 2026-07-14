@@ -190,6 +190,10 @@ export default function BookManagement() {
   }, [search, categoryFilter, sortBy, sortOrder]);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
+  useEffect(() => {
     const handleGlobalKeyDown = (e) => {
       if (e.altKey || e.ctrlKey || e.metaKey) return;
       if (['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'CapsLock', 'Enter', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backspace', 'Delete'].includes(e.key)) return;
