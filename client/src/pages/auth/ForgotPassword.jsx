@@ -453,6 +453,12 @@ const ForgotPassword = () => {
               </div>
 
               <div className="pt-3">
+                {/* -------------------------------------------------------------
+                    🔴 BUTTON: "Send Verification Code" Button
+                    To change the color of this button:
+                    - Modify "bg-[#9E0D0D]" to your color (e.g. bg-blue-600)
+                    - Modify "hover:bg-[#7F0A0A]" for the hover state color
+                   ------------------------------------------------------------- */}
                 <button
                   type="submit"
                   disabled={loading}
@@ -528,6 +534,12 @@ const ForgotPassword = () => {
                   <span className="material-symbols-outlined text-[18px] font-bold text-slate-500">arrow_back</span>
                   BACK
                 </button>
+                {/* -------------------------------------------------------------
+                    🔴 BUTTON: "Verify Code" Submit Button (Step 2)
+                    To change the color of this button:
+                    - Modify "bg-[#9E0D0D]" to your color (e.g. bg-blue-600)
+                    - Modify "hover:bg-[#7F0A0A]" for the hover state color
+                   ------------------------------------------------------------- */}
                 <button
                   type="submit"
                   disabled={loading}
@@ -693,6 +705,12 @@ const ForgotPassword = () => {
               </div>
 
               <div className="pt-3">
+                {/* -------------------------------------------------------------
+                    🔴 BUTTON: "Reset Password" Submit Button (Step 3)
+                    To change the color of this button:
+                    - Modify "bg-[#9E0D0D]" to your color (e.g. bg-blue-600)
+                    - Modify "hover:bg-[#7F0A0A]" for the hover state color
+                   ------------------------------------------------------------- */}
                 <button
                   type="submit"
                   disabled={loading}

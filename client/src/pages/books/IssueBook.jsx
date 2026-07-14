@@ -1156,6 +1156,12 @@ export default function IssueBook() {
                           </div>
                         </div>
 
+                        {/* -------------------------------------------------------------
+                            🔴 BUTTON: "Continue to Review & Issue" Button (Step 2)
+                            To change the color of this button:
+                            - Modify "bg-[#9E0D0D]" to your color (e.g. bg-blue-600)
+                            - Modify "hover:bg-[#7F0A0A]" for the hover state color
+                           ------------------------------------------------------------- */}
                         <button
                           onClick={() => setStep(3)}
                           className="w-full py-2 rounded-xl text-xs font-black text-white bg-[#9E0D0D] hover:bg-[#7F0A0A] hover:shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-lg shadow-red-900/10 cursor-pointer"
