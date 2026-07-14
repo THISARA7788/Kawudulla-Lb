@@ -133,6 +133,7 @@ router.delete('/books/:id', protect, authorize('librarian'), async (req, res) =>
 
     // Perform soft delete
     book.isDeleted = true;
+    book.isbn = undefined; // release unique isbn constraint
     await book.save();
 
     res.json({ message: 'Book deleted successfully (archived)' });
@@ -1025,7 +1026,7 @@ router.post('/books/import', protect, authorize('librarian'), uploadFile.single(
     const booksToInsert = [];
     const skippedDuplicates = [];
     const existingIsbns = new Set(
-      (await Book.find({ isbn: { $exists: true, $ne: '' } }, 'isbn')).map(b => b.isbn)
+      (await Book.find({ isbn: { $exists: true, $ne: '' }, isDeleted: { $ne: true } }, 'isbn')).map(b => b.isbn)
     );
     const processedFileIsbns = new Set();
 
