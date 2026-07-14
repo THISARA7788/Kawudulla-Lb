@@ -962,6 +962,7 @@ export default function ReturnBook() {
                         selectedBorrows={selectedBorrows}
                         onSelect={handleToggleBorrow}
                         maxHeight="380px"
+                        returnDate={returnDate}
                       />
                     </div>
                   )}
@@ -990,9 +991,12 @@ export default function ReturnBook() {
                         (() => {
                           const borrow = selectedBorrows[0];
                           const book = borrow.book || {};
-                          const diffTime = new Date(returnDate) - new Date(borrow.dueDate);
-                          const days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-                          const fine = days * 10;
+                           const rDate = new Date(returnDate);
+                           const now = new Date();
+                           rDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+                           const diffTime = rDate - new Date(borrow.dueDate);
+                           const days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                           const fine = days * 10;
                           return (
                             <div className="flex flex-col items-center flex-grow justify-center min-h-0 select-none animate-fadeIn my-2">
                               {/* Wrapper with relative positioning, allowing overflow */}

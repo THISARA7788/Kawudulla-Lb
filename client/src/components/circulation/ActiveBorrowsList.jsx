@@ -19,7 +19,8 @@ export default function ActiveBorrowsList({
   selectedMember,
   selectedBorrows = [],
   onSelect,
-  maxHeight = '340px'
+  maxHeight = '340px',
+  returnDate
 }) {
   
   // 1. Initial State: No member chosen yet
@@ -48,9 +49,15 @@ export default function ActiveBorrowsList({
   return (
     <div className="space-y-1.5 overflow-y-auto pr-1" style={{ maxHeight }}>
       {borrows.map((b, i) => {
-        // Calculate overdue dates and count days overdue
-        const isOverdue = new Date(b.dueDate) < new Date();
-        const daysOverdue = isOverdue ? Math.floor((Date.now() - new Date(b.dueDate)) / 86400000) : 0;
+        // Calculate overdue dates and count days overdue using returnDate when available
+        const evalDate = returnDate ? new Date(returnDate) : new Date();
+        if (returnDate) {
+          const now = new Date();
+          evalDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+        }
+        const isOverdue = new Date(b.dueDate) < evalDate;
+        const diffTime = evalDate - new Date(b.dueDate);
+        const daysOverdue = isOverdue ? Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24))) : 0;
         const book = b.book || {};
         const isSelected = selectedBorrows.some(sel => sel._id === b._id);
 
