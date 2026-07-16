@@ -6,10 +6,6 @@ const ms = {
   fontVariationSettings: "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24",
 }
 
-const msOutline = {
-  fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
-}
-
 const pieColors = ['#A78BFA', '#60A5FA', '#F472B6', '#34D399', '#FBBF24', '#F87171', '#818CF8', '#2DD4BF']
 
 function PieChart({ data, size = 120 }) {
@@ -90,6 +86,7 @@ export default function LibrarianDashboardMain() {
   const [books, setBooks] = useState([])
   const [loading, setLoading] = useState(true)
   const [categories, setCategories] = useState([])
+  const [showAllCategories, setShowAllCategories] = useState(false)
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -155,7 +152,7 @@ export default function LibrarianDashboardMain() {
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", color: '#2C2C3E' }}>
       {/* ===== Page Header ===== */}
-      <header className="mb-6">
+      <header className="mb-3">
         <h1 className="text-3xl font-extrabold tracking-tight mb-1" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
           Librarian Dashboard
         </h1>
@@ -165,20 +162,20 @@ export default function LibrarianDashboardMain() {
       </header>
 
       {/* ===== Stats Bento Grid ===== */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {stats.map((s, i) => <StatCard key={i} s={s} />)}
       </section>
 
       {/* ===== Main Content Area ===== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        {/* LEFT Column: Quick Actions + Book Inventory */}
-        <div className="lg:col-span-2 space-y-5">
+        {/* LEFT Column: Quick Actions + Last Added Books */}
+        <div className="lg:col-span-2 space-y-4">
 
           {/* Quick Actions */}
           <section>
-            <h3 className="text-base font-bold mb-3" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Quick Actions</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <h3 className="text-base font-bold mb-2" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>Quick Actions</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <QuickAction icon="book_5" label="Issue Book" onClick={() => navigate('/issue-book')} />
               <QuickAction icon="assignment_return" label="Return Book" onClick={() => navigate('/return-book')} />
               <QuickAction icon="add_circle" label="Add New Book" onClick={() => navigate('/books')} />
@@ -186,11 +183,11 @@ export default function LibrarianDashboardMain() {
             </div>
           </section>
 
-          {/* Book Inventory Table */}
-          <section className="rounded-xl p-5 border" style={{ backgroundColor: '#fff', borderColor: '#f0f0f0' }}>
-            <div className="flex items-center justify-between mb-4">
+          {/* Last Added Books Table */}
+          <section className="rounded-xl p-4 border" style={{ backgroundColor: '#fff', borderColor: '#f0f0f0' }}>
+            <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-bold" style={{ color: '#1a1245', fontFamily: "'Manrope', sans-serif" }}>
-                Book Inventory
+                Last Added Books
               </h3>
               <button onClick={() => navigate('/books')} className="text-xs font-semibold" style={{ color: '#4F5B7D' }}>Manage All</button>
             </div>
@@ -216,7 +213,7 @@ export default function LibrarianDashboardMain() {
                     </tr>
                   </thead>
                   <tbody style={{ borderTop: '1px solid #f0f0f0' }}>
-                    {books.slice(0, 8).map((book) => {
+                    {[...books].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 1).map((book) => {
                       const hasCopies = (book.availableCopies || 0) > 0
                       return (
                         <tr key={book._id} style={{ borderBottom: '1px solid #f8f8f8' }}>
@@ -257,7 +254,7 @@ export default function LibrarianDashboardMain() {
               Categories
             </h3>
             {loading ? (
-              <div className="py-6" style={{ color: '#94a3b8' }}>Loading...</div>
+              <div className="py-4" style={{ color: '#94a3b8' }}>Loading...</div>
             ) : books.length === 0 ? (
               <p className="text-sm" style={{ color: '#94a3b8' }}>No data yet.</p>
             ) : (
@@ -265,19 +262,26 @@ export default function LibrarianDashboardMain() {
                 <PieChart data={Object.entries(categories).map(([cat, count]) => ({
                   label: cat,
                   value: count,
-                }))} />
-                <div className="space-y-1 flex-1">
-                  {Object.entries(categories).map(([cat, catCopies]) => (
-                    <div key={cat} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: pieColors[Object.keys(categories).indexOf(cat) % pieColors.length] }} />
-                        <span className="font-medium" style={{ color: '#2C2C3E' }}>{cat}</span>
+                }))} size={90} />
+                <div className="space-y-0.5 flex-1 ml-3">
+                  {Object.entries(categories)
+                    .slice(0, showAllCategories ? undefined : 4)
+                    .map(([cat, catCopies], idx) => (
+                      <div key={cat} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: pieColors[idx % pieColors.length] }} />
+                          <span className="font-medium text-xs" style={{ color: '#2C2C3E' }}>{cat}</span>
+                        </div>
+                        <span className="font-bold text-xs" style={{ color: catCopies > 0 ? '#166534' : '#b31b25' }}>
+                          {catCopies}
+                        </span>
                       </div>
-                      <span className="font-bold" style={{ color: catCopies > 0 ? '#166534' : '#b31b25' }}>
-                        {catCopies}
-                      </span>
-                    </div>
-                  ))}
+                    ))}
+                  {Object.keys(categories).length > 4 && (
+                    <button onClick={() => setShowAllCategories(s => !s)} className="text-xs font-semibold mt-1" style={{ color: '#6366F1' }}>
+                      {showAllCategories ? 'Show Less' : 'Show More'} ({Object.keys(categories).length - 4})
+                    </button>
+                  )}
                 </div>
               </div>
             )}
