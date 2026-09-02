@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function FineRow({ fine, onPay, onWaive, onDelete }) {
+export default function FineRow({ fine, index = 0, onPay, onWaive, onDelete }) {
   const statusStyle = {
     unpaid: { bg: '#fef9c3', color: '#854d0e' },
     paid: { bg: '#dcfce7', color: '#166534' },
@@ -8,7 +8,7 @@ export default function FineRow({ fine, onPay, onWaive, onDelete }) {
   }[fine.status] || { bg: '#f0f0f0', color: '#666' };
 
   return (
-    <tr className="hover:bg-slate-50 transition-colors" style={{ borderBottom: '1px solid #f8f8f8' }}>
+    <tr className={`${index % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}>
       <td className="py-3 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>{fine.transaction?.transactionId || '—'}</td>
       <td className="py-3 px-4">
         <span className="text-xs font-semibold" style={{ color: '#1a1245' }}>{fine.user?.name || '—'}</span>

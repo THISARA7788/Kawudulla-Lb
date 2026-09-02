@@ -371,7 +371,7 @@ async function generateToken(id) {
 // GET /api/auth/pending - Librarians view all pending registrations
 router.get('/pending', protect, authorize('librarian'), async (req, res) => {
   try {
-    const pendingUsers = await User.find({ status: 'pending' })
+    const pendingUsers = await User.find({ status: 'pending', role: { $ne: 'librarian' } })
       .select('-password -resetToken -resetTokenExpiry')
       .sort({ createdAt: -1 });
 

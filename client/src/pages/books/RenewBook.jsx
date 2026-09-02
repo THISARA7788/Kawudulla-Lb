@@ -53,7 +53,7 @@ export default function RenewBook() {
     const fetchUsers = async () => {
       try {
         const res = await api.get('/users', { headers: { Authorization: `Bearer ${token}` } });
-        setAllUsers(res.data.users || []);
+        setAllUsers((res.data.users || []).filter((u) => u.role !== 'librarian'));
       } catch (err) {
         console.error('Error fetching users:', err);
       }

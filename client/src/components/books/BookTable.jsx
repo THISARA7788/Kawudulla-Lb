@@ -114,13 +114,13 @@ export default function BookTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm align-middle" style={{ fontFamily: "'Inter', sans-serif" }}>
-        <thead>
-          <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+        <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
+          <tr>
             {columns.map((h, idx) => (
               <th
                 key={idx}
-                className="py-3.5 px-4 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider bg-slate-50/50"
-                style={{ borderBottom: '2px solid #f1f5f9' }}
+                className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center"
+                style={{ color: '#4C0000' }}
               >
                 {h}
               </th>
@@ -128,8 +128,8 @@ export default function BookTable({
           </tr>
         </thead>
         
-        <tbody>
-          {filtered.map((book) => {
+        <tbody className="divide-y divide-slate-100">
+          {filtered.map((book, index) => {
             const isSelected = selectedBookIds.includes(book._id);
             const isOverdue = overdueBookIds.includes(book._id);
             const dynamicStatus = isOverdue
@@ -139,10 +139,9 @@ export default function BookTable({
               <tr 
                 key={book._id} 
                 onClick={() => onRowClick && onRowClick(book)}
-                className={`transition-colors cursor-pointer ${
-                  isSelected ? 'bg-red-50/20 hover:bg-red-50/30' : 'hover:bg-slate-50/60'
-                }`} 
-                style={{ borderBottom: '1px solid #f1f5f9' }}
+                className={`transition-colors duration-150 cursor-pointer ${
+                  isSelected ? 'bg-red-50/50 hover:bg-red-100/50' : index % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'
+                } hover:bg-[#EAEFF5]`} 
                 title={isSelectionMode ? 'Click to select book' : 'Click to view full book details profile'}
               >
                 {isSelectionMode && (

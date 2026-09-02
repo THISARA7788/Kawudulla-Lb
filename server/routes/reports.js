@@ -13,7 +13,7 @@ router.use(protect, authorize('librarian'));
 router.get('/dashboard', async (req, res) => {
   try {
     const totalBooks = await Book.countDocuments();
-    const totalMembers = await User.countDocuments({ status: 'active' });
+    const totalMembers = await User.countDocuments({ status: 'active', role: { $ne: 'librarian' } });
     const totalTransactions = await Transaction.countDocuments();
     
     const now = new Date();
@@ -28,7 +28,7 @@ router.get('/dashboard', async (req, res) => {
       status: { $ne: 'returned' }
     });
 
-    const pendingRegistrations = await User.countDocuments({ status: 'pending' });
+    const pendingRegistrations = await User.countDocuments({ status: 'pending', role: { $ne: 'librarian' } });
 
     const availableBooks = await Book.aggregate([{ $group: { _id: null, total: { $sum: '$availableCopies' } } }]);
     const totalCopies = await Book.aggregate([{ $group: { _id: null, total: { $sum: '$totalCopies' } } }]);
@@ -148,7 +148,7 @@ router.get('/circulation', async (req, res) => {
 router.get('/members', async (req, res) => {
   try {
     const { startDate, endDate, role } = req.query;
-    const query = { status: 'active' };
+    const query = { status: 'active', role: { $ne: 'librarian' } };
     if (role && role !== 'all') query.role = role;
 
     const dateFilter = {};

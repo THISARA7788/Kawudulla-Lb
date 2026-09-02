@@ -40,9 +40,12 @@ function displayGradeAndClass(m) {
 export default function MemberTable({
   loading,
   filtered,
+  currentPage = 1,
+  setCurrentPage,
+  itemsPerPage = 30,
+  setItemsPerPage,
   openHistory,
   openEdit,
-  openRole,
   handleStatusToggle,
   handleDelete
 }) {
@@ -92,57 +95,161 @@ export default function MemberTable({
     );
   }
 
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedList = filtered.slice(startIndex, startIndex + itemsPerPage);
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr style={{ borderBottom: '2px solid #f0f0f0' }}>
-            {['Member ID', 'Name', 'Email', 'Role', 'Grade / Class', 'Status', ''].map((h) => (
-              <th key={h} className="py-3 px-4 text-xs text-slate-400 font-semibold uppercase tracking-wider">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map((m) => (
-            <tr key={m._id} className="hover:bg-slate-50 transition-colors" style={{ borderBottom: '1px solid #f8f8f8' }}>
-              <td className="py-3 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>{m.memberId || '—'}</td>
-              <td className="py-3 px-4 font-semibold" style={{ color: '#2C2C3E' }}>{m.name}</td>
-              <td className="py-3 px-4 text-xs" style={{ color: '#595c5e' }}>{m.email}</td>
-              <td className="py-3 px-4">{roleBadge(m.role)}</td>
-              <td className="py-3 px-4">
-                <span className="text-xs font-semibold" style={{ color: '#2C2C3E' }}>
-                  {displayGradeAndClass(m)}
-                </span>
-              </td>
-              <td className="py-3 px-4">{statusBadge(m.status)}</td>
-              <td className="py-3 px-4 text-right">
-                <button onClick={() => openHistory(m)} className="mr-1 p-1 rounded hover:bg-slate-100 transition-colors" style={{ color: '#7c3aed' }} title="View History">
-                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>history</span>
-                </button>
-                <button onClick={() => openEdit(m)} className="mr-1 p-1 rounded hover:bg-slate-100 transition-colors" style={{ color: '#4F5B7D' }} title="Edit">
-                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
-                </button>
-                <button onClick={() => openRole(m)} className="mr-1 p-1 rounded hover:bg-slate-100 transition-colors" style={{ color: '#2563eb' }} title="Change Role">
-                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>badge</span>
-                </button>
-                {m.status === 'active' && (
-                  <button onClick={() => handleStatusToggle(m, 'rejected')} className="mr-1 p-1 rounded hover:bg-slate-100 transition-colors" style={{ color: '#b31b25' }} title="Deactivate">
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>block</span>
-                  </button>
-                )}
-                {m.status === 'rejected' && (
-                  <button onClick={() => handleStatusToggle(m, 'active')} className="mr-1 p-1 rounded hover:bg-slate-100 transition-colors" style={{ color: '#166534' }} title="Activate">
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check_circle</span>
-                  </button>
-                )}
-                <button onClick={() => handleDelete(m)} className="p-1 rounded hover:bg-slate-100 transition-colors" style={{ color: '#b31b25' }} title="Delete">
-                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
-                </button>
-              </td>
+    <div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
+            <tr>
+              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Member ID</th>
+              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Name</th>
+              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Email</th>
+              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Role</th>
+              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Grade / Class</th>
+              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Status</th>
+              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {paginatedList.map((m, idx) => (
+              <tr
+                key={m._id}
+                className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}
+              >
+                <td className="py-3.5 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>{m.memberId || '—'}</td>
+                <td className="py-3.5 px-4 font-semibold" style={{ color: '#2C2C3E' }}>{m.name}</td>
+                <td className="py-3.5 px-4 text-xs" style={{ color: '#595c5e' }}>{m.email}</td>
+                <td className="py-3.5 px-4">{roleBadge(m.role)}</td>
+                <td className="py-3.5 px-4">
+                  <span className="text-xs font-semibold" style={{ color: '#2C2C3E' }}>
+                    {displayGradeAndClass(m)}
+                  </span>
+                </td>
+                <td className="py-3.5 px-4">{statusBadge(m.status)}</td>
+                <td className="py-3.5 px-4 text-right">
+                  <div className="flex items-center justify-end gap-1.5">
+                    {/* View History */}
+                    <button
+                      onClick={() => openHistory(m)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-50 hover:bg-purple-100 text-purple-600 border border-purple-200/60 shadow-xs transition-all duration-150 active:scale-90 cursor-pointer"
+                      title="View Borrowing History"
+                    >
+                      <span className="material-symbols-outlined text-[17px]">history</span>
+                    </button>
+
+                    {/* Edit Member & Role */}
+                    <button
+                      onClick={() => openEdit(m)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200/60 shadow-xs transition-all duration-150 active:scale-90 cursor-pointer"
+                      title="Edit Member & Role"
+                    >
+                      <span className="material-symbols-outlined text-[17px]">edit</span>
+                    </button>
+
+                    {/* Deactivate / Activate Status */}
+                    {m.status === 'active' ? (
+                      <button
+                        onClick={() => handleStatusToggle(m, 'rejected')}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200/60 shadow-xs transition-all duration-150 active:scale-90 cursor-pointer"
+                        title="Deactivate Member"
+                      >
+                        <span className="material-symbols-outlined text-[17px]">person_off</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleStatusToggle(m, 'active')}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200/60 shadow-xs transition-all duration-150 active:scale-90 cursor-pointer"
+                        title="Activate Member"
+                      >
+                        <span className="material-symbols-outlined text-[17px]">person_check</span>
+                      </button>
+                    )}
+
+                    {/* Delete Member (Trash Icon) */}
+                    <button
+                      onClick={() => handleDelete(m)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border border-rose-200/60 shadow-xs transition-all duration-150 active:scale-90 cursor-pointer"
+                      title="Delete Member"
+                    >
+                      <span className="material-symbols-outlined text-[17px]">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination Footer Bar */}
+      {totalItems > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 border-t border-slate-100 bg-slate-50/50 text-xs text-slate-500 font-medium">
+          <div className="flex items-center gap-2">
+            <span>Show</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                if (typeof setItemsPerPage === 'function') setItemsPerPage(Number(e.target.value));
+                if (typeof setCurrentPage === 'function') setCurrentPage(1);
+              }}
+              className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 font-bold outline-none shadow-xs"
+            >
+              <option value={10}>10</option>
+              <option value={30}>30</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span>items per page &middot; Showing {totalItems > 0 ? startIndex + 1 : 0} to {endIndex} of {totalItems} members</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage && setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-bold transition-all cursor-pointer"
+            >
+              Previous
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+              .map((page, idx, arr) => {
+                const prevPage = arr[idx - 1];
+                const showEllipsis = prevPage && page - prevPage > 1;
+
+                return (
+                  <React.Fragment key={page}>
+                    {showEllipsis && <span className="px-1 text-slate-400">...</span>}
+                    <button
+                      onClick={() => setCurrentPage && setCurrentPage(page)}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                        currentPage === page
+                          ? 'bg-[#1a1245] text-white shadow-sm'
+                          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  </React.Fragment>
+                );
+              })}
+
+            <button
+              onClick={() => setCurrentPage && setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage >= totalPages}
+              className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-bold transition-all cursor-pointer"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

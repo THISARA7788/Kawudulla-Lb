@@ -147,85 +147,98 @@ export default function FineManagement() {
 
   return (
     <DashboardLayout>
-          <div className="flex items-center justify-end mb-4">
-            <div className="flex gap-2">
-              <button onClick={openConfig} className="px-4 py-2 rounded-xl text-sm font-semibold" style={{ backgroundColor: '#4062BB', color: '#fff' }}>
-                <span className="material-symbols-outlined inline-block mr-1" style={{ fontSize: 16, verticalAlign: 'middle' }}>settings</span>
-                Fine Settings
-              </button>
+      {/* Top Control Panel Header (Fixed below top navbar on desktop, relative flow on mobile) */}
+      <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-[#F8FAFC] pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 shadow-xs">
+        <div className="flex gap-3 items-center flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: 18 }}>search</span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Search by member, book, or transaction..."
+              className="w-full py-2.5 pl-9 pr-4 text-xs rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] bg-white text-slate-800 shadow-sm"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            className="py-2.5 px-3 text-xs font-semibold rounded-xl outline-none border border-slate-200 bg-white shadow-sm"
+            style={{ color: '#2C2C3E', minWidth: 120 }}
+          >
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>{s === 'all' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1)}</option>
+            ))}
+          </select>
+          <button
+            onClick={openConfig}
+            className="px-4 py-2.5 bg-[#9E0D0D] hover:bg-[#7F0A0A] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-900/10 transition-all cursor-pointer whitespace-nowrap active:scale-95"
+          >
+            <span className="material-symbols-outlined text-base">settings</span>
+            Fine Settings
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area (Offset for desktop) */}
+      <div className="pt-2 lg:pt-16 pb-4">
+        {/* Rate + Pending Fines Summary */}
+        {!loading && (
+          <div className="flex items-center gap-4 mb-4 p-4 rounded-xl shadow-sm" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }}>
+            <div>
+              <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Fine Rate</p>
+              <p className="text-xl font-bold" style={{ color: '#1a1245' }}>&#8360; {config.fineRatePerDay}/day</p>
+            </div>
+            <div style={{ width: 1, height: 40, backgroundColor: '#e0e0e0' }} />
+            <div>
+              <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Grace Period</p>
+              <p className="text-xl font-bold" style={{ color: '#1a1245' }}>{config.gracePeriodDays} day{config.gracePeriodDays !== 1 ? 's' : ''}</p>
+            </div>
+            <div style={{ width: 1, height: 40, backgroundColor: '#e0e0e0' }} />
+            <div>
+              <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Pending Fines</p>
+              <p className="text-xl font-bold" style={{ color: '#b31b25' }}>{pendingFines.length}</p>
             </div>
           </div>
+        )}
 
-          {/* Rate + Pending Fines */}
-          {!loading && (
-            <>
-              <div className="flex items-center gap-4 mb-4 p-4 rounded-xl" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }}>
-                <div>
-                  <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Fine Rate</p>
-                  <p className="text-xl font-bold" style={{ color: '#1a1245' }}>&#8360; {config.fineRatePerDay}/day</p>
-                </div>
-                <div style={{ width: 1, height: 40, backgroundColor: '#e0e0e0' }} />
-                <div>
-                  <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Grace Period</p>
-                  <p className="text-xl font-bold" style={{ color: '#1a1245' }}>{config.gracePeriodDays} day{config.gracePeriodDays !== 1 ? 's' : ''}</p>
-                </div>
-                <div style={{ width: 1, height: 40, backgroundColor: '#e0e0e0' }} />
-                <div>
-                  <p className="text-xs font-medium" style={{ color: '#94a3b8' }}>Pending Fines</p>
-                  <p className="text-xl font-bold" style={{ color: '#b31b25' }}>{pendingFines.length}</p>
-                </div>
-              </div>
-
-              {/* Pending Fines Section */}
-              {pendingFines.length > 0 && (
-                <div className="mb-4 rounded-xl border" style={{ backgroundColor: '#fff', borderColor: '#f0f0f0' }}>
-                  <div className="px-4 py-3" style={{ borderBottom: '2px solid #f0f0f0' }}>
-                    <h3 className="text-sm font-semibold" style={{ color: '#1a1245' }}>Pending Overdue Fines</h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                       <thead>
-                         <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
-                           {['Member', 'Book', 'Days Overdue', 'Fine Amount', 'Actions'].map((h) => (
-                             <th key={h} className="py-2 px-4 text-xs text-slate-400 font-semibold text-right">{h}</th>
-                           ))}
-                         </tr>
-                       </thead>
-                      <tbody>
-                        {pendingFines.map((pf, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid #f8f8f8' }}>
-                            <td className="py-2 px-4 text-xs font-semibold" style={{ color: '#1a1245' }}>{pf.transaction.user?.name}<br /><span style={{ color: '#94a3b8' }}>{pf.transaction.user?.memberId}</span></td>
-                            <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{pf.transaction.book?.title} <span style={{ color: '#94a3b8' }}>({pf.transaction.book?.bookId})</span></td>
-                            <td className="py-2 px-4 font-bold" style={{ color: '#b31b25' }}>{pf.daysOverdue} days</td>
-                            <td className="py-2 px-4 font-bold" style={{ color: '#1a1245' }}>&#8360; {pf.amount.toFixed(2)}</td>
-                            <td className="py-2 px-4 text-right">
-                              <button onClick={() => createFine(pf)} disabled={saving} className="px-3 py-1 rounded-lg text-xs font-semibold" style={{ backgroundColor: '#1a1245', color: '#fff' }}>Create Fine</button>
-                            </td>
-                            <td className="py-2 px-4 text-right">
-                              <button onClick={() => handleDeletePending(pf)} disabled={saving} className="p-1 rounded hover:bg-slate-100" style={{ color: '#b31b25' }} title="Delete">
-                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Search + Filter */}
-          <div className="flex gap-3 mb-4">
-            <div className="relative flex-1">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94a3b8', fontSize: 18 }}>search</span>
-              <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search by member, book, or transaction..." className="w-full py-2.5 pl-9 pr-4 text-sm rounded-xl outline-none" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }} />
+        {/* Pending Fines Section */}
+        {!loading && pendingFines.length > 0 && (
+          <div className="mb-4 rounded-xl border overflow-hidden shadow-sm" style={{ backgroundColor: '#fff', borderColor: '#f0f0f0' }}>
+            <div className="px-4 py-3 border-b border-slate-100">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#4C0000]">Pending Overdue Fines</h3>
             </div>
-            <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="py-2 px-3 text-sm rounded-xl outline-none" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0', color: '#2C2C3E', minWidth: 120 }}>
-              {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s === 'all' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-            </select>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
+                  <tr>
+                    {['Member', 'Book', 'Days Overdue', 'Fine Amount', 'Actions'].map((h) => (
+                      <th key={h} className="py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {pendingFines.map((pf, i) => (
+                    <tr key={i} className={`${i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}>
+                      <td className="py-2.5 px-4 text-xs font-semibold" style={{ color: '#1a1245' }}>{pf.transaction.user?.name}<br /><span className="text-[10px] text-slate-400 font-mono font-bold">{pf.transaction.user?.memberId}</span></td>
+                      <td className="py-2.5 px-4 text-xs" style={{ color: '#595c5e' }}>{pf.transaction.book?.title} <span className="font-mono text-slate-400">({pf.transaction.book?.bookId})</span></td>
+                      <td className="py-2.5 px-4 font-bold text-center" style={{ color: '#b31b25' }}>{pf.daysOverdue} days</td>
+                      <td className="py-2.5 px-4 font-bold text-center" style={{ color: '#1a1245' }}>&#8360; {pf.amount.toFixed(2)}</td>
+                      <td className="py-2.5 px-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => createFine(pf)} disabled={saving} className="px-3 py-1 bg-[#1a1245] hover:bg-[#2C2C3E] text-white rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer">Create Fine</button>
+                          <button onClick={() => handleDeletePending(pf)} disabled={saving} className="p-1 rounded-lg hover:bg-slate-100 text-rose-600 transition-colors cursor-pointer" title="Delete">
+                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+        )}
 
           {/* Fines Table */}
           <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#fff', borderColor: '#f0f0f0' }}>
@@ -241,16 +254,16 @@ export default function FineManagement() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #f0f0f0' }}>
-                      {['Transaction', 'Member', 'Member ID', 'Book', 'Days Overdue', 'Amount', 'Status', ''].map((h) => (
-                        <th key={h} className="py-3 px-4 text-xs text-slate-400 font-semibold uppercase tracking-wider">{h}</th>
+                  <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
+                    <tr>
+                      {['Transaction ID', 'Member', 'Member ID', 'Book', 'Days Overdue', 'Amount', 'Status', 'Actions'].map((h) => (
+                        <th key={h} className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody>
-                    {fines.map((f) => (
-                      <FineRow key={f._id} fine={f} onPay={openPay} onWaive={openWaive} onDelete={handleDelete} />
+                  <tbody className="divide-y divide-slate-100">
+                    {fines.map((f, idx) => (
+                      <FineRow key={f._id} fine={f} index={idx} onPay={openPay} onWaive={openWaive} onDelete={handleDelete} />
                     ))}
                   </tbody>
                 </table>
@@ -278,6 +291,7 @@ export default function FineManagement() {
               ))}
             </div>
           )}
+        </div>
       <FineModals
         modal={modal}
         selected={selected}

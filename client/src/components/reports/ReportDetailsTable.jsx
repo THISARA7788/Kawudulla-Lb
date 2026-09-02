@@ -15,15 +15,15 @@ export default function ReportDetailsTable({ reportType, reportData }) {
         ) : (
           <div className="overflow-x-auto max-h-96 overflow-y-auto">
             <table className="w-full text-left text-sm">
-              <thead>
-                <tr style={{ borderBottom: '2px solid #f0f0f0', position: 'sticky', top: 0, backgroundColor: '#fff' }}>
+              <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
+                <tr>
                   {['TRX ID', 'Member ID', 'Member', 'Book ID', 'Book', 'Issue Date', 'Due Date', 'Status'].map((h) => (
-                    <th key={h} className="py-3 px-4 text-xs text-slate-400 font-semibold uppercase tracking-wider">{h}</th>
+                    <th key={h} className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                {txns.map((t) => {
+              <tbody className="divide-y divide-slate-100">
+                {txns.map((t, idx) => {
                   const isOverdue = t.status === 'overdue' || (!t.returnDate && new Date(t.dueDate) < new Date());
                   const wasReturnedOverdue = t.returnDate && t.overdueDays > 0;
                   const daysOverdue = isOverdue
@@ -42,17 +42,17 @@ export default function ReportDetailsTable({ reportType, reportData }) {
                   }
 
                   return (
-                    <tr key={t._id} style={{ borderBottom: '1px solid #f8f8f8' }}>
-                      <td className="py-2 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>{t.transactionId || '—'}</td>
-                      <td className="py-2 px-4 text-xs font-mono font-bold" style={{ color: '#4062BB' }}>{t.user?.memberId || '—'}</td>
-                      <td className="py-2 px-4 text-xs font-semibold" style={{ color: '#2C2C3E' }}>{t.user?.name || '—'}</td>
-                      <td className="py-2 px-4 text-xs font-mono font-bold" style={{ color: '#166534' }}>{t.book?.bookId || '—'}</td>
-                      <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{t.book?.title || '—'}</td>
-                      <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(t.issueDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                      <td className="py-2 px-4 text-xs font-semibold" style={{ color: (isOverdue || wasReturnedOverdue) ? '#b31b25' : '#595c5e' }}>
+                    <tr key={t._id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}>
+                      <td className="py-2.5 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>{t.transactionId || '—'}</td>
+                      <td className="py-2.5 px-4 text-xs font-mono font-bold" style={{ color: '#4062BB' }}>{t.user?.memberId || '—'}</td>
+                      <td className="py-2.5 px-4 text-xs font-semibold" style={{ color: '#2C2C3E' }}>{t.user?.name || '—'}</td>
+                      <td className="py-2.5 px-4 text-xs font-mono font-bold" style={{ color: '#166534' }}>{t.book?.bookId || '—'}</td>
+                      <td className="py-2.5 px-4 text-xs" style={{ color: '#595c5e' }}>{t.book?.title || '—'}</td>
+                      <td className="py-2.5 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(t.issueDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                      <td className="py-2.5 px-4 text-xs font-semibold" style={{ color: (isOverdue || wasReturnedOverdue) ? '#b31b25' : '#595c5e' }}>
                         {new Date(t.dueDate).toLocaleDateString()}
                       </td>
-                      <td className="py-2 px-4">
+                      <td className="py-2.5 px-4">
                         <span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: badge.bg, color: badge.c }}>
                           {badge.text}
                         </span>
@@ -80,23 +80,23 @@ export default function ReportDetailsTable({ reportType, reportData }) {
         ) : (
           <div className="overflow-x-auto max-h-96 overflow-y-auto">
             <table className="w-full text-left text-sm">
-              <thead>
-                <tr style={{ borderBottom: '2px solid #f0f0f0' }}>
+              <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
+                <tr>
                   {['Member ID', 'Name', 'Email', 'Role', 'Grade', 'Active Borrows', 'Total Borrows'].map((h) => (
-                    <th key={h} className="py-3 px-4 text-xs text-slate-400 font-semibold uppercase tracking-wider">{h}</th>
+                    <th key={h} className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                {members.map((m) => (
-                  <tr key={m._id} style={{ borderBottom: '1px solid #f8f8f8' }}>
-                    <td className="py-2 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>{m.memberId}</td>
-                    <td className="py-2 px-4 text-xs font-semibold" style={{ color: '#2C2C3E' }}>{m.name}</td>
-                    <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{m.email}</td>
-                    <td className="py-2 px-4 text-xs uppercase">{m.role}</td>
-                    <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{m.grade || '—'}</td>
-                    <td className="py-2 px-4 text-xs font-bold" style={{ color: m.activeBorrows > 0 ? '#b31b25' : '#166534' }}>{m.activeBorrows}</td>
-                    <td className="py-2 px-4 text-xs font-bold" style={{ color: '#1a1245' }}>{m.totalBorrows}</td>
+              <tbody className="divide-y divide-slate-100">
+                {members.map((m, idx) => (
+                  <tr key={m._id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}>
+                    <td className="py-2.5 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>{m.memberId}</td>
+                    <td className="py-2.5 px-4 text-xs font-semibold" style={{ color: '#2C2C3E' }}>{m.name}</td>
+                    <td className="py-2.5 px-4 text-xs" style={{ color: '#595c5e' }}>{m.email}</td>
+                    <td className="py-2.5 px-4 text-xs uppercase font-semibold">{m.role}</td>
+                    <td className="py-2.5 px-4 text-xs" style={{ color: '#595c5e' }}>{m.grade || '—'}</td>
+                    <td className="py-2.5 px-4 text-xs font-bold" style={{ color: m.activeBorrows > 0 ? '#b31b25' : '#166534' }}>{m.activeBorrows}</td>
+                    <td className="py-2.5 px-4 text-xs font-bold" style={{ color: '#1a1245' }}>{m.totalBorrows}</td>
                   </tr>
                 ))}
               </tbody>
@@ -156,26 +156,26 @@ export default function ReportDetailsTable({ reportType, reportData }) {
         ) : (
           <div className="overflow-x-auto max-h-96 overflow-y-auto">
             <table className="w-full text-left text-sm">
-              <thead>
-                <tr style={{ borderBottom: '2px solid #f0f0f0' }}>
+              <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
+                <tr>
                   {['TRX ID', 'Member ID', 'Member', 'Book ID', 'Book', 'Amount', 'Status', 'Date'].map((h) => (
-                    <th key={h} className="py-3 px-4 text-xs text-slate-400 font-semibold uppercase tracking-wider">{h}</th>
+                    <th key={h} className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                {fineList.map((f) => {
+              <tbody className="divide-y divide-slate-100">
+                {fineList.map((f, idx) => {
                   const sBadge = { unpaid: { bg: '#fef9c3', c: '#854d0e' }, paid: { bg: '#dcfce7', c: '#166534' }, waived: { bg: '#ece9f8', c: '#5b51d0' } }[f.status] || { bg: '#f0f0f0', c: '#666' };
                   return (
-                    <tr key={f._id} style={{ borderBottom: '1px solid #f8f8f8' }}>
-                      <td className="py-2 px-4 text-xs font-mono" style={{ color: '#94a3b8' }}>{f.transaction?.transactionId || '—'}</td>
-                      <td className="py-2 px-4 text-xs font-mono font-bold" style={{ color: '#4062BB' }}>{f.user?.memberId || '—'}</td>
-                      <td className="py-2 px-4 text-xs font-semibold" style={{ color: '#2C2C3E' }}>{f.user?.name || ''}</td>
-                      <td className="py-2 px-4 text-xs font-mono font-bold" style={{ color: '#166534' }}>{f.book?.bookId || '—'}</td>
-                      <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{f.book?.title || ''}</td>
-                      <td className="py-2 px-4 text-xs font-bold" style={{ color: '#1a1245' }}>{f.amount.toFixed(2)}</td>
-                      <td className="py-2 px-4"><span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: sBadge.bg, color: sBadge.c }}>{f.status}</span></td>
-                      <td className="py-2 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(f.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                    <tr key={f._id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}>
+                      <td className="py-2.5 px-4 text-xs font-mono" style={{ color: '#94a3b8' }}>{f.transaction?.transactionId || '—'}</td>
+                      <td className="py-2.5 px-4 text-xs font-mono font-bold" style={{ color: '#4062BB' }}>{f.user?.memberId || '—'}</td>
+                      <td className="py-2.5 px-4 text-xs font-semibold" style={{ color: '#2C2C3E' }}>{f.user?.name || ''}</td>
+                      <td className="py-2.5 px-4 text-xs font-mono font-bold" style={{ color: '#166534' }}>{f.book?.bookId || '—'}</td>
+                      <td className="py-2.5 px-4 text-xs" style={{ color: '#595c5e' }}>{f.book?.title || ''}</td>
+                      <td className="py-2.5 px-4 text-xs font-bold" style={{ color: '#1a1245' }}>{f.amount.toFixed(2)}</td>
+                      <td className="py-2.5 px-4"><span className="text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: sBadge.bg, color: sBadge.c }}>{f.status}</span></td>
+                      <td className="py-2.5 px-4 text-xs" style={{ color: '#595c5e' }}>{new Date(f.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}</td>
                     </tr>
                   );
                 })}

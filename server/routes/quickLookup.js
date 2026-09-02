@@ -22,14 +22,14 @@ router.get('/quick-lookup/:id', async (req, res) => {
     const { id } = req.params;
     const trimmed = id.trim();
 
-    // 1. Try to find user by memberId (case-insensitive) or MongoDB _id
+    // 1. Try to find user by memberId (case-insensitive) or MongoDB _id (students/teachers only)
     let user = null;
     const mongoose = require('mongoose');
     if (mongoose.Types.ObjectId.isValid(trimmed)) {
-      user = await User.findById(trimmed, '-password -borrowedBooks -resetToken -resetTokenExpiry');
+      user = await User.findOne({ _id: trimmed, role: { $ne: 'librarian' } }, '-password -borrowedBooks -resetToken -resetTokenExpiry');
     }
     if (!user) {
-      user = await User.findOne({ memberId: trimmed.toUpperCase() }, '-password -borrowedBooks -resetToken -resetTokenExpiry');
+      user = await User.findOne({ memberId: trimmed.toUpperCase(), role: { $ne: 'librarian' } }, '-password -borrowedBooks -resetToken -resetTokenExpiry');
     }
     
     if (user) {
