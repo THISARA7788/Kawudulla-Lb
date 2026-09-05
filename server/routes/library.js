@@ -649,14 +649,82 @@ router.post('/renew', protect, authorize('librarian'), async (req, res) => {
   }
 });
 
+// GET /api/library/transactions/stats - Get summary stats for circulation records
+router.get('/transactions/stats', protect, async (req, res) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    const [
+      totalTransactions,
+      activeBorrows,
+      overdueBorrows,
+      returnedCount,
+      todayIssues,
+      todayReturns
+    ] = await Promise.all([
+      Transaction.countDocuments({}),
+      Transaction.countDocuments({ returnDate: null, dueDate: { $gte: now }, status: { $ne: 'returned' } }),
+      Transaction.countDocuments({ returnDate: null, dueDate: { $lt: now }, status: { $ne: 'returned' } }),
+      Transaction.countDocuments({ returnDate: { $ne: null } }),
+      Transaction.countDocuments({ issueDate: { $gte: todayStart, $lte: todayEnd } }),
+      Transaction.countDocuments({ returnDate: { $gte: todayStart, $lte: todayEnd } }),
+    ]);
+
+    res.json({
+      total: totalTransactions,
+      active: activeBorrows,
+      overdue: overdueBorrows,
+      returned: returnedCount,
+      todayIssues,
+      todayReturns,
+    });
+  } catch (error) {
+    console.error('Get transactions stats error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // GET /api/library/transactions - Get all circulation records
 router.get('/transactions', protect, async (req, res) => {
   try {
-    const { userId, status, page = 1, limit = 20 } = req.query;
+    const { userId, status, search, startDate, endDate, sortBy = 'updatedAt_desc', page = 1, limit = 50 } = req.query;
     let query = {};
     const now = new Date();
 
     if (userId) query.user = userId;
+
+    // Search filter across transactions, users, and books
+    if (search && search.trim()) {
+      const q = search.trim();
+      const regex = new RegExp(q, 'i');
+
+      const [matchingUsers, matchingBooks] = await Promise.all([
+        User.find({ $or: [{ name: regex }, { memberId: regex }, { email: regex }] }).select('_id'),
+        Book.find({ $or: [{ title: regex }, { bookId: regex }, { isbn: regex }, { author: regex }] }).select('_id'),
+      ]);
+
+      const userIds = matchingUsers.map(u => u._id);
+      const bookIds = matchingBooks.map(b => b._id);
+
+      query.$or = [
+        { transactionId: regex },
+        { user: { $in: userIds } },
+        { book: { $in: bookIds } }
+      ];
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      query.issueDate = {};
+      if (startDate) query.issueDate.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.issueDate.$lte = end;
+      }
+    }
 
     // Dynamic status filtering to correctly identify overdue books
     if (status && status !== 'all') {
@@ -667,29 +735,38 @@ router.get('/transactions', protect, async (req, res) => {
           { status: 'active', dueDate: { $lt: now } }
         ];
       } else if (status === 'active') {
-        // Only truly active (currently borrowed and NOT yet overdue)
         query.status = 'active';
         query.dueDate = { $gte: now };
         query.returnDate = null;
+      } else if (status === 'returned') {
+        query.returnDate = { $ne: null };
       } else {
         query.status = status;
       }
     }
 
+    // Sorting configuration
+    let sortObj = { updatedAt: -1 };
+    if (sortBy === 'issueDate_desc') sortObj = { issueDate: -1 };
+    else if (sortBy === 'issueDate_asc') sortObj = { issueDate: 1 };
+    else if (sortBy === 'dueDate_asc') sortObj = { dueDate: 1 };
+    else if (sortBy === 'dueDate_desc') sortObj = { dueDate: -1 };
+    else if (sortBy === 'returnDate_desc') sortObj = { returnDate: -1 };
+    else if (sortBy === 'transactionId_asc') sortObj = { transactionId: 1 };
+
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const transactions = await Transaction.find(query)
-      .sort({ updatedAt: -1 }) // Sort by last update (issue time or return time) to show most recent activity first
+      .sort(sortObj)
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('user', 'name email role memberId grade')
+      .populate('user', 'name email role memberId grade class')
       .populate('book', 'title author isbn bookId category coverImageUrl')
       .populate('issuedBy', 'name');
 
     // Dynamically tag overdue transactions for the UI
     const formattedTransactions = transactions.map(t => {
       const doc = t.toObject();
-      // If it's not returned and past due date, flag it as overdue for the UI
       if (!doc.returnDate && new Date(doc.dueDate) < now && doc.status !== 'returned') {
         doc.status = 'overdue';
       }
@@ -697,9 +774,6 @@ router.get('/transactions', protect, async (req, res) => {
     });
 
     const total = await Transaction.countDocuments(query);
-
-    console.log('[DEBUG] Transactions query:', JSON.stringify(query));
-    console.log('[DEBUG] Found transactions:', formattedTransactions.length, 'Total in DB:', total);
 
     res.json({
       transactions: formattedTransactions,

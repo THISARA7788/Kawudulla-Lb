@@ -482,11 +482,11 @@ export default function MemberModals({
                         <table className="w-full text-left text-xs">
                           <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
                             <tr>
-                              <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wider" style={{ color: '#4C0000' }}>Book</th>
-                              <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wider" style={{ color: '#4C0000' }}>Issue Date</th>
-                              <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wider" style={{ color: '#4C0000' }}>Due Date</th>
-                              <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wider" style={{ color: '#4C0000' }}>Return Date</th>
-                              <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wider" style={{ color: '#4C0000' }}>Status</th>
+                              <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wide" style={{ color: '#881337' }}>Book</th>
+                              <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wide" style={{ color: '#881337' }}>Issue Date</th>
+                              <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wide" style={{ color: '#881337' }}>Due Date</th>
+                              <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wide" style={{ color: '#881337' }}>Return Date</th>
+                              <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wide" style={{ color: '#881337' }}>Status</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">

@@ -107,13 +107,13 @@ export default function MemberTable({
         <table className="w-full text-left text-sm">
           <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
             <tr>
-              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Member ID</th>
-              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Name</th>
-              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Email</th>
-              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Role</th>
-              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Grade / Class</th>
-              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Status</th>
-              <th className="py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-center" style={{ color: '#4C0000' }}>Actions</th>
+              <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Member ID</th>
+              <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Name</th>
+              <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Email</th>
+              <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Role</th>
+              <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Grade / Class</th>
+              <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Status</th>
+              <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -132,8 +132,8 @@ export default function MemberTable({
                   </span>
                 </td>
                 <td className="py-3.5 px-4">{statusBadge(m.status)}</td>
-                <td className="py-3.5 px-4 text-right">
-                  <div className="flex items-center justify-end gap-1.5">
+                <td className="py-3.5 px-4 text-center">
+                  <div className="flex items-center justify-center gap-1.5">
                     {/* View History */}
                     <button
                       onClick={() => openHistory(m)}

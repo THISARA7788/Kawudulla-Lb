@@ -63,11 +63,30 @@ transactionSchema.index({ status: 1, dueDate: 1 });
 transactionSchema.index({ user: 1, status: 1 });
 transactionSchema.index({ book: 1, status: 1 });
 
-// Auto-generate transaction ID on creation
+const transactionCounterSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  seq: { type: Number, default: 0 },
+});
+const TransactionCounter =
+  mongoose.models.TransactionCounter ||
+  mongoose.model('TransactionCounter', transactionCounterSchema);
+
+// Auto-generate sequential Transaction Number on creation (e.g., TRN-0001)
 transactionSchema.pre('save', async function (next) {
   if (this.isNew && !this.transactionId) {
-    const seq = Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
-    this.transactionId = `TRX-${seq}`;
+    try {
+      const counter = await TransactionCounter.findByIdAndUpdate(
+        'transactionId',
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      this.transactionId = `TRN-${String(counter.seq).padStart(4, '0')}`;
+    } catch (err) {
+      console.error('Error generating transaction sequence:', err);
+      // Fallback in case counter operation fails
+      const fallbackSeq = Date.now().toString(36).toUpperCase();
+      this.transactionId = `TRN-${fallbackSeq}`;
+    }
   }
   next();
 });

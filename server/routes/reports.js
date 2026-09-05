@@ -185,7 +185,43 @@ router.get('/members', async (req, res) => {
   }
 });
 
-// GET /api/library/reports/popular-books
+// GET /api/library/reports/books (Whole Library Book Count & Inventory)
+router.get('/books', async (req, res) => {
+  try {
+    const books = await Book.find().sort({ bookId: 1 }).lean();
+
+    const totalTitles = books.length;
+    const totalCopies = books.reduce((sum, b) => sum + (b.totalCopies || 1), 0);
+    const availableCopies = books.reduce((sum, b) => sum + (b.availableCopies !== undefined ? b.availableCopies : 1), 0);
+    const issuedCopies = Math.max(totalCopies - availableCopies, 0);
+
+    // Category distribution with copy counts
+    const categoryMap = {};
+    books.forEach(b => {
+      const cat = b.category || 'Uncategorized';
+      categoryMap[cat] = (categoryMap[cat] || 0) + (b.totalCopies || 1);
+    });
+    const categories = Object.entries(categoryMap)
+      .map(([cat, count]) => ({ _id: cat, count }))
+      .sort((a, b) => b.count - a.count);
+
+    res.json({
+      books,
+      summary: {
+        totalTitles,
+        totalCopies,
+        availableCopies,
+        issuedCopies,
+      },
+      categories,
+    });
+  } catch (err) {
+    console.error('Reports operation error:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/library/reports/popular-books (Legacy support)
 router.get('/popular-books', async (req, res) => {
   try {
     const { limit = 10 } = req.query;

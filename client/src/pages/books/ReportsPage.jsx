@@ -56,10 +56,10 @@ function shapeSinhala(text) {
 }
 
 const REPORT_TYPES = [
-  { id: 'circulation', label: 'Circulation Report', icon: 'sync_alt' },
-  { id: 'members', label: 'Member Activity', icon: 'group' },
-  { id: 'popular-books', label: 'Popular Books', icon: 'trending_up' },
-  { id: 'fines', label: 'Fine Collection', icon: 'payments' },
+  { id: 'circulation', label: 'Circulation', icon: 'sync_alt' },
+  { id: 'members', label: 'Members', icon: 'group' },
+  { id: 'books', label: 'Books', icon: 'menu_book' },
+  { id: 'fines', label: 'Fines', icon: 'payments' },
 ];
 
 const PRESETS = [
@@ -84,9 +84,14 @@ export default function ReportsPage() {
   const navigate = useNavigate();
 
   const [reportType, setReportType] = useState('circulation');
+  const [selectedPreset, setSelectedPreset] = useState('month');
   const [dateRange, setDateRange] = useState(getRange('month'));
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
+  const [bookFilter, setBookFilter] = useState('all');
+  const [fineFilter, setFineFilter] = useState('all');
+  const [circulationFilter, setCirculationFilter] = useState('all');
+  const [memberFilter, setMemberFilter] = useState('all');
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [excelGenerating, setExcelGenerating] = useState(false);
   const [toast, setToast] = useState(null);
@@ -100,16 +105,64 @@ export default function ReportsPage() {
   useEffect(() => { if (user && user.role !== 'librarian') navigate('/dashboard', { replace: true }); }, [user, navigate]);
 
   const fetchReport = async () => {
+    if (!token) return;
     setLoading(true);
     try {
-      const params = { ...dateRange };
-      const res = await api.get(`/library/reports/${reportType}`, { params, headers: { Authorization: `Bearer ${token}` } });
-      setReportData(res.data);
-    } catch (err) { console.error(err); showToast('Failed to generate report.', 'error'); }
-    finally { setLoading(false); }
+      if (reportType === 'books') {
+        let booksData = null;
+        try {
+          const res = await api.get('/library/reports/books', { headers: { Authorization: `Bearer ${token}` } });
+          booksData = res.data;
+        } catch {
+          // Fallback to active /library/books endpoint
+          const res = await api.get('/library/books', { headers: { Authorization: `Bearer ${token}` } });
+          const books = res.data.books || [];
+          const totalTitles = books.length;
+          const totalCopies = books.reduce((sum, b) => sum + (b.totalCopies || 1), 0);
+          const availableCopies = books.reduce((sum, b) => sum + (b.availableCopies !== undefined ? b.availableCopies : 1), 0);
+          const issuedCopies = Math.max(totalCopies - availableCopies, 0);
+
+          const categoryMap = {};
+          books.forEach((b) => {
+            const cat = b.category || 'Uncategorized';
+            categoryMap[cat] = (categoryMap[cat] || 0) + (b.totalCopies || 1);
+          });
+          const categories = Object.entries(categoryMap)
+            .map(([cat, count]) => ({ _id: cat, count }))
+            .sort((a, b) => b.count - a.count);
+
+          booksData = {
+            books,
+            summary: {
+              totalTitles,
+              totalCopies,
+              availableCopies,
+              issuedCopies,
+            },
+            categories,
+          };
+        }
+        setReportData(booksData);
+      } else {
+        const params = { ...dateRange };
+        const res = await api.get(`/library/reports/${reportType}`, { params, headers: { Authorization: `Bearer ${token}` } });
+        setReportData(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to generate report.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Automatically fetch report whenever reportType or date range changes
+  useEffect(() => {
+    fetchReport();
+  }, [reportType, dateRange.startDate, dateRange.endDate, token]);
+
   const applyPreset = (id) => {
+    setSelectedPreset(id);
     setDateRange(getRange(id));
   };
 
@@ -159,7 +212,7 @@ export default function ReportsPage() {
 
       const transactions = reportData.transactions || [];
       if (reportType === 'circulation') {
-        columns = ['TRX ID', 'Member ID', 'Member', 'Book ID', 'Book', 'Issue Date', 'Due Date', 'Status'];
+        columns = ['Transaction ID', 'Member ID', 'Member', 'Book ID', 'Book', 'Issue Date', 'Due Date', 'Status'];
         rows = transactions.map((t) => {
           const isOverdue = t.status === 'overdue' || (!t.returnDate && new Date(t.dueDate) < new Date());
           const wasReturnedOverdue = t.returnDate && t.overdueDays > 0;
@@ -179,7 +232,7 @@ export default function ReportsPage() {
             shapeSinhala(t.user?.name || '—'),
             t.book?.bookId || '—',
             shapeSinhala(t.book?.title || '—'),
-            new Date(t.issueDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
+            new Date(t.issueDate).toLocaleDateString(),
             new Date(t.dueDate).toLocaleDateString(),
             statusText,
           ];
@@ -188,19 +241,26 @@ export default function ReportsPage() {
 
       const members = reportData.members || [];
       if (reportType === 'members') {
-        columns = ['Member ID', 'Name', 'Email', 'Role', 'Grade', 'Active Borrows', 'Total Borrows'];
-        rows = members.map((m) => [m.memberId, shapeSinhala(m.name), m.email, m.role, m.grade || '—', m.activeBorrows?.toString() || '0', m.totalBorrows?.toString() || '0']);
+        columns = ['Member ID', 'Name', 'Email', 'Role', 'Grade', 'Total Borrows'];
+        rows = members.map((m) => [m.memberId, shapeSinhala(m.name), m.email, m.role, m.grade || '—', m.totalBorrows?.toString() || '0']);
       }
 
-      const popular = reportData.popular || [];
-      if (reportType === 'popular-books') {
-        columns = ['#', 'Book ID', 'Title', 'Author', 'Times Borrowed'];
-        rows = popular.map((p, i) => [(i + 1).toString(), p.book?.bookId || '', shapeSinhala(p.book?.title || ''), shapeSinhala(p.book?.author || ''), (p.count || 0).toString()]);
+      const booksList = reportData.books || [];
+      if (reportType === 'books') {
+        columns = ['Book ID', 'Title', 'Author', 'Category', 'Available Copies', 'Total Copies'];
+        rows = booksList.map((b) => [
+          b.bookId || '',
+          shapeSinhala(b.title || ''),
+          shapeSinhala(b.author || ''),
+          b.category || '',
+          (b.availableCopies !== undefined ? b.availableCopies : 1).toString(),
+          (b.totalCopies || 1).toString(),
+        ]);
       }
 
       const fineList = reportData.fines || [];
       if (reportType === 'fines') {
-        columns = ['Transaction', 'Member ID', 'Member', 'Book ID', 'Book', 'Amount (LKR)', 'Status', 'Date'];
+        columns = ['Transaction ID', 'Member ID', 'Member', 'Book ID', 'Book', 'Amount (LKR)', 'Status', 'Date'];
         rows = fineList.map((f) => [
           f.transaction?.transactionId || '',
           f.user?.memberId || '',
@@ -271,8 +331,24 @@ export default function ReportsPage() {
 
       const transactions = reportData.transactions || [];
       if (reportType === 'circulation') {
-        columns = ['TRX ID', 'Member ID', 'Member Name', 'Book ID', 'Book Title', 'Issue Date', 'Due Date', 'Status'];
-        rows = transactions.map((t) => {
+        let exportTransactions = transactions;
+        if (circulationFilter === 'returned') {
+          exportTransactions = transactions.filter((t) => t.status === 'returned' || !!t.returnDate);
+        } else if (circulationFilter === 'active') {
+          exportTransactions = transactions.filter((t) => {
+            const isOverdue = t.status === 'overdue' || (!t.returnDate && new Date(t.dueDate) < new Date());
+            return !t.returnDate && !isOverdue;
+          });
+        } else if (circulationFilter === 'overdue') {
+          exportTransactions = transactions.filter((t) => {
+            const isOverdue = t.status === 'overdue' || (!t.returnDate && new Date(t.dueDate) < new Date());
+            const wasReturnedOverdue = t.returnDate && t.overdueDays > 0;
+            return isOverdue || wasReturnedOverdue;
+          });
+        }
+
+        columns = ['Transaction ID', 'Member ID', 'Member Name', 'Book ID', 'Book Title', 'Issue Date', 'Due Date', 'Status'];
+        rows = exportTransactions.map((t) => {
           const isOverdue = t.status === 'overdue' || (!t.returnDate && new Date(t.dueDate) < new Date());
           const wasReturnedOverdue = t.returnDate && t.overdueDays > 0;
           const daysOverdue = isOverdue
@@ -291,7 +367,7 @@ export default function ReportsPage() {
             t.user?.name || '—',
             t.book?.bookId || '—',
             t.book?.title || '—',
-            new Date(t.issueDate).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
+            new Date(t.issueDate).toLocaleDateString(),
             new Date(t.dueDate).toLocaleDateString(),
             statusText,
           ];
@@ -300,42 +376,71 @@ export default function ReportsPage() {
 
       const members = reportData.members || [];
       if (reportType === 'members') {
-        columns = ['Member ID', 'Name', 'Email', 'Role', 'Grade', 'Active Borrows', 'Total Borrows'];
-        rows = members.map((m) => [
+        let exportMembers = members;
+        if (memberFilter === 'student') {
+          exportMembers = members.filter((m) => m.role === 'student');
+        } else if (memberFilter === 'teacher') {
+          exportMembers = members.filter((m) => m.role === 'teacher');
+        }
+
+        columns = ['Member ID', 'Name', 'Email', 'Role', 'Grade', 'Total Borrows'];
+        rows = exportMembers.map((m) => [
           m.memberId || '—',
           m.name || '—',
           m.email || '—',
           m.role || '—',
           m.grade || '—',
-          m.activeBorrows || 0,
           m.totalBorrows || 0
         ]);
       }
 
-      const popular = reportData.popular || [];
-      if (reportType === 'popular-books') {
-        columns = ['Rank', 'Book ID', 'Title', 'Author', 'Times Borrowed'];
-        rows = popular.map((p, i) => [
-          i + 1,
-          p.book?.bookId || '—',
-          p.book?.title || '—',
-          p.book?.author || '—',
-          p.count || 0
-        ]);
+      const booksList = reportData.books || [];
+      if (reportType === 'books') {
+        let exportBooks = booksList;
+        if (bookFilter === 'available') {
+          exportBooks = booksList.filter((b) => (b.availableCopies !== undefined ? b.availableCopies : 1) > 0);
+        } else if (bookFilter === 'borrowed') {
+          exportBooks = booksList.filter((b) => {
+            const avail = b.availableCopies !== undefined ? b.availableCopies : 1;
+            const tot = b.totalCopies || 1;
+            return avail === 0 || avail < tot;
+          });
+        }
+
+        columns = ['Book ID', 'Title', 'Author', 'Category', 'Available', 'Total Copies', 'Status'];
+        rows = exportBooks.map((b) => {
+          const avail = b.availableCopies !== undefined ? b.availableCopies : 1;
+          const tot = b.totalCopies || 1;
+          const status = avail > 0 ? 'In Stock' : 'Out of Stock';
+          return [
+            b.bookId || '—',
+            b.title || '—',
+            b.author || '—',
+            b.category || '—',
+            avail,
+            tot,
+            status,
+          ];
+        });
       }
 
       const fineList = reportData.fines || [];
       if (reportType === 'fines') {
-        columns = ['Transaction ID', 'Member ID', 'Member Name', 'Book ID', 'Book Title', 'Amount (LKR)', 'Status', 'Date'];
-        rows = fineList.map((f) => [
+        let exportFines = fineList;
+        if (fineFilter !== 'all') {
+          exportFines = fineList.filter((f) => f.status === fineFilter);
+        }
+
+        columns = ['Transaction ID', 'Member ID', 'Member', 'Book ID', 'Book', 'Amount (LKR)', 'Status', 'Date'];
+        rows = exportFines.map((f) => [
           f.transaction?.transactionId || '—',
           f.user?.memberId || '—',
           f.user?.name || '—',
           f.book?.bookId || '—',
           f.book?.title || '—',
           f.amount || 0,
-          f.status || '—',
-          new Date(f.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }),
+          f.status === 'waived' ? 'excused' : (f.status || '—'),
+          new Date(f.createdAt).toLocaleDateString(),
         ]);
       }
 
@@ -356,12 +461,57 @@ export default function ReportsPage() {
       const now = new Date().toLocaleDateString();
       sheetData.push([`Period: ${rangeStr} | Generated: ${now}`]);
 
-      // Summary Metrics from reportData
-      const summary = reportData.summary || {};
-      Object.entries(summary).forEach(([key, val]) => {
-        const formattedKey = key.replace(/([A-Z])/g, ' $1').trim().toLowerCase();
-        sheetData.push([`${formattedKey}: ${val}`]);
-      });
+      // Summary Metrics from reportData based on reportType
+      if (reportType === 'members') {
+        const membersList = reportData.members || [];
+        const studentsCount = membersList.filter(m => m.role === 'student').length;
+        const teachersCount = membersList.filter(m => m.role === 'teacher').length;
+        sheetData.push([`Total Members: ${membersList.length}`]);
+        sheetData.push([`Students: ${studentsCount}`]);
+        sheetData.push([`Teachers: ${teachersCount}`]);
+        if (memberFilter !== 'all') {
+          sheetData.push([`Filter Applied: ${memberFilter === 'student' ? 'Students Only' : 'Teachers Only'}`]);
+        }
+      } else if (reportType === 'circulation') {
+        const s = reportData.summary || {};
+        sheetData.push([`Total Issued: ${s.issued || 0}`]);
+        sheetData.push([`Total Returned: ${s.returned || 0}`]);
+        sheetData.push([`Currently Active: ${s.active || 0}`]);
+        sheetData.push([`Overdue Books: ${s.overdue || 0}`]);
+        if (circulationFilter !== 'all') {
+          const circFilterNames = {
+            returned: 'Returned Records',
+            active: 'Currently Active Borrows',
+            overdue: 'Overdue Books',
+          };
+          sheetData.push([`Filter Applied: ${circFilterNames[circulationFilter] || circulationFilter}`]);
+        }
+      } else if (reportType === 'fines') {
+        const s = reportData.summary || {};
+        sheetData.push([`Collected Fines: Rs. ${(s.totalCollected || 0).toFixed(2)}`]);
+        sheetData.push([`Outstanding Fines: Rs. ${(s.totalOutstanding || 0).toFixed(2)}`]);
+        sheetData.push([`Excused Fines: Rs. ${(s.totalWaived || 0).toFixed(2)}`]);
+        sheetData.push([`Total Fine Records: ${s.count || 0}`]);
+        if (fineFilter !== 'all') {
+          const filterNames = { paid: 'Collected / Paid Fines', unpaid: 'Unpaid / Outstanding Fines', waived: 'Excused Fines' };
+          sheetData.push([`Filter Applied: ${filterNames[fineFilter] || fineFilter}`]);
+        }
+      } else if (reportType === 'books') {
+        const s = reportData.summary || {};
+        sheetData.push([`Total Titles: ${s.totalTitles || 0}`]);
+        sheetData.push([`Total Physical Copies: ${s.totalCopies || 0}`]);
+        sheetData.push([`Available Copies: ${s.availableCopies || 0}`]);
+        sheetData.push([`Currently Borrowed: ${s.issuedCopies || 0}`]);
+        if (bookFilter !== 'all') {
+          sheetData.push([`Filter Applied: ${bookFilter === 'available' ? 'In Stock Books' : 'Out of Stock / Borrowed Books'}`]);
+        }
+      } else {
+        const summary = reportData.summary || {};
+        Object.entries(summary).forEach(([key, val]) => {
+          const formattedKey = key.replace(/([A-Z])/g, ' $1').trim();
+          sheetData.push([`${formattedKey}: ${val}`]);
+        });
+      }
 
       // Blank line spacer
       sheetData.push([]);
@@ -450,15 +600,31 @@ export default function ReportsPage() {
           // 3. Style Table Body Data Cells
           else {
             let alignHoriz = 'left';
+            let fontStyle = { name: "Calibri", sz: 10 };
             const val = ws[cellRef].v;
+
             if (typeof val === 'number') {
               alignHoriz = 'center';
-            } else if (typeof val === 'string' && (val === 'Active' || val === 'Returned' || val.startsWith('Overdue') || val.startsWith('Returned (Overdue'))) {
-              alignHoriz = 'center';
+            } else if (typeof val === 'string') {
+              if (val === 'In Stock' || val === 'paid' || val === 'Returned') {
+                alignHoriz = 'center';
+                fontStyle = { name: "Calibri", sz: 10, bold: true, color: { rgb: "166534" } };
+              } else if (val === 'Out of Stock' || val === 'unpaid' || val.startsWith('Overdue') || val.startsWith('Returned (Overdue)')) {
+                alignHoriz = 'center';
+                fontStyle = { name: "Calibri", sz: 10, bold: true, color: { rgb: "B31B25" } };
+              } else if (val === 'excused' || val === 'waived') {
+                alignHoriz = 'center';
+                fontStyle = { name: "Calibri", sz: 10, bold: true, color: { rgb: "6D28D9" } };
+              } else if (val === 'Active') {
+                alignHoriz = 'center';
+                fontStyle = { name: "Calibri", sz: 10, bold: true, color: { rgb: "1E40AF" } };
+              } else if (val === 'student' || val === 'teacher') {
+                alignHoriz = 'center';
+              }
             }
 
             ws[cellRef].s = {
-              font: { name: "Calibri", sz: 10 },
+              font: fontStyle,
               alignment: { vertical: "center", horizontal: alignHoriz },
               border: {
                 bottom: { style: "thin", color: { rgb: "E5E7EB" } },
@@ -485,56 +651,138 @@ export default function ReportsPage() {
     if (!reportData) return null;
     return (
       <>
-        <ReportSummaryCards reportType={reportType} reportData={reportData} />
-        <ReportDetailsTable reportType={reportType} reportData={reportData} />
+        <ReportSummaryCards
+          reportType={reportType}
+          reportData={reportData}
+          bookFilter={bookFilter}
+          onSelectBookFilter={setBookFilter}
+          fineFilter={fineFilter}
+          onSelectFineFilter={setFineFilter}
+          circulationFilter={circulationFilter}
+          onSelectCirculationFilter={setCirculationFilter}
+          memberFilter={memberFilter}
+          onSelectMemberFilter={setMemberFilter}
+        />
+        <ReportDetailsTable
+          reportType={reportType}
+          reportData={reportData}
+          bookFilter={bookFilter}
+          onSelectBookFilter={setBookFilter}
+          fineFilter={fineFilter}
+          onSelectFineFilter={setFineFilter}
+          circulationFilter={circulationFilter}
+          onSelectCirculationFilter={setCirculationFilter}
+          memberFilter={memberFilter}
+          onSelectMemberFilter={setMemberFilter}
+        />
       </>
     );
   };
 
   return (
     <DashboardLayout>
-          <div className="flex items-center justify-end gap-3 mb-4">
-            <button onClick={generatePDF} disabled={!reportData || pdfGenerating || excelGenerating} className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2" style={{ backgroundColor: '#1a1245', color: '#fff', opacity: !reportData || pdfGenerating || excelGenerating ? 0.5 : 1 }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{pdfGenerating ? 'progress_activity' : 'picture_as_pdf'}</span>
-              {pdfGenerating ? 'Generating PDF...' : 'Print PDF'}
-            </button>
-            <button onClick={generateExcel} disabled={!reportData || pdfGenerating || excelGenerating} className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 text-white shadow-sm hover:shadow transition-all" style={{ backgroundColor: '#15803d', opacity: !reportData || pdfGenerating || excelGenerating ? 0.5 : 1 }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{excelGenerating ? 'progress_activity' : 'table_view'}</span>
+          {/* Report Type Tabs & Export Action Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {REPORT_TYPES.map((rt) => (
+                <button
+                  key={rt.id}
+                  onClick={() => {
+                    setReportType(rt.id);
+                    setBookFilter('all');
+                    setFineFilter('all');
+                    setCirculationFilter('all');
+                    setMemberFilter('all');
+                  }}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer"
+                  style={{
+                    backgroundColor: reportType === rt.id ? '#1a1245' : '#fff',
+                    color: reportType === rt.id ? '#fff' : '#2C2C3E',
+                    border: `1px solid ${reportType === rt.id ? '#1a1245' : '#e0e0e0'}`
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{rt.icon}</span> {rt.label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={generateExcel}
+              disabled={!reportData || excelGenerating}
+              className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 text-white shadow-sm hover:shadow transition-all cursor-pointer self-end sm:self-auto shrink-0"
+              style={{ backgroundColor: '#15803d', opacity: !reportData || excelGenerating ? 0.5 : 1 }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                {excelGenerating ? 'progress_activity' : 'table_view'}
+              </span>
               {excelGenerating ? 'Generating Excel...' : 'Export Excel'}
             </button>
           </div>
 
-          {/* Report Type Tabs */}
-          <div className="flex gap-2 mb-4">
-            {REPORT_TYPES.map((rt) => (
-              <button key={rt.id} onClick={() => setReportType(rt.id)} className="px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2" style={{ backgroundColor: reportType === rt.id ? '#1a1245' : '#fff', color: reportType === rt.id ? '#fff' : '#2C2C3E', border: `1px solid ${reportType === rt.id ? '#1a1245' : '#e0e0e0'}` }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{rt.icon}</span> {rt.label}
-              </button>
-            ))}
-          </div>
+          {/* Date Range & Filter Controls */}
+          <div className="flex flex-wrap gap-3 mb-6 items-center bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">From</label>
+                <input
+                  type="date"
+                  value={dateRange.startDate}
+                  onChange={(e) => {
+                    setSelectedPreset('custom');
+                    setDateRange((p) => ({ ...p, startDate: e.target.value }));
+                  }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl outline-none border border-slate-200 bg-slate-50 text-slate-700 focus:bg-white focus:border-[#4062BB] transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">To</label>
+                <input
+                  type="date"
+                  value={dateRange.endDate}
+                  onChange={(e) => {
+                    setSelectedPreset('custom');
+                    setDateRange((p) => ({ ...p, endDate: e.target.value }));
+                  }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl outline-none border border-slate-200 bg-slate-50 text-slate-700 focus:bg-white focus:border-[#4062BB] transition-all"
+                />
+              </div>
+            </div>
 
-          {/* Date Range */}
-          <div className="flex gap-3 mb-4 items-center">
-            <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: '#595c5e' }}>From</label>
-              <input type="date" value={dateRange.startDate} onChange={(e) => setDateRange((p) => ({ ...p, startDate: e.target.value }))} className="px-3 py-2 text-sm rounded-xl outline-none" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }} />
+            <div className="h-8 w-px bg-slate-200 hidden md:block mx-1" />
+
+            {/* Quick Presets */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {PRESETS.map((p) => {
+                const isActive = selectedPreset === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => applyPreset(p.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer ${
+                      isActive
+                        ? 'bg-[#1a1245] text-white shadow-xs'
+                        : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/70'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
             </div>
-            <div>
-              <label className="block text-xs font-semibold mb-1" style={{ color: '#595c5e' }}>To</label>
-              <input type="date" value={dateRange.endDate} onChange={(e) => setDateRange((p) => ({ ...p, endDate: e.target.value }))} className="px-3 py-2 text-sm rounded-xl outline-none" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0' }} />
-            </div>
+
             <div className="flex-1" />
-            <div className="flex gap-2">
-              {PRESETS.map((p) => (
-                <button key={p.id} onClick={() => applyPreset(p.id)} className="px-3 py-2 rounded-lg text-xs font-medium" style={{ backgroundColor: '#fff', border: '1px solid #e0e0e0', color: '#2C2C3E' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f0f0f0'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; }}>
-                  {p.label}
-                </button>
-              ))}
-            </div>
-            <button onClick={fetchReport} disabled={loading} className="px-6 py-2 rounded-xl text-sm font-semibold" style={{ backgroundColor: '#4062BB', color: '#fff', opacity: loading ? 0.7 : 1 }}>
-              {loading ? 'Loading...' : 'Generate Report'}
+
+            {/* Refresh Data Button */}
+            <button
+              onClick={fetchReport}
+              disabled={loading}
+              className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-[#4062BB] hover:bg-[#3453a3] active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title="Refresh Report Data"
+            >
+              <span className={`material-symbols-outlined text-[16px] ${loading ? 'animate-spin' : ''}`}>
+                sync
+              </span>
+              {loading ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
 

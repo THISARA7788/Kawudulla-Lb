@@ -167,25 +167,13 @@ export default function RenewBook() {
   return (
     <DashboardLayout>
       <div className="p-1 max-w-6xl mx-auto space-y-6">
-        
-        {/* Header Title Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-[#4C0000] flex items-center gap-2" style={{ fontFamily: "'Manrope', sans-serif" }}>
-              <span className="material-symbols-outlined text-2xl font-bold">autorenew</span>
-              Book Renewal Center
-            </h1>
-            <p className="text-slate-500 text-xs mt-1">Extend checkout periods for active borrows and update due dates.</p>
-          </div>
-        </div>
-
-        {/* Outer Split Pane Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Outer Split Pane Layout - Stretched to end on the exact same line */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
           
           {/* Left Column: Member Search Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 lg:col-span-1 space-y-4">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider select-none flex items-center gap-1.5 border-b pb-2">
-              <span className="material-symbols-outlined text-[16px]">person_search</span>
+          <div className="bg-white rounded-2xl shadow-2xs border border-slate-200/80 p-6 md:col-span-1 flex flex-col h-full space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider select-none flex items-center gap-1.5 border-b border-slate-100 pb-3" style={{ color: '#881337' }}>
+              <span className="material-symbols-outlined text-[18px]">person_search</span>
               Select Member
             </h3>
 
@@ -273,7 +261,7 @@ export default function RenewBook() {
 
             {/* Selected Member Detail Summary Card */}
             {selectedMember && (
-              <div className="mt-4 p-4 rounded-xl border border-red-100 bg-red-50/5 text-left animate-fadeIn">
+              <div className="mt-auto p-4 rounded-xl border border-red-100 bg-red-50/5 text-left animate-fadeIn">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0" style={{ background: 'linear-gradient(135deg, #4C0000 0%, #9E0D0D 100%)' }}>
                     {selectedMember.name?.charAt(0).toUpperCase()}
@@ -301,9 +289,9 @@ export default function RenewBook() {
           </div>
 
           {/* Right Column: Active Borrows Table List */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 lg:col-span-2 space-y-4">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider select-none flex items-center gap-1.5 border-b pb-2">
-              <span className="material-symbols-outlined text-[16px]">menu_book</span>
+          <div className="bg-white rounded-2xl shadow-2xs border border-slate-200/80 p-6 md:col-span-2 flex flex-col h-full space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider select-none flex items-center gap-1.5 border-b border-slate-100 pb-3" style={{ color: '#881337' }}>
+              <span className="material-symbols-outlined text-[18px]">menu_book</span>
               Active Borrows
             </h3>
 
@@ -315,24 +303,24 @@ export default function RenewBook() {
             )}
 
             {!selectedMember ? (
-              <div className="text-center py-20 bg-slate-50/30 rounded-xl border border-dashed border-slate-200">
+              <div className="flex-1 flex flex-col items-center justify-center py-20 bg-slate-50/30 rounded-xl border border-dashed border-slate-200">
                 <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">person_search</span>
                 <p className="text-xs text-slate-500 font-semibold">Please select a member to view active checkouts</p>
               </div>
             ) : activeBorrows.length === 0 ? (
-              <div className="text-center py-20 bg-slate-50/30 rounded-xl border border-dashed border-slate-200">
+              <div className="flex-1 flex flex-col items-center justify-center py-20 bg-slate-50/30 rounded-xl border border-dashed border-slate-200">
                 <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">check_circle</span>
                 <p className="text-xs text-slate-500 font-semibold">No active borrows found for this user.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-slate-100">
+              <div className="overflow-x-auto rounded-xl border border-slate-100 flex-1">
                 <table className="w-full min-w-[500px] text-left">
-                  <thead className="bg-[#F5F3FC] text-[#4C0000] text-xs font-bold uppercase tracking-wider">
+                  <thead className="sticky top-0 z-10 shadow-2xs bg-[#F8FAFC] border-b border-slate-200/80">
                     <tr>
-                      <th className="px-4 py-3">Book Info</th>
-                      <th className="px-4 py-3">Borrow Date</th>
-                      <th className="px-4 py-3">Due Date</th>
-                      <th className="px-4 py-3 text-right">Action</th>
+                      <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Book Info</th>
+                      <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Borrow Date</th>
+                      <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Due Date</th>
+                      <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700 text-xs font-medium">
@@ -355,21 +343,21 @@ export default function RenewBook() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-slate-500">{formatDate(b.issueDate)}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 text-slate-500 text-center">{formatDate(b.issueDate)}</td>
+                          <td className="px-4 py-3 text-center">
                             <span className={isOverdue ? 'text-red-600 font-bold' : 'text-slate-700'}>
                               {formatDate(b.dueDate)}
                             </span>
                             {isOverdue && (
-                              <span className="block text-[8px] bg-red-100 text-red-800 font-extrabold uppercase px-1 rounded-sm w-max mt-0.5 border border-red-200">
+                              <span className="block text-[8px] bg-red-100 text-red-800 font-extrabold uppercase px-1 rounded-sm w-max mx-auto mt-0.5 border border-red-200">
                                 Overdue
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-right">
+                          <td className="px-4 py-3 text-center">
                             <button
                               onClick={() => openRenewModal(b)}
-                              className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-[#4C0000] hover:bg-[#9E0D0D] transition-colors cursor-pointer active:scale-95 shadow-sm"
+                              className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-[#881337] hover:bg-[#9E0D0D] transition-colors cursor-pointer active:scale-95 shadow-sm"
                             >
                               Renew Book
                             </button>

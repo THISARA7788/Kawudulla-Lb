@@ -159,6 +159,7 @@ router.get('/', async (req, res) => {
       const q = search.toLowerCase();
       filtered = fines.filter(
         (f) =>
+          (f.fineId && f.fineId.toLowerCase().includes(q)) ||
           (f.user && (f.user.name?.toLowerCase().includes(q) || f.user.memberId?.toLowerCase().includes(q))) ||
           (f.book && (f.book.title?.toLowerCase().includes(q) || f.book.bookId?.toLowerCase().includes(q))) ||
           (f.transaction && f.transaction.transactionId?.toLowerCase().includes(q))

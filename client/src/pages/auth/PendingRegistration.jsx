@@ -181,8 +181,8 @@ function PendingRegistration() {
                 <table className="w-full min-w-[800px]">
                   <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
                   <tr>
-                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
-                      <div className="flex items-center justify-center gap-1.5">
+                    <th className="px-6 py-4 text-left text-[13px] font-bold uppercase tracking-wide" style={{ color: '#881337' }}>
+                      <div className="flex items-center justify-start gap-1.5">
                         <span>Name</span>
                         {filteredPendingUsers.length > 0 && (
                           <span className="bg-red-50 text-[#9E0D0D] border border-red-200 text-[10px] px-2 py-0.5 rounded-full font-black">
@@ -191,19 +191,19 @@ function PendingRegistration() {
                         )}
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
+                    <th className="px-6 py-4 text-left text-[13px] font-bold uppercase tracking-wide" style={{ color: '#881337' }}>
                       Email
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
+                    <th className="px-6 py-4 text-center text-[13px] font-bold uppercase tracking-wide" style={{ color: '#881337' }}>
                       Grade
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
+                    <th className="px-6 py-4 text-center text-[13px] font-bold uppercase tracking-wide" style={{ color: '#881337' }}>
                       Role
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
+                    <th className="px-6 py-4 text-center text-[13px] font-bold uppercase tracking-wide" style={{ color: '#881337' }}>
                       Registered
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#4C0000' }}>
+                    <th className="px-6 py-4 text-center text-[13px] font-bold uppercase tracking-wide" style={{ color: '#881337' }}>
                       Actions
                     </th>
                   </tr>

@@ -1,5 +1,13 @@
+const dns = require('dns');
 const mongoose = require('mongoose');
 const User = require('../models/User');
+
+// Configure DNS servers to resolve MongoDB Atlas SRV records reliably on Windows/ISP networks
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+} catch (e) {
+  // If setServers fails, fallback to system default
+}
 
 const connectDB = async () => {
   try {
