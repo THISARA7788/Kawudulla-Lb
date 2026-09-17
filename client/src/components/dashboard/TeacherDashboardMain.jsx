@@ -6,7 +6,7 @@ import HeroBorrowingChart from './HeroBorrowingChart';
 import BookProfileModal from '../books/BookProfileModal';
 import { getEmptyBookCoverBackground } from '../../utils/bookCoverUtils';
 
-export default function StudentDashboardMain() {
+export default function TeacherDashboardMain() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -60,7 +60,7 @@ export default function StudentDashboardMain() {
           setTopCategories(recRes.data.topCategories || []);
         }
       } catch (err) {
-        console.error('Error fetching student dashboard data:', err);
+        console.error('Error fetching teacher dashboard data:', err);
         setError('Failed to load profile details.');
       } finally {
         setLoading(false);
@@ -73,7 +73,7 @@ export default function StudentDashboardMain() {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <span className="material-symbols-outlined animate-spin mb-2" style={{ fontSize: 32 }}>progress_activity</span>
-        <p className="text-xs font-semibold">Loading student dashboard...</p>
+        <p className="text-xs font-semibold">Loading teacher dashboard...</p>
       </div>
     );
   }
@@ -97,18 +97,11 @@ export default function StudentDashboardMain() {
         className="py-3.5 px-5 sm:py-4 sm:px-6 rounded-2xl relative overflow-hidden text-white shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         style={{ background: 'linear-gradient(135deg, #4C0000 0%, #150000 100%)' }}
       >
-        {/* Left: Greetings & Profile Info */}
+        {/* Left: Greetings & Faculty Info */}
         <div className="relative z-10 flex-1 min-w-0">
-          {user?.grade && (
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-[#EAB308] bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
-                {user.grade} {user.class ? `• ${user.class}` : ''}
-              </span>
-            </div>
-          )}
           <h1 className="text-xl sm:text-2xl font-black mt-0.5 tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
             {greeting.text}, {(() => {
-              const rawName = user?.name?.trim().split(/\s+/)[0] || 'Student';
+              const rawName = user?.name?.trim().split(/\s+/)[0] || 'Teacher';
               return rawName.charAt(0).toUpperCase() + rawName.slice(1);
             })()}! {greeting.emoji}
           </h1>
@@ -137,6 +130,9 @@ export default function StudentDashboardMain() {
               <h3 className="font-extrabold text-slate-800 text-sm sm:text-base leading-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
                 Recommended For You
               </h3>
+              <p className="text-[10.5px] text-slate-400 font-medium">
+                Curated educational and literature recommendations aligned with your interests
+              </p>
             </div>
           </div>
           <button

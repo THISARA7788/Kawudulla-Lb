@@ -11,7 +11,7 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import api from '../../api/axios'
 
-const navItems = [
+const librarianNavItems = [
   { icon: "grid_view", label: "Dashboard", route: "/dashboard" },
   { icon: "library_books", label: "Books Catalog", route: "/books" },
   { icon: "book_5", label: "Issue Book", route: "/issue-book" },
@@ -22,6 +22,14 @@ const navItems = [
   { icon: "history_edu", label: "Circulation", route: "/circulation" },
   { icon: "payments", label: "Fines", route: "/fines" },
   { icon: "assessment", label: "Reports", route: "/reports" },
+]
+
+const memberNavItems = [
+  { icon: "grid_view", label: "Dashboard", route: "/dashboard" },
+  { icon: "library_books", label: "Browse Books", route: "/books" },
+  { icon: "history_edu", label: "My Borrowings", route: "/my-borrowings" },
+  { icon: "payments", label: "My Fines", route: "/my-fines" },
+  { icon: "mark_email_unread", label: "Requested Books", route: "/book-requests" },
 ]
 
 const ms = {
@@ -116,22 +124,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
       {/* Nav links */}
       <nav className="flex-1 space-y-1 overflow-y-auto no-scrollbar" style={{ scrollbarWidth: 'none' }}>
-        {navItems
-          .map((item) => {
-            if (user?.role !== 'librarian' && item.route === '/books') {
-              return { ...item, label: "Browse Books" };
-            }
-            return item;
-          })
-          .filter((item) => {
-            if (user?.role === 'librarian') return true;
-            return item.route === '/dashboard' || item.route === '/books';
-          })
-          .map((item) => {
-            const isActive = item.route !== '#' && (
-              location.pathname === item.route || 
-              (item.route !== '/dashboard' && location.pathname.startsWith(item.route))
-            )
+        {(user?.role === 'librarian' ? librarianNavItems : memberNavItems).map((item) => {
+          const isActive = item.route !== '#' && (
+            location.pathname === item.route || 
+            (item.route !== '/dashboard' && location.pathname.startsWith(item.route))
+          )
           return (
             <button
               key={item.label}
@@ -157,7 +154,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             </button>
           )
         })}
-
       </nav>
 
       {/* User Info Profile Card & Dropdown Chevron */}

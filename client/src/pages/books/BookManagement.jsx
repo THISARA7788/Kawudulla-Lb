@@ -6,6 +6,7 @@
 // - It allows the librarian to search, add new books, edit existing books, and delete books.
 // ==================================================================================
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -63,6 +64,7 @@ const getStatusBadgeStyle = (status) => {
 
 export default function BookManagement() {
   const { user, token } = useAuth();
+  const navigate = useNavigate();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -86,6 +88,7 @@ export default function BookManagement() {
   const [selectedBookIds, setSelectedBookIds] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   const longPressTimeoutRef = useRef(null);
   const isLongPressActiveRef = useRef(false);
@@ -181,12 +184,29 @@ export default function BookManagement() {
     }
   };
 
+  const fetchPendingRequestsCount = async () => {
+    try {
+      const res = await api.get('/book-requests/pending-count');
+      setPendingRequestsCount(res.data?.count || 0);
+    } catch (err) {
+      console.error('Fetch pending requests count error:', err);
+    }
+  };
+
   useEffect(() => {
     fetchBooks();
+    let interval;
+    if (user?.role === 'librarian') {
+      fetchPendingRequestsCount();
+      interval = setInterval(fetchPendingRequestsCount, 20000);
+    }
     if (searchInputRef.current) {
       searchInputRef.current.focus();
     }
-  }, []);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [user]);
 
   useEffect(() => {
     localStorage.setItem('book_catalog_view_mode', viewMode);
@@ -483,14 +503,32 @@ export default function BookManagement() {
                 - Modify the border or shadow color inside "rgba(158,13,13,0.2)"
                ------------------------------------------------------------- */}
             {user?.role === 'librarian' && (
-              <button
-                onClick={openAdd}
-                className="px-4 py-1.5 rounded-2xl text-sm font-bold flex items-center gap-2 hover:opacity-95 hover:shadow-lg transition-all whitespace-nowrap active:scale-95"
-                style={{ backgroundColor: '#9E0D0D', color: '#fff', boxShadow: '0 4px 12px rgba(158,13,13,0.2)' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
-                Add New Book
-              </button>
+              <>
+                {/* Compact Requested Books Action Button (Librarian only) */}
+                <button
+                  onClick={() => navigate('/book-requests')}
+                  className="relative px-3.5 py-1.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 shadow-sm hover:shadow transition-all whitespace-nowrap active:scale-95 cursor-pointer"
+                  title="Requested Books"
+                >
+                  <span className="material-symbols-outlined text-[#9E0D0D]" style={{ fontSize: 18 }}>mark_email_unread</span>
+                  <span>Requests</span>
+                  {pendingRequestsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600 ring-2 ring-white"></span>
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={openAdd}
+                  className="px-4 py-1.5 rounded-2xl text-sm font-bold flex items-center gap-2 hover:opacity-95 hover:shadow-lg transition-all whitespace-nowrap active:scale-95"
+                  style={{ backgroundColor: '#9E0D0D', color: '#fff', boxShadow: '0 4px 12px rgba(158,13,13,0.2)' }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
+                  Add New Book
+                </button>
+              </>
             )}
           </div>
         </div>

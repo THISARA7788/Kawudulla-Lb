@@ -27,13 +27,21 @@ export default function TopBar({ onMenuToggle }) {
 
   let pageTitle = ''
   if (path.startsWith('/dashboard')) {
-    pageTitle = user?.role === 'librarian' ? 'Librarian Dashboard' : 'Student Dashboard'
+    pageTitle = user?.role === 'librarian' ? 'Librarian Dashboard' : user?.role === 'teacher' ? 'Teacher Dashboard' : 'Student Dashboard'
   } else if (path.startsWith('/books')) {
-    pageTitle = 'Books Catalog'
+    pageTitle = user?.role === 'librarian' ? 'Books Catalog' : 'Browse Books'
+  } else if (path.startsWith('/my-borrowings')) {
+    pageTitle = 'My Borrowings'
+  } else if (path.startsWith('/my-fines')) {
+    pageTitle = 'My Fines'
+  } else if (path.startsWith('/book-requests')) {
+    pageTitle = 'Requested Books'
   } else if (path.startsWith('/issue-book')) {
     pageTitle = 'Issue Book Center'
   } else if (path.startsWith('/return-book')) {
     pageTitle = 'Return Book'
+  } else if (path.startsWith('/renew-book')) {
+    pageTitle = 'Renew Book'
   } else if (path.startsWith('/pending-registration')) {
     pageTitle = 'Pending Registration'
   } else if (path.startsWith('/members')) {
@@ -41,9 +49,11 @@ export default function TopBar({ onMenuToggle }) {
   } else if (path.startsWith('/circulation')) {
     pageTitle = 'Circulation'
   } else if (path.startsWith('/fines')) {
-    pageTitle = 'Fines'
+    pageTitle = 'Fines Management'
   } else if (path.startsWith('/reports')) {
     pageTitle = 'Library Reports'
+  } else if (path.startsWith('/qr-scanner')) {
+    pageTitle = 'QR Scanner'
   } else if (path.startsWith('/profile')) {
     pageTitle = 'Profile & Settings'
   } else {

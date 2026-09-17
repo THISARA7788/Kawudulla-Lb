@@ -48,12 +48,55 @@ router.get('/quick-lookup/:id', async (req, res) => {
         .populate('book', 'bookId title author coverImageUrl')
         .populate('transaction', 'transactionId dueDate');
 
+      // Calculate annual borrowing stats for the current year
+      const requestedYear = parseInt(req.query.year) || new Date().getFullYear();
+      const allUserTransactions = await Transaction.find(
+        { user: user._id },
+        'issueDate createdAt'
+      ).lean();
+
+      // Collect available years
+      const yearsSet = new Set([requestedYear, new Date().getFullYear()]);
+      allUserTransactions.forEach((t) => {
+        const d = new Date(t.issueDate || t.createdAt);
+        if (!isNaN(d.getTime())) {
+          yearsSet.add(d.getFullYear());
+        }
+      });
+      const availableYears = Array.from(yearsSet).sort((a, b) => b - a);
+
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthlyCounts = Array(12).fill(0);
+
+      allUserTransactions.forEach((t) => {
+        const d = new Date(t.issueDate || t.createdAt);
+        if (!isNaN(d.getTime()) && d.getFullYear() === requestedYear) {
+          monthlyCounts[d.getMonth()] += 1;
+        }
+      });
+
+      const monthly = months.map((month, idx) => ({
+        month,
+        monthIndex: idx,
+        count: monthlyCounts[idx]
+      }));
+
+      const totalThisYear = monthlyCounts.reduce((acc, curr) => acc + curr, 0);
+
+      const yearlyStats = {
+        year: requestedYear,
+        monthly,
+        totalThisYear,
+        availableYears
+      };
+
       return res.json({
         type: 'member',
         member: populatedUser,
         activeBorrows,
         totalBorrows,
         activeFines,
+        yearlyStats,
       });
     }
 

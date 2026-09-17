@@ -28,6 +28,9 @@ import MembersPage from './pages/members/MembersPage';
 import FineManagement from './pages/books/FineManagement';
 import ReportsPage from './pages/books/ReportsPage';
 import QrScannerPage from './pages/books/QrScannerPage';
+import MyBorrowingsPage from './pages/borrowings/MyBorrowingsPage';
+import MyFinesPage from './pages/fines/MyFinesPage';
+import BookRequestsPage from './pages/requests/BookRequestsPage';
 
 function App() {
   return (
@@ -55,9 +58,33 @@ function App() {
           }
         />
         <Route
-          path="/issue-book"
+          path="/my-borrowings"
           element={
             <PrivateRoute>
+              <MyBorrowingsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/my-fines"
+          element={
+            <PrivateRoute>
+              <MyFinesPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/book-requests"
+          element={
+            <PrivateRoute>
+              <BookRequestsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/issue-book"
+          element={
+            <PrivateRoute roles={['librarian']}>
               <IssueBook />
             </PrivateRoute>
           }
@@ -65,7 +92,7 @@ function App() {
         <Route
           path="/return-book"
           element={
-            <PrivateRoute>
+            <PrivateRoute roles={['librarian']}>
               <ReturnBook />
             </PrivateRoute>
           }
@@ -73,7 +100,7 @@ function App() {
         <Route
           path="/renew-book"
           element={
-            <PrivateRoute>
+            <PrivateRoute roles={['librarian']}>
               <RenewBook />
             </PrivateRoute>
           }
@@ -81,7 +108,7 @@ function App() {
         <Route
           path="/circulation"
           element={
-            <PrivateRoute>
+            <PrivateRoute roles={['librarian']}>
               <CirculationRecord />
             </PrivateRoute>
           }
@@ -89,7 +116,7 @@ function App() {
         <Route
           path="/pending-registration"
           element={
-            <PrivateRoute>
+            <PrivateRoute roles={['librarian']}>
               <PendingRegistration />
             </PrivateRoute>
           }
@@ -97,7 +124,7 @@ function App() {
         <Route
           path="/members"
           element={
-            <PrivateRoute>
+            <PrivateRoute roles={['librarian']}>
               <MembersPage />
             </PrivateRoute>
           }
@@ -105,7 +132,7 @@ function App() {
         <Route
           path="/fines"
           element={
-            <PrivateRoute>
+            <PrivateRoute roles={['librarian']}>
               <FineManagement />
             </PrivateRoute>
           }
@@ -113,7 +140,7 @@ function App() {
         <Route
           path="/reports"
           element={
-            <PrivateRoute>
+            <PrivateRoute roles={['librarian']}>
               <ReportsPage />
             </PrivateRoute>
           }
@@ -121,7 +148,7 @@ function App() {
         <Route
           path="/qr-scanner"
           element={
-            <PrivateRoute>
+            <PrivateRoute roles={['librarian']}>
               <QrScannerPage />
             </PrivateRoute>
           }

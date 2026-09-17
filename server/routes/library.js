@@ -1192,4 +1192,151 @@ router.post('/books/import', protect, authorize('librarian'), uploadFile.single(
   }
 });
 
+// GET /api/library/my-borrowings - Retrieve personal active and past loans for current user
+router.get('/my-borrowings', protect, async (req, res) => {
+  try {
+    const transactions = await Transaction.find({ user: req.user._id })
+      .populate('book', 'title author isbn bookId coverImageUrl category status')
+      .sort({ createdAt: -1 });
+
+    const active = transactions.filter((t) => !t.returnDate);
+    const history = transactions.filter((t) => !!t.returnDate);
+
+    res.json({
+      active,
+      history,
+      totalCount: transactions.length,
+      activeCount: active.length,
+    });
+  } catch (error) {
+    console.error('Get my borrowings error:', error.message);
+    res.status(500).json({ message: 'Server error retrieving borrowing records' });
+  }
+});
+
+// GET /api/library/my-fines - Retrieve personal fine records for current user
+router.get('/my-fines', protect, async (req, res) => {
+  try {
+    const fines = await Fine.find({ user: req.user._id })
+      .populate('book', 'title author isbn bookId coverImageUrl')
+      .populate('transaction', 'issueDate dueDate returnDate transactionId')
+      .sort({ createdAt: -1 });
+
+    const unpaid = fines.filter((f) => f.status === 'unpaid');
+    const resolved = fines.filter((f) => f.status === 'paid' || f.status === 'waived');
+    const totalUnpaidAmount = unpaid.reduce((sum, f) => sum + (f.amount || 0), 0);
+
+    res.json({
+      fines,
+      unpaid,
+      resolved,
+      totalUnpaidAmount,
+    });
+  } catch (error) {
+    console.error('Get my fines error:', error.message);
+    res.status(500).json({ message: 'Server error retrieving fine records' });
+  }
+});
+
+// GET /api/library/recommended-books - Personalized 5-book recommendations based on borrowing history
+router.get('/recommended-books', protect, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // 1. Fetch user's all past and current transactions
+    const userTransactions = await Transaction.find({ user: userId }).populate('book');
+    
+    // 2. Collect read book IDs and count category and author frequencies
+    const borrowedBookIds = new Set();
+    const categoryCounts = {};
+    const authorCounts = {};
+
+    userTransactions.forEach((tx) => {
+      if (tx.book) {
+        borrowedBookIds.add(tx.book._id.toString());
+        if (tx.book.category) {
+          categoryCounts[tx.book.category] = (categoryCounts[tx.book.category] || 0) + 1;
+        }
+        if (tx.book.author) {
+          authorCounts[tx.book.author] = (authorCounts[tx.book.author] || 0) + 1;
+        }
+      }
+    });
+
+    // Sort categories and authors by frequency descending
+    const topCategories = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
+    const topAuthors = Object.keys(authorCounts).sort((a, b) => authorCounts[b] - authorCounts[a]);
+
+    const recommendedBooks = [];
+    const recommendedIds = new Set(borrowedBookIds);
+
+    // 3. Find unread books from user's favorite categories
+    for (const cat of topCategories) {
+      if (recommendedBooks.length >= 5) break;
+      const limit = 5 - recommendedBooks.length;
+      const matchingBooks = await Book.find({
+        isDeleted: { $ne: true },
+        category: cat,
+        _id: { $nin: Array.from(recommendedIds) }
+      }).limit(limit);
+
+      for (const b of matchingBooks) {
+        recommendedIds.add(b._id.toString());
+        recommendedBooks.push({
+          ...b.toObject(),
+          recommendationReason: `Based on your interest in ${cat}`
+        });
+      }
+    }
+
+    // 4. If still under 5 books, look for unread books by favorite authors
+    if (recommendedBooks.length < 5 && topAuthors.length > 0) {
+      for (const author of topAuthors) {
+        if (recommendedBooks.length >= 5) break;
+        const limit = 5 - recommendedBooks.length;
+        const matchingBooks = await Book.find({
+          isDeleted: { $ne: true },
+          author: author,
+          _id: { $nin: Array.from(recommendedIds) }
+        }).limit(limit);
+
+        for (const b of matchingBooks) {
+          recommendedIds.add(b._id.toString());
+          recommendedBooks.push({
+            ...b.toObject(),
+            recommendationReason: `From author you read: ${author}`
+          });
+        }
+      }
+    }
+
+    // 5. Fallback: Fill remaining slots with library's latest / available books
+    if (recommendedBooks.length < 5) {
+      const limit = 5 - recommendedBooks.length;
+      const fallbackBooks = await Book.find({
+        isDeleted: { $ne: true },
+        _id: { $nin: Array.from(recommendedIds) }
+      }).sort({ createdAt: -1 }).limit(limit);
+
+      for (const b of fallbackBooks) {
+        recommendedIds.add(b._id.toString());
+        recommendedBooks.push({
+          ...b.toObject(),
+          recommendationReason: topCategories.length > 0 ? 'Recommended New Addition' : 'Popular in Library'
+        });
+      }
+    }
+
+    res.json({
+      recommendations: recommendedBooks.slice(0, 5),
+      topCategories,
+      hasHistory: topCategories.length > 0
+    });
+  } catch (error) {
+    console.error('Get recommended books error:', error.message);
+    res.status(500).json({ message: 'Server error retrieving recommendations' });
+  }
+});
+
 module.exports = router;
+

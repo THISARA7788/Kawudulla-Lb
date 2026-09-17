@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const PrivateRoute = ({ children }) => {
+const PrivateRoute = ({ children, roles }) => {
   const { isAuthenticated, user } = useAuth();
 
   // If not authenticated at all, redirect to login
@@ -9,10 +9,6 @@ const PrivateRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-
-
-
-  
   // If authenticated but account is not active, show blocked message
   if (user?.status && user.status !== 'active') {
     return (
@@ -33,7 +29,7 @@ const PrivateRoute = ({ children }) => {
               localStorage.removeItem('token');
               window.location.href = '/login';
             }}
-            className="px-6 py-3 text-white font-semibold rounded-lg shadow-md transition-all"
+            className="px-6 py-3 text-white font-semibold rounded-lg shadow-md transition-all cursor-pointer"
             style={{ background: '#1a1245' }}
           >
             Back to Login
@@ -41,6 +37,11 @@ const PrivateRoute = ({ children }) => {
         </div>
       </div>
     );
+  }
+
+  // If route is restricted to specific roles, check role
+  if (roles && roles.length > 0 && !roles.includes(user?.role)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;

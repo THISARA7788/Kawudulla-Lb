@@ -25,6 +25,7 @@ app.use('/api/library/fines', require('./routes/fines'));
 app.use('/api/library/reports', require('./routes/reports'));
 app.use('/api/library', require('./routes/quickLookup'));
 app.use('/api/library', require('./routes/library'));
+app.use('/api/book-requests', require('./routes/bookRequests'));
 app.use('/api/notifications', require('./routes/notifications'));
 
 // Test route

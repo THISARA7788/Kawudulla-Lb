@@ -1,6 +1,7 @@
 import { useAuth } from '../../context/AuthContext';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import LibrarianDashboardMain from '../../components/dashboard/LibrarianDashboardMain';
+import TeacherDashboardMain from '../../components/dashboard/TeacherDashboardMain';
 import StudentDashboardMain from '../../components/dashboard/StudentDashboardMain';
 
 const Dashboard = () => {
@@ -15,7 +16,16 @@ const Dashboard = () => {
     );
   }
 
-  // Student / Teacher → Student/Teacher Dashboard Main
+  // Teacher → Teacher Dashboard Main
+  if (user?.role === 'teacher') {
+    return (
+      <DashboardLayout>
+        <TeacherDashboardMain />
+      </DashboardLayout>
+    );
+  }
+
+  // Student → Student Dashboard Main
   return (
     <DashboardLayout>
       <StudentDashboardMain />

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
 
 const TYPE_CONFIG = {
@@ -8,11 +10,16 @@ const TYPE_CONFIG = {
   fine: { icon: 'payments', label: 'Fine Issued', color: '#f59e0b' },
   registration_approved: { icon: 'check_circle', label: 'Registration Approved', color: '#22c55e' },
   registration_rejected: { icon: 'cancel', label: 'Registration Rejected', color: '#ef4444' },
+  book_requested: { icon: 'mark_email_unread', label: 'Book Requested', color: '#f59e0b' },
+  book_request_approved: { icon: 'check_circle', label: 'Request Approved', color: '#22c55e' },
+  book_request_declined: { icon: 'cancel', label: 'Request Declined', color: '#ef4444' },
   general: { icon: 'notifications', label: 'Notification', color: '#8b5cf6' }
 }
 
 export default function NotificationsPanel({ notifications, onClose, onMarkRead, onMarkAllRead, onRefresh }) {
   const nodeRef = useRef(null)
+  const navigate = useNavigate()
+  const { user } = useAuth()
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -27,6 +34,25 @@ export default function NotificationsPanel({ notifications, onClose, onMarkRead,
       await api.delete(`/notifications/${id}`)
       onRefresh()
     } catch (e) { /* ignore */ }
+  }
+
+  const handleNotificationClick = async (n) => {
+    if (!n.read) {
+      await onMarkRead(n._id)
+      onRefresh()
+    }
+    onClose()
+    
+    // Route to appropriate section
+    if (n.type.startsWith('book_request')) {
+      navigate('/book-requests')
+    } else if (n.type === 'fine') {
+      navigate(user?.role === 'librarian' ? '/fines' : '/my-fines')
+    } else if (['book_borrowed', 'book_returned', 'overdue'].includes(n.type)) {
+      navigate(user?.role === 'librarian' ? '/circulation' : '/my-borrowings')
+    } else if (n.type.startsWith('registration')) {
+      navigate(user?.role === 'librarian' ? '/pending-registration' : '/dashboard')
+    }
   }
 
   const timeAgo = (date) => {
@@ -81,7 +107,7 @@ export default function NotificationsPanel({ notifications, onClose, onMarkRead,
                 key={n._id}
                 className={`flex items-start gap-3 px-4 py-3.5 transition-colors group ${!n.read ? 'bg-white' : 'bg-transparent hover:bg-white/60'}`}
                 style={{ cursor: 'pointer' }}
-                onClick={async () => { await onMarkRead(n._id); onRefresh() }}
+                onClick={() => handleNotificationClick(n)}
               >
                 <div className="flex-shrink-0 mt-0.5 w-9 h-9 rounded-lg flex items-center justify-center bg-[#4A0202]">
                   <span className="material-symbols-outlined text-white" style={{ fontSize: 18 }}>{c.icon}</span>
