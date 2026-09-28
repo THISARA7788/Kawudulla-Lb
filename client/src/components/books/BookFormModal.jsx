@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
 import api from '../../api/axios';
 import XLSX from 'xlsx-js-style';
 import { compressImage } from '../../utils/imageCompressor';
@@ -144,80 +143,6 @@ export default function BookFormModal({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [showModal, triggerIsbnSearch]);
-
-  // HTML5-QRCode Camera Scanner States
-  const [showCamera, setShowCamera] = useState(false);
-  const [cameraError, setCameraError] = useState('');
-  const [cameras, setCameras] = useState([]);
-  const [activeCameraId, setActiveCameraId] = useState('');
-  const html5QrCodeRef = useRef(null);
-
-  const startCamera = async () => {
-    setCameraError('');
-    setShowCamera(true);
-    setTimeout(async () => {
-      try {
-        const devices = await Html5Qrcode.getCameras();
-        if (devices && devices.length > 0) {
-          setCameras(devices);
-          const backCam = devices.find(d => d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'));
-          const targetCamId = backCam ? backCam.id : devices[0].id;
-          setActiveCameraId(targetCamId);
-          await initScanner(targetCamId);
-        } else {
-          setCameraError('No video input hardware detected.');
-        }
-      } catch (err) {
-        setCameraError('Failed to list system cameras: ' + err.message);
-      }
-    }, 150);
-  };
-
-  const initScanner = async (cameraId) => {
-    if (html5QrCodeRef.current) {
-      try {
-        await html5QrCodeRef.current.stop();
-      } catch (e) {}
-    }
-
-    const scanner = new Html5Qrcode("camera-reader");
-    html5QrCodeRef.current = scanner;
-
-    try {
-      await scanner.start(
-        cameraId,
-        {
-          fps: 12,
-          qrbox: { width: 280, height: 160 } // optimized barcode scan viewport ratio
-        },
-        (decodedText) => {
-          stopCamera();
-          triggerIsbnSearch(decodedText);
-        },
-        (errorMessage) => {
-          // ignore stream parse warnings
-        }
-      );
-    } catch (err) {
-      setCameraError('Camera failed to start: ' + err.message);
-    }
-  };
-
-  const stopCamera = async () => {
-    if (html5QrCodeRef.current) {
-      try {
-        await html5QrCodeRef.current.stop();
-      } catch (e) {}
-      html5QrCodeRef.current = null;
-    }
-    setShowCamera(false);
-  };
-
-  const handleCameraChange = async (e) => {
-    const newId = e.target.value;
-    setActiveCameraId(newId);
-    await initScanner(newId);
-  };
 
   // Image Upload Canvas Compression & Cloudinary API
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -402,7 +327,7 @@ export default function BookFormModal({
 
             <button
               type="button"
-              onClick={() => { stopCamera(); setShowModal(false); }}
+              onClick={() => setShowModal(false)}
               className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
               style={{ color: '#94a3b8' }}
               title="Close"
@@ -483,45 +408,6 @@ export default function BookFormModal({
           </div>
         )}
 
-        {/* Toggleable Camera QR/Barcode Drawer */}
-        {showCamera && (
-          <div className="mb-4 p-4 rounded-xl border relative bg-slate-900 border-slate-700 shadow-inner">
-            <div className="flex justify-between items-center mb-2.5">
-              <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span className="animate-pulse w-2 h-2 rounded-full bg-green-500"></span>
-                Camera Live Feed
-              </label>
-              
-              <div className="flex items-center gap-2">
-                {cameras.length > 1 && (
-                  <select
-                    value={activeCameraId}
-                    onChange={handleCameraChange}
-                    className="text-[11px] px-2 py-1 bg-slate-800 text-white border border-slate-700 rounded-md outline-none"
-                  >
-                    {cameras.map(c => <option key={c.id} value={c.id}>{c.label || `Camera ${cameras.indexOf(c) + 1}`}</option>)}
-                  </select>
-                )}
-                <button
-                  type="button"
-                  onClick={stopCamera}
-                  className="text-xs font-semibold px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-750 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-
-            {cameraError && <div className="text-red-400 text-xs py-2">{cameraError}</div>}
-
-            <div className="overflow-hidden rounded-lg bg-black flex justify-center items-center border border-slate-800">
-              <div id="camera-reader" className="w-full max-w-sm"></div>
-            </div>
-            
-            <p className="text-[10px] text-center text-slate-400 mt-2">Center the book barcode inside the focus viewport box</p>
-          </div>
-        )}
-
         <form onSubmit={handleSave} className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             
@@ -536,7 +422,7 @@ export default function BookFormModal({
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Title <span className="text-red-500 font-bold">*</span></label>
                   <input name="title" value={form.title || ''} onChange={handleChange} required
-                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white placeholder:text-slate-300 placeholder:font-normal"
                     placeholder="e.g. Sherlock Holmes"
                   />
                 </div>
@@ -544,7 +430,7 @@ export default function BookFormModal({
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">Author <span className="text-red-500 font-bold">*</span></label>
                   <input name="author" value={form.author || ''} onChange={handleChange} required
-                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white placeholder:text-slate-300 placeholder:font-normal"
                     placeholder="e.g. Arthur Conan Doyle"
                   />
                 </div>
@@ -562,15 +448,15 @@ export default function BookFormModal({
                   {(form.category === 'Other') && (
                     <input value={customCategory} onChange={(e) => setCustomCategory(e.target.value)}
                       placeholder="Enter custom category" required
-                      className="w-full mt-2 px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
+                      className="w-full mt-2 px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white placeholder:text-slate-300 placeholder:font-normal"
                     />
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Publisher <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Publisher</label>
                   <input name="publisher" value={form.publisher || ''} onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white placeholder:text-slate-300 placeholder:font-normal"
                     placeholder="e.g. George Newnes"
                   />
                 </div>
@@ -578,9 +464,9 @@ export default function BookFormModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Published Year <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Published Year</label>
                   <input name="publishedYear" type="number" value={form.publishedYear || ''} onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white placeholder:text-slate-300 placeholder:font-normal"
                     placeholder="e.g. 1892"
                   />
                 </div>
@@ -598,9 +484,9 @@ export default function BookFormModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">ISBN Code <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">ISBN Code</label>
                   <input name="isbn" value={form.isbn || ''} onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
+                    className="w-full px-3 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white placeholder:text-slate-300 placeholder:font-normal"
                     placeholder="e.g. 9780123456789"
                   />
                 </div>
@@ -609,9 +495,9 @@ export default function BookFormModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">Book Description <span className="text-slate-400 text-[10px] font-normal ml-1">(Optional)</span></label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Book Description</label>
                 <textarea name="description" value={form.description || ''} onChange={handleChange} rows="2"
-                  className="w-full px-3 py-2 text-sm rounded-xl outline-none resize-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
+                  className="w-full px-3 py-2 text-sm rounded-xl outline-none resize-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white placeholder:text-slate-300 placeholder:font-normal"
                   placeholder="Brief summary or description..."
                 />
               </div>
@@ -619,27 +505,17 @@ export default function BookFormModal({
 
             {/* Right Column: Smart Scanning, Inventory, Cover Art */}
             <div className="space-y-3">
-              {/* Section: Barcode & ISBN Auto-Fill */}
+              {/* Section: Smart ISBN Lookup */}
               <div className="bg-white p-4 rounded-2xl border-l-4 border-l-[#9E0D0D] border border-slate-100 flex flex-col gap-2 shadow-[0_4px_12px_rgba(148,163,184,0.08)]">
-                <div className="flex justify-between items-center">
+                <div className="flex items-center">
                   <span className="text-[10px] font-black uppercase tracking-wider text-[#9E0D0D] flex items-center gap-1.5 select-none">
                     <span className="material-symbols-outlined text-[#9E0D0D]" style={{ fontSize: 16 }}>qr_code_scanner</span>
-                    Barcode & ISBN Auto-Fill
+                    Smart ISBN Lookup
                   </span>
-                  {!showCamera && (
-                    <button
-                      type="button"
-                      onClick={startCamera}
-                      className="px-2 py-0.5 text-xs font-bold flex items-center gap-1 bg-white border border-slate-200 hover:border-slate-350 rounded-lg shadow-sm hover:bg-slate-50 transition-all text-slate-700 cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-slate-500" style={{ fontSize: 14 }}>videocam</span>
-                      Camera Scan
-                    </button>
-                  )}
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">ISBN Code <span className="text-slate-400 text-[9px] font-normal normal-case ml-1">(Optional)</span></label>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">ISBN Code</label>
                   <div className="relative flex gap-2">
                     <div className="relative flex-1">
                       <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: 16 }}>barcode_reader</span>
@@ -657,7 +533,7 @@ export default function BookFormModal({
                         onFocus={(e) => e.target.select()}
                         onClick={(e) => e.target.select()}
                         placeholder="Scan barcode or enter ISBN number..."
-                        className="w-full pl-9 pr-4 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white"
+                        className="w-full pl-9 pr-4 py-2 text-sm rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] focus:ring-4 focus:ring-[#9E0D0D]/10 transition-all bg-white placeholder:text-slate-300 placeholder:font-normal"
                       />
                       {searchingIsbn && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
@@ -681,7 +557,7 @@ export default function BookFormModal({
               <div className="bg-white p-4 rounded-2xl border border-slate-100 space-y-2.5 shadow-[0_4px_12px_rgba(148,163,184,0.08)]">
                 <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none flex items-center gap-1.5 mb-1">
                   <span className="material-symbols-outlined text-slate-400" style={{ fontSize: 16 }}>palette</span>
-                  Cover Art & Inventory <span className="text-slate-400 text-[10px] font-normal normal-case ml-1">(Optional)</span>
+                  Cover Art & Inventory
                 </h3>
                 
                 <div className="flex gap-4 items-center">
@@ -748,7 +624,7 @@ export default function BookFormModal({
                 </div>
 
                 <div className="border-t border-slate-150 pt-3 flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-500">Total Copies in Stock <span className="text-slate-400 text-[10px] font-normal ml-0.5">(Optional)</span></label>
+                  <label className="text-xs font-semibold text-slate-500">Total Copies in Stock</label>
                   
                   <div className="flex items-center gap-2">
                     <input
@@ -804,7 +680,7 @@ export default function BookFormModal({
             </button>
             <button
               type="button"
-              onClick={() => { stopCamera(); setShowModal(false); }}
+              onClick={() => setShowModal(false)}
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer active:scale-95"
             >
               Cancel
@@ -840,7 +716,7 @@ export default function BookFormModal({
             )}
             <button
               type="button"
-              onClick={() => { setImportResult(null); stopCamera(); setShowModal(false); }}
+              onClick={() => { setImportResult(null); setShowModal(false); }}
               className="mt-6 w-full py-2.5 bg-[#9E0D0D] text-white rounded-2xl text-sm font-bold shadow-md hover:bg-[#7F0A0A] transition-all active:scale-95 cursor-pointer"
             >
               Done

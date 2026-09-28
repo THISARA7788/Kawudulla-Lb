@@ -11,26 +11,18 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
-const GRADES = [
-  'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8',
-  'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'Grade 13',
-];
-const CLASS_SECTIONS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-
 export default function RenewBook() {
   const { token } = useAuth();
 
   // Search states
   const [memberSearch, setMemberSearch] = useState('');
-  const [memberRoleFilter, setMemberRoleFilter] = useState('all');
-  const [memberGradeFilter, setMemberGradeFilter] = useState('all');
-  const [memberClassFilter, setMemberClassFilter] = useState('all');
   const [memberResults, setMemberResults] = useState([]);
   const [showMemberSuggestions, setShowMemberSuggestions] = useState(true);
   const [selectedMember, setSelectedMember] = useState(null);
 
   // Borrowing states
   const [activeBorrows, setActiveBorrows] = useState([]);
+  const [loadingBorrows, setLoadingBorrows] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
@@ -63,32 +55,29 @@ export default function RenewBook() {
 
   // Live filter users based on selection criteria
   useEffect(() => {
-    if (!memberSearch && memberRoleFilter === 'all' && memberGradeFilter === 'all' && memberClassFilter === 'all') {
+    if (!memberSearch.trim()) {
       setMemberResults([]);
       return;
     }
 
+    const q = memberSearch.trim().toLowerCase();
     const filtered = allUsers.filter(u => {
-      const matchText = !memberSearch || 
-        u.name?.toLowerCase().includes(memberSearch.toLowerCase()) || 
-        u.email?.toLowerCase().includes(memberSearch.toLowerCase()) ||
-        u.memberId?.toLowerCase().includes(memberSearch.toLowerCase());
-
-      const matchRole = memberRoleFilter === 'all' || u.role === memberRoleFilter;
-      const matchGrade = memberGradeFilter === 'all' || u.grade === memberGradeFilter;
-      const matchClass = memberClassFilter === 'all' || u.class === memberClassFilter;
-
-      return matchText && matchRole && matchGrade && matchClass;
+      return (
+        u.name?.toLowerCase().includes(q) || 
+        u.email?.toLowerCase().includes(q) ||
+        u.memberId?.toLowerCase().includes(q)
+      );
     });
 
     setMemberResults(filtered.slice(0, 8));
-  }, [memberSearch, memberRoleFilter, memberGradeFilter, memberClassFilter, allUsers]);
+  }, [memberSearch, allUsers]);
 
   const handleSelectMember = async (member) => {
     setSelectedMember(member);
     setShowMemberSuggestions(false);
     setMemberSearch(member.name);
     setError('');
+    setLoadingBorrows(true);
 
     try {
       const res = await api.get(`/library/transactions?userId=${member._id}&limit=1000`, {
@@ -99,6 +88,8 @@ export default function RenewBook() {
     } catch (err) {
       console.error('Error fetching member borrows:', err);
       setError('Failed to fetch active borrowing history for this user.');
+    } finally {
+      setLoadingBorrows(false);
     }
   };
 
@@ -157,11 +148,12 @@ export default function RenewBook() {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '-';
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${month}/${day}/${year}`;
   };
 
   return (
@@ -217,47 +209,7 @@ export default function RenewBook() {
               )}
             </div>
 
-            {/* Role Filter dropdown */}
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter by Role</label>
-              <select
-                value={memberRoleFilter}
-                onChange={(e) => setMemberRoleFilter(e.target.value)}
-                className="w-full px-3 py-2 text-xs font-bold rounded-xl outline-none border border-slate-200 focus:border-[#9E0D0D] transition-all bg-white cursor-pointer"
-              >
-                <option value="all">All Roles</option>
-                <option value="student">Student</option>
-                <option value="teacher">Teacher</option>
-              </select>
-            </div>
 
-            {/* Grade & Section Filters (Only shown if student filter is set) */}
-            {memberRoleFilter === 'student' && (
-              <div className="grid grid-cols-2 gap-2.5 animate-fadeIn">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Grade</label>
-                  <select
-                    value={memberGradeFilter}
-                    onChange={(e) => setMemberGradeFilter(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-xl outline-none border border-slate-200 bg-white"
-                  >
-                    <option value="all">All Grades</option>
-                    {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Class</label>
-                  <select
-                    value={memberClassFilter}
-                    onChange={(e) => setMemberClassFilter(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-xl outline-none border border-slate-200 bg-white"
-                  >
-                    <option value="all">All Classes</option>
-                    {CLASS_SECTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-              </div>
-            )}
 
             {/* Selected Member Detail Summary Card */}
             {selectedMember && (
@@ -302,7 +254,44 @@ export default function RenewBook() {
               </div>
             )}
 
-            {!selectedMember ? (
+            {loadingBorrows ? (
+              <div className="overflow-x-auto rounded-xl border border-slate-100 flex-1 animate-pulse">
+                <table className="w-full min-w-[500px] text-left">
+                  <thead className="bg-white border-b border-slate-200/80">
+                    <tr>
+                      <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Book Info</th>
+                      <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Borrow Date</th>
+                      <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Due Date</th>
+                      <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {[1, 2, 3].map((n) => (
+                      <tr key={n}>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-14 rounded-lg bg-slate-200 flex-shrink-0"></div>
+                            <div className="space-y-1.5 flex-1">
+                              <div className="h-3.5 bg-slate-200 rounded w-44"></div>
+                              <div className="h-2.5 bg-slate-100 rounded w-28"></div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="h-4 bg-slate-200 rounded w-20 mx-auto"></div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="h-4 bg-slate-200 rounded w-20 mx-auto"></div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="h-8 bg-slate-200 rounded-xl w-24 mx-auto"></div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : !selectedMember ? (
               <div className="flex-1 flex flex-col items-center justify-center py-20 bg-slate-50/30 rounded-xl border border-dashed border-slate-200">
                 <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">person_search</span>
                 <p className="text-xs text-slate-500 font-semibold">Please select a member to view active checkouts</p>
@@ -315,7 +304,7 @@ export default function RenewBook() {
             ) : (
               <div className="overflow-x-auto rounded-xl border border-slate-100 flex-1">
                 <table className="w-full min-w-[500px] text-left">
-                  <thead className="sticky top-0 z-10 shadow-2xs bg-[#F8FAFC] border-b border-slate-200/80">
+                  <thead className="sticky top-0 z-10 shadow-2xs bg-white border-b border-slate-200/80">
                     <tr>
                       <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Book Info</th>
                       <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Borrow Date</th>
@@ -338,7 +327,7 @@ export default function RenewBook() {
                                 </div>
                               )}
                               <div>
-                                <p className="font-bold text-slate-800 leading-tight">{b.book?.title}</p>
+                                <p className="font-medium text-xs text-slate-800 leading-tight">{b.book?.title}</p>
                                 <p className="text-[10px] text-slate-400 mt-0.5">by {b.book?.author || 'Unknown'}</p>
                               </div>
                             </div>

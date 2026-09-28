@@ -224,7 +224,7 @@ export default function FineManagement() {
   return (
     <DashboardLayout>
       {/* Top Control Panel Header (Fixed below top navbar on desktop, relative flow on mobile) */}
-      <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-[#F8FAFC] pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 shadow-xs">
+      <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-white pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 shadow-xs">
         <div className="flex gap-3 items-center flex-wrap">
           <div className="relative flex-1 min-w-[200px]">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: 18 }}>search</span>
@@ -272,14 +272,14 @@ export default function FineManagement() {
                 </div>
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-rose-800/70 block">Unpaid Fines</span>
-                  <p className="text-base sm:text-lg font-black text-slate-800 leading-tight">
-                    {stats.unpaidCount} <span className="text-xs font-semibold text-slate-400">pending</span>
+                  <p className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                    {stats.unpaidCount} <span className="text-xs font-medium text-slate-800">pending</span>
                   </p>
                 </div>
               </div>
               <div className="text-right pl-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 block">Total Due</span>
-                <span className="text-sm sm:text-base font-black text-rose-600">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 block">Total Due</span>
+                <span className="text-sm sm:text-base font-black text-slate-900">
                   Rs. {stats.unpaidTotal?.toFixed(2)}
                 </span>
               </div>
@@ -293,14 +293,14 @@ export default function FineManagement() {
                 </div>
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800/70 block">Collected Fines</span>
-                  <p className="text-base sm:text-lg font-black text-slate-800 leading-tight">
-                    {stats.paidCount} <span className="text-xs font-semibold text-slate-400">collected</span>
+                  <p className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                    {stats.paidCount} <span className="text-xs font-medium text-slate-800">collected</span>
                   </p>
                 </div>
               </div>
               <div className="text-right pl-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block">Total Received</span>
-                <span className="text-sm sm:text-base font-black text-emerald-700">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 block">Total Received</span>
+                <span className="text-sm sm:text-base font-black text-slate-900">
                   Rs. {stats.paidTotal?.toFixed(2)}
                 </span>
               </div>
@@ -311,9 +311,17 @@ export default function FineManagement() {
         {/* Fines Table */}
         <div className="rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs bg-white">
           {loading ? (
-            <div className="flex items-center justify-center py-16" style={{ color: '#94a3b8' }}>
-              <span className="material-symbols-outlined animate-spin mr-2" style={{ fontSize: 28 }}>progress_activity</span>
-              Loading fines...
+            <div className="divide-y divide-slate-100 animate-pulse">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <div key={idx} className="p-4 flex items-center justify-between gap-4">
+                  <div className="h-4 bg-slate-200 rounded w-24" />
+                  <div className="h-4 bg-slate-200 rounded w-36" />
+                  <div className="h-4 bg-slate-200 rounded w-44 flex-1 hidden md:block" />
+                  <div className="h-3 bg-slate-100 rounded w-16 hidden lg:block" />
+                  <div className="h-4 bg-slate-200 rounded w-16" />
+                  <div className="h-6 w-20 bg-slate-200 rounded-full" />
+                </div>
+              ))}
             </div>
           ) : fines.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16" style={{ color: '#94a3b8' }}>
@@ -323,7 +331,7 @@ export default function FineManagement() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-center text-sm">
-                <thead className="sticky top-0 z-10 shadow-2xs bg-[#F8FAFC] border-b border-slate-200/80">
+                <thead className="sticky top-0 z-10 shadow-2xs bg-white border-b border-slate-200/80">
                   <tr>
                     <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Transaction ID</th>
                     <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Member</th>

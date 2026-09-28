@@ -383,16 +383,20 @@ export default function LibrarianDashboardMain() {
             <span className="material-symbols-outlined text-[#9E0D0D]" style={{ fontSize: 16 }}>library_books</span>
           </div>
           <div>
-            <span 
-              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
-              style={{ fontFamily: "'Manrope', sans-serif" }}
-            >
-              {loading ? '...' : totalCopies.toLocaleString('en-US')}
-            </span>
+            {loading ? (
+              <div className="h-7 w-20 bg-slate-200/70 rounded-md animate-pulse mb-3.5" />
+            ) : (
+              <span 
+                className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+                style={{ fontFamily: "'Manrope', sans-serif" }}
+              >
+                {totalCopies.toLocaleString('en-US')}
+              </span>
+            )}
             <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight">Total Books</span>
           </div>
           <span className="px-2 py-0.5 rounded-full text-[8.5px] font-semibold bg-slate-50 border border-slate-100 text-slate-500 block absolute right-2.5 top-2.5 whitespace-nowrap">
-            {loading ? '...' : totalBooks.toLocaleString('en-US')} titles
+            {loading ? '...' : `${totalBooks.toLocaleString('en-US')} titles`}
           </span>
         </div>
 
@@ -406,12 +410,16 @@ export default function LibrarianDashboardMain() {
             <span className="material-symbols-outlined text-emerald-600" style={{ fontSize: 16 }}>check_circle</span>
           </div>
           <div>
-            <span 
-              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
-              style={{ fontFamily: "'Manrope', sans-serif" }}
-            >
-              {loading ? '...' : (dashboardStats?.availableCopies ?? 0).toLocaleString('en-US')}
-            </span>
+            {loading ? (
+              <div className="h-7 w-20 bg-slate-200/70 rounded-md animate-pulse mb-3.5" />
+            ) : (
+              <span 
+                className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+                style={{ fontFamily: "'Manrope', sans-serif" }}
+              >
+                {(dashboardStats?.availableCopies ?? 0).toLocaleString('en-US')}
+              </span>
+            )}
             <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight">Available Books</span>
           </div>
         </div>
@@ -426,12 +434,16 @@ export default function LibrarianDashboardMain() {
             <span className="material-symbols-outlined text-[#D97706]" style={{ fontSize: 16 }}>import_contacts</span>
           </div>
           <div>
-            <span 
-              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
-              style={{ fontFamily: "'Manrope', sans-serif" }}
-            >
-              {loading ? '...' : (dashboardStats?.currentlyBorrowed ?? 0).toLocaleString('en-US')}
-            </span>
+            {loading ? (
+              <div className="h-7 w-20 bg-slate-200/70 rounded-md animate-pulse mb-3.5" />
+            ) : (
+              <span 
+                className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+                style={{ fontFamily: "'Manrope', sans-serif" }}
+              >
+                {(dashboardStats?.currentlyBorrowed ?? 0).toLocaleString('en-US')}
+              </span>
+            )}
             <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight">Currently Borrowed</span>
           </div>
         </div>
@@ -446,12 +458,16 @@ export default function LibrarianDashboardMain() {
             <span className={`material-symbols-outlined ${(!loading && dashboardStats?.overdueCount > 0) ? 'text-[#9E0D0D]' : 'text-slate-500'}`} style={{ fontSize: 16 }}>warning</span>
           </div>
           <div>
-            <span 
-              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
-              style={{ fontFamily: "'Manrope', sans-serif" }}
-            >
-              {loading ? '...' : (dashboardStats?.overdueCount ?? 0).toLocaleString('en-US')}
-            </span>
+            {loading ? (
+              <div className="h-7 w-20 bg-slate-200/70 rounded-md animate-pulse mb-3.5" />
+            ) : (
+              <span 
+                className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+                style={{ fontFamily: "'Manrope', sans-serif" }}
+              >
+                {(dashboardStats?.overdueCount ?? 0).toLocaleString('en-US')}
+              </span>
+            )}
             <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight">Overdue Books</span>
           </div>
         </div>
@@ -466,12 +482,16 @@ export default function LibrarianDashboardMain() {
             <span className={`material-symbols-outlined ${(!loading && dashboardStats?.pendingRegistrations > 0) ? 'text-[#D97706]' : 'text-slate-500'}`} style={{ fontSize: 16 }}>person_add</span>
           </div>
           <div>
-            <span 
-              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
-              style={{ fontFamily: "'Manrope', sans-serif" }}
-            >
-              {loading ? '...' : (dashboardStats?.pendingRegistrations ?? 0).toLocaleString('en-US')}
-            </span>
+            {loading ? (
+              <div className="h-7 w-20 bg-slate-200/70 rounded-md animate-pulse mb-3.5" />
+            ) : (
+              <span 
+                className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+                style={{ fontFamily: "'Manrope', sans-serif" }}
+              >
+                {(dashboardStats?.pendingRegistrations ?? 0).toLocaleString('en-US')}
+              </span>
+            )}
             <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight whitespace-nowrap">Pending Registrations</span>
           </div>
         </div>
@@ -486,12 +506,16 @@ export default function LibrarianDashboardMain() {
             <span className="material-symbols-outlined text-[#9E0D0D]" style={{ fontSize: 16 }}>payments</span>
           </div>
           <div>
-            <span 
-              className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
-              style={{ fontFamily: "'Manrope', sans-serif" }}
-            >
-              {loading ? '...' : `Rs. ${(dashboardStats?.unpaidFines ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
-            </span>
+            {loading ? (
+              <div className="h-7 w-24 bg-slate-200/70 rounded-md animate-pulse mb-3.5" />
+            ) : (
+              <span 
+                className="text-3xl font-black text-black tracking-tight block leading-none mb-3.5 whitespace-nowrap"
+                style={{ fontFamily: "'Manrope', sans-serif" }}
+              >
+                {`Rs. ${(dashboardStats?.unpaidFines ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+              </span>
+            )}
             <span className="font-extrabold text-[9px] uppercase tracking-wider text-slate-500 block leading-tight">Total Fines Due</span>
           </div>
           <div className="absolute right-2.5 top-2.5 text-right text-[8px] text-slate-400 font-bold leading-tight">
@@ -617,7 +641,14 @@ export default function LibrarianDashboardMain() {
               Book Categories
             </h3>
             {loading ? (
-              <div className="py-4" style={{ color: '#94a3b8' }}>Loading...</div>
+              <div className="flex items-center justify-around py-4 animate-pulse">
+                <div className="w-[125px] h-[125px] rounded-full bg-slate-100 flex-shrink-0" />
+                <div className="space-y-2 flex-1 ml-10">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="h-3.5 bg-slate-100 rounded w-4/5" />
+                  ))}
+                </div>
+              </div>
             ) : books.length === 0 ? (
               <p className="text-sm" style={{ color: '#94a3b8' }}>No data yet.</p>
             ) : (

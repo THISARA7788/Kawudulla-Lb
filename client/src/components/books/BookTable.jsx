@@ -24,9 +24,24 @@ export default function BookTable({
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16" style={{ color: '#94a3b8' }}>
-        <span className="material-symbols-outlined animate-spin mr-2" style={{ fontSize: 28 }}>progress_activity</span>
-        Loading books...
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="divide-y divide-slate-100 animate-pulse">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className="p-3.5 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="w-10 h-14 bg-slate-200 rounded-lg flex-shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-3.5 bg-slate-200 rounded w-2/5" />
+                  <div className="h-2.5 bg-slate-100 rounded w-1/4" />
+                </div>
+              </div>
+              <div className="h-5 w-20 bg-slate-200 rounded-full hidden sm:block" />
+              <div className="h-3 bg-slate-100 rounded w-16 hidden md:block" />
+              <div className="h-3 bg-slate-100 rounded w-20 hidden lg:block" />
+              <div className="h-6 w-16 bg-slate-200 rounded-full" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -114,7 +129,7 @@ export default function BookTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm align-middle" style={{ fontFamily: "'Inter', sans-serif" }}>
-        <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
+        <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#FFFFFF', borderBottom: '1px solid #CBD5E1' }}>
           <tr>
             {columns.map((h, idx) => (
               <th
@@ -186,12 +201,12 @@ export default function BookTable({
                 </td>
                 
                 {/* Title */}
-                <td className="py-3 px-4 font-bold text-slate-800" style={{ maxWidth: 220 }}>
+                <td className="py-3 px-4 font-medium text-xs text-slate-800" style={{ maxWidth: 220 }}>
                   <div className="truncate" title={book.title}>{book.title}</div>
                 </td>
    
                 {/* Author */}
-                <td className="py-3 px-4 text-slate-650 font-medium">
+                <td className="py-3 px-4 text-slate-650 font-medium text-xs">
                   <div className="truncate" title={book.author} style={{ maxWidth: 150 }}>{book.author}</div>
                 </td>
                 

@@ -694,11 +694,11 @@ export default function ReportsPage() {
                     setCirculationFilter('all');
                     setMemberFilter('all');
                   }}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 cursor-pointer shadow-xs"
                   style={{
-                    backgroundColor: reportType === rt.id ? '#1a1245' : '#fff',
+                    backgroundColor: reportType === rt.id ? '#9E0D0D' : '#fff',
                     color: reportType === rt.id ? '#fff' : '#2C2C3E',
-                    border: `1px solid ${reportType === rt.id ? '#1a1245' : '#e0e0e0'}`
+                    border: `1px solid ${reportType === rt.id ? '#9E0D0D' : '#e2e8f0'}`
                   }}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{rt.icon}</span> {rt.label}
@@ -731,7 +731,7 @@ export default function ReportsPage() {
                     setSelectedPreset('custom');
                     setDateRange((p) => ({ ...p, startDate: e.target.value }));
                   }}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-xl outline-none border border-slate-200 bg-slate-50 text-slate-700 focus:bg-white focus:border-[#4062BB] transition-all"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl outline-none border border-slate-200 bg-slate-50 text-slate-700 focus:bg-white focus:border-[#9E0D0D] transition-all"
                 />
               </div>
               <div>
@@ -743,7 +743,7 @@ export default function ReportsPage() {
                     setSelectedPreset('custom');
                     setDateRange((p) => ({ ...p, endDate: e.target.value }));
                   }}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-xl outline-none border border-slate-200 bg-slate-50 text-slate-700 focus:bg-white focus:border-[#4062BB] transition-all"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-xl outline-none border border-slate-200 bg-slate-50 text-slate-700 focus:bg-white focus:border-[#9E0D0D] transition-all"
                 />
               </div>
             </div>
@@ -760,7 +760,7 @@ export default function ReportsPage() {
                     onClick={() => applyPreset(p.id)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer ${
                       isActive
-                        ? 'bg-[#1a1245] text-white shadow-xs'
+                        ? 'bg-[#9E0D0D] text-white shadow-xs'
                         : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/70'
                     }`}
                   >
@@ -776,20 +776,40 @@ export default function ReportsPage() {
             <button
               onClick={fetchReport}
               disabled={loading}
-              className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-[#4062BB] hover:bg-[#3453a3] active:scale-95 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="group px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-50 hover:bg-white hover:text-[#9E0D0D] border border-slate-200/90 hover:border-red-200 shadow-2xs hover:shadow-xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 select-none"
               title="Refresh Report Data"
             >
-              <span className={`material-symbols-outlined text-[16px] ${loading ? 'animate-spin' : ''}`}>
+              <span className={`material-symbols-outlined text-[17px] text-[#9E0D0D] transition-transform duration-500 ${loading ? 'animate-spin' : 'group-hover:rotate-180'}`}>
                 sync
               </span>
-              {loading ? 'Refreshing...' : 'Refresh'}
+              <span>{loading ? 'Refreshing...' : 'Refresh'}</span>
             </button>
           </div>
 
           {/* Report Body */}
           {loading ? (
-            <div className="flex items-center justify-center py-20" style={{ color: '#94a3b8' }}>
-              <span className="material-symbols-outlined animate-spin mr-2" style={{ fontSize: 28 }}>progress_activity</span>Generating report...
+            <div className="space-y-4 animate-pulse">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-xl border border-slate-100 p-4 space-y-2 shadow-2xs">
+                    <div className="h-3 w-20 bg-slate-200 rounded" />
+                    <div className="h-6 w-28 bg-slate-200 rounded" />
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3 shadow-xs">
+                <div className="h-4 w-40 bg-slate-200 rounded" />
+                <div className="divide-y divide-slate-100">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="py-3 flex justify-between items-center gap-4">
+                      <div className="h-3.5 bg-slate-200 rounded w-1/4" />
+                      <div className="h-3 bg-slate-100 rounded w-1/6" />
+                      <div className="h-3 bg-slate-100 rounded w-1/6" />
+                      <div className="h-5 w-16 bg-slate-200 rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             renderBody()

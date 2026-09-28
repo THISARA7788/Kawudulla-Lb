@@ -865,7 +865,6 @@ export default function IssueBook() {
                       </div>
                       <div>
                         <h3 className="text-sm font-extrabold text-slate-700">Scan or Search Book</h3>
-                        <p className="text-[10px] text-slate-405">Scan barcode or type title, author, or ISBN</p>
                       </div>
                     </div>
 
@@ -914,11 +913,8 @@ export default function IssueBook() {
                     <div className="mt-3 border border-slate-100 rounded-xl overflow-hidden divide-y divide-slate-100 overflow-y-auto pr-1 flex-1 min-h-0">
                       {bookSearch.trim() === '' ? (
                         <div className="p-8 text-center flex flex-col items-center justify-center h-full select-none">
-                          <span className="material-symbols-outlined text-slate-300 mb-1.5" style={{ fontSize: 36 }}>search</span>
-                          <p className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">Search for a Book</p>
-                          <p className="text-[10px] text-slate-400 mt-1 max-w-[200px] leading-normal">
-                            Type title, author, barcode or scan barcode to select books.
-                          </p>
+                          <span className="material-symbols-outlined text-slate-300 mb-1" style={{ fontSize: 30 }}>search</span>
+                          <p className="text-xs text-slate-400 font-medium">Search for a book</p>
                         </div>
                       ) : bookResults.length === 0 ? (
                         <div className="p-8 text-center flex flex-col items-center justify-center h-full select-none animate-fadeIn">
@@ -988,8 +984,12 @@ export default function IssueBook() {
                         </div>
                       </div>
 
-                      {/* Cart Contents */}
-                      {cart.length === 1 ? (
+                      {cart.length === 0 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center p-8 select-none">
+                          <span className="material-symbols-outlined text-slate-300 mb-1" style={{ fontSize: 30 }}>local_library</span>
+                          <p className="text-xs text-slate-400 font-medium">Cart is empty</p>
+                        </div>
+                      ) : cart.length === 1 ? (
                         <div className="animate-fadeIn space-y-2.5 flex-1 flex flex-col min-h-0 overflow-y-auto pr-1">
                           <div className="flex gap-4 items-start">
                             {/* Larger Cover Image */}
@@ -1056,39 +1056,31 @@ export default function IssueBook() {
                           )}
                         </div>
                       ) : (
-                        /* Selected Books list for multiple books or empty cart */
-                        <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1">
-                          {cart.length === 0 ? (
-                            <div className="text-center py-6">
-                              <span className="material-symbols-outlined text-slate-300 text-3xl mb-1.5">local_library</span>
-                              <p className="text-[11px] text-slate-400 font-medium">Cart is empty</p>
-                              <p className="text-[9px] text-slate-400 mt-0.5">Select books from the list on the left.</p>
-                            </div>
-                          ) : (
-                            cart.map((item) => (
-                              <div key={item.book._id} className="p-2.5 bg-slate-50/50 border border-slate-100 rounded-xl flex items-center justify-between gap-3 animate-fadeIn">
-                                <div className="flex gap-2 items-center min-w-0">
-                                  <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-250 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                    {item.book.coverImageUrl ? (
-                                      <img src={item.book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
-                                    ) : (
-                                      <span className="material-symbols-outlined text-amber-650 text-lg">menu_book</span>
-                                    )}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <h4 className="text-xs font-black text-slate-700 truncate">{item.book.title}</h4>
-                                  </div>
+                        /* Selected Books list for multiple books */
+                        <div className="space-y-2 flex-1 max-h-[160px] overflow-y-auto pr-1">
+                          {cart.map((item) => (
+                            <div key={item.book._id} className="p-2.5 bg-slate-50/50 border border-slate-100 rounded-xl flex items-center justify-between gap-3 animate-fadeIn">
+                              <div className="flex gap-2 items-center min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-250 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                  {item.book.coverImageUrl ? (
+                                    <img src={item.book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="material-symbols-outlined text-amber-650 text-lg">menu_book</span>
+                                  )}
                                 </div>
-
-                                <button
-                                  onClick={() => removeFromCart(item.book._id)}
-                                  className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0 cursor-pointer"
-                                >
-                                  <span className="material-symbols-outlined text-base">close</span>
-                                </button>
+                                <div className="min-w-0">
+                                  <h4 className="text-xs font-black text-slate-700 truncate">{item.book.title}</h4>
+                                </div>
                               </div>
-                            ))
-                          )}
+
+                              <button
+                                onClick={() => removeFromCart(item.book._id)}
+                                className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0 cursor-pointer"
+                              >
+                                <span className="material-symbols-outlined text-base">close</span>
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>

@@ -76,7 +76,7 @@ export default function ReportDetailsTable({
         ) : (
           <div className="overflow-x-auto max-h-96 overflow-y-auto">
             <table className="w-full text-left text-sm">
-              <thead className="sticky top-0 z-10 shadow-xs bg-[#F8FAFC] border-b border-slate-200/80">
+              <thead className="sticky top-0 z-10 shadow-xs bg-white border-b border-slate-200/80">
                 <tr>
                   <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Transaction ID</th>
                   <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Member ID</th>
@@ -111,7 +111,7 @@ export default function ReportDetailsTable({
                     <tr key={t._id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}>
                       <td className="py-2.5 px-4 text-xs font-mono font-bold text-left" style={{ color: '#1a1245' }}>{t.transactionId || '—'}</td>
                       <td className="py-2.5 px-4 text-xs font-mono font-bold text-left" style={{ color: '#4062BB' }}>{t.user?.memberId || '—'}</td>
-                      <td className="py-2.5 px-4 text-xs font-semibold text-left" style={{ color: '#2C2C3E' }}>{t.user?.name || '—'}</td>
+                      <td className="py-2.5 px-4 text-xs font-medium text-left" style={{ color: '#2C2C3E' }}>{t.user?.name || '—'}</td>
                       <td className="py-2.5 px-4 text-xs font-mono font-bold text-left" style={{ color: '#1a1245' }}>{t.book?.bookId || '—'}</td>
                       <td className="py-2.5 px-4 text-xs text-left" style={{ color: '#595c5e' }}>{t.book?.title || '—'}</td>
                       <td className="py-2.5 px-4 text-xs text-left" style={{ color: '#595c5e' }}>{new Date(t.issueDate).toLocaleDateString()}</td>
@@ -183,7 +183,7 @@ export default function ReportDetailsTable({
         ) : (
           <div className="overflow-x-auto max-h-96 overflow-y-auto">
             <table className="w-full text-left text-sm">
-              <thead className="sticky top-0 z-10 shadow-xs bg-[#F8FAFC] border-b border-slate-200/80">
+              <thead className="sticky top-0 z-10 shadow-xs bg-white border-b border-slate-200/80">
                 <tr>
                   <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Member ID</th>
                   <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Name</th>
@@ -197,7 +197,7 @@ export default function ReportDetailsTable({
                 {filteredMembers.map((m, idx) => (
                   <tr key={m._id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}>
                     <td className="py-2.5 px-4 text-xs font-mono font-bold text-center" style={{ color: '#1a1245' }}>{m.memberId}</td>
-                    <td className="py-2.5 px-4 text-xs font-semibold" style={{ color: '#2C2C3E' }}>{m.name}</td>
+                    <td className="py-2.5 px-4 text-xs font-medium text-left" style={{ color: '#2C2C3E' }}>{m.name}</td>
                     <td className="py-2.5 px-4 text-xs" style={{ color: '#595c5e' }}>{m.email}</td>
                     <td className="py-2.5 px-4 text-xs uppercase font-semibold text-center">{m.role}</td>
                     <td className="py-2.5 px-4 text-xs text-center" style={{ color: '#595c5e' }}>{m.grade || '—'}</td>
@@ -246,7 +246,7 @@ export default function ReportDetailsTable({
               onClick={() => setShowCategories(!showCategories)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
                 showCategories
-                  ? 'bg-[#1a1245] text-white border-[#1a1245] shadow-xs'
+                  ? 'bg-[#9E0D0D] text-white border-[#9E0D0D] shadow-xs'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
             >
@@ -323,13 +323,13 @@ export default function ReportDetailsTable({
             <div className="flex flex-col items-center justify-center py-16" style={{ color: '#94a3b8' }}>
               <span className="material-symbols-outlined mb-2" style={{ fontSize: 48, opacity: 0.3 }}>menu_book</span>
               <p className="text-sm font-medium">
-                {bookFilter === 'all' ? 'No books found in the library catalog' : `No ${bookFilter === 'available' ? 'in-stock' : 'out-of-stock / borrowed'} books found`}
+                {bookFilter === 'all' ? 'No books found in the library catalogue' : `No ${bookFilter === 'available' ? 'in-stock' : 'out-of-stock / borrowed'} books found`}
               </p>
             </div>
           ) : (
             <div className="overflow-x-auto max-h-96 overflow-y-auto">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 z-10 shadow-xs bg-[#F8FAFC] border-b border-slate-200/80">
+                <thead className="sticky top-0 z-10 shadow-xs bg-white border-b border-slate-200/80">
                   <tr>
                     <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Book ID</th>
                     <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Title</th>
@@ -352,7 +352,7 @@ export default function ReportDetailsTable({
                     return (
                       <tr key={b._id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}>
                         <td className="py-2.5 px-4 text-xs font-mono font-bold text-left" style={{ color: '#1a1245' }}>{b.bookId || '—'}</td>
-                        <td className="py-2.5 px-4 text-xs font-semibold text-left" style={{ color: '#2C2C3E' }}>{b.title}</td>
+                        <td className="py-2.5 px-4 text-xs font-medium text-left" style={{ color: '#2C2C3E' }}>{b.title}</td>
                         <td className="py-2.5 px-4 text-xs text-left" style={{ color: '#595c5e' }}>{b.author}</td>
                         <td className="py-2.5 px-4 text-xs text-left" style={{ color: '#595c5e' }}>{b.category || '—'}</td>
                         <td className="py-2.5 px-4 text-xs font-bold text-center" style={{ color: isAvailable ? '#166534' : '#b31b25' }}>{avail}</td>
@@ -417,7 +417,7 @@ export default function ReportDetailsTable({
         ) : (
           <div className="overflow-x-auto max-h-96 overflow-y-auto">
             <table className="w-full text-left text-sm">
-              <thead className="sticky top-0 z-10 shadow-xs bg-[#F8FAFC] border-b border-slate-200/80">
+              <thead className="sticky top-0 z-10 shadow-xs bg-white border-b border-slate-200/80">
                 <tr>
                   <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Transaction ID</th>
                   <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Member ID</th>
@@ -436,7 +436,7 @@ export default function ReportDetailsTable({
                     <tr key={f._id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}>
                       <td className="py-2.5 px-4 text-xs font-mono font-bold text-left" style={{ color: '#1a1245' }}>{f.transaction?.transactionId || '—'}</td>
                       <td className="py-2.5 px-4 text-xs font-mono font-bold text-left" style={{ color: '#4062BB' }}>{f.user?.memberId || '—'}</td>
-                      <td className="py-2.5 px-4 text-xs font-semibold text-left" style={{ color: '#2C2C3E' }}>{f.user?.name || ''}</td>
+                      <td className="py-2.5 px-4 text-xs font-medium text-left" style={{ color: '#2C2C3E' }}>{f.user?.name || ''}</td>
                       <td className="py-2.5 px-4 text-xs font-mono font-bold text-left" style={{ color: '#1a1245' }}>{f.book?.bookId || '—'}</td>
                       <td className="py-2.5 px-4 text-xs text-left" style={{ color: '#595c5e' }}>{f.book?.title || ''}</td>
                       <td className="py-2.5 px-4 text-xs font-bold text-left" style={{ color: '#1a1245' }}>Rs. {f.amount.toFixed(2)}</td>

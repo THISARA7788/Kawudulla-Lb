@@ -71,7 +71,7 @@ export default function NotificationsPanel({ notifications, onClose, onMarkRead,
   return (
     <div
       ref={nodeRef}
-      className="absolute top-12 right-0 w-[360px] max-h-[500px] overflow-hidden rounded-xl shadow-2xl z-50 border border-slate-100 bg-slate-50"
+      className="absolute top-12 right-0 w-[360px] max-h-[500px] overflow-hidden rounded-2xl shadow-2xl z-50 border border-slate-100 bg-slate-50"
       style={{ 
         animation: 'fadeIn .15s ease-out', 
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 20px 1px rgba(74, 2, 2, 0.15)'

@@ -32,7 +32,7 @@ export default function FineModals({
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fine Record</span>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <h3 className="text-lg font-black text-[#1a1245] font-mono">
+                  <h3 className="text-lg font-black text-[#881337] font-mono">
                     {selected.fineId || selected.transaction?.transactionNumber || selected.transaction?.transactionId || '—'}
                   </h3>
                   <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full capitalize ${
@@ -57,7 +57,7 @@ export default function FineModals({
             {/* Body */}
             <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               {/* Fine Calculation Summary */}
-              <div className="p-4 bg-gradient-to-r from-slate-900 to-[#1a1245] rounded-xl text-white">
+              <div className="p-4 bg-gradient-to-r from-slate-900 to-[#4C0000] rounded-xl text-white">
                 <div className="flex justify-between items-center">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-300">Total Fine Amount</span>
@@ -146,7 +146,7 @@ export default function FineModals({
                       onClick={() => {
                         setModal('waive');
                       }}
-                      className="px-3.5 py-2 bg-[#1a1245] hover:bg-[#2C2C3E] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                      className="px-3.5 py-2 bg-[#9E0D0D] hover:bg-[#7F0A0A] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: 16 }}>cancel</span>
                       Excuse
@@ -178,7 +178,7 @@ export default function FineModals({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-2xs">
           <div className="rounded-2xl p-6 w-full max-w-sm bg-white shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[#1a1245]">Mark Fine as Paid</h2>
+              <h2 className="text-lg font-bold text-[#881337]">Mark Fine as Paid</h2>
               <button onClick={() => setModal(null)} className="p-1 rounded-full text-slate-400 hover:bg-slate-100">
                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
               </button>
@@ -206,7 +206,7 @@ export default function FineModals({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-2xs">
           <div className="rounded-2xl p-6 w-full max-w-sm bg-white shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[#1a1245]">Excuse Fine</h2>
+              <h2 className="text-lg font-bold text-[#881337]">Excuse Fine</h2>
               <button onClick={() => setModal(null)} className="p-1 rounded-full text-slate-400 hover:bg-slate-100">
                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
               </button>
@@ -223,11 +223,11 @@ export default function FineModals({
                 onChange={(e) => setWaiveReason(e.target.value)}
                 placeholder="e.g. Medical leave, school event, authorized exception..."
                 rows="3"
-                className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-slate-200 bg-slate-50 focus:bg-white resize-none"
+                className="w-full px-3 py-2 text-xs rounded-xl outline-none border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#9E0D0D] resize-none"
               />
             </div>
             <div className="flex gap-2">
-              <button onClick={handleWaive} disabled={saving} className="flex-1 py-2 rounded-xl text-xs font-bold bg-[#1a1245] hover:bg-[#2C2C3E] text-white shadow-sm cursor-pointer disabled:opacity-50">
+              <button onClick={handleWaive} disabled={saving} className="flex-1 py-2 rounded-xl text-xs font-bold bg-[#9E0D0D] hover:bg-[#7F0A0A] text-white shadow-sm cursor-pointer disabled:opacity-50">
                 {saving ? 'Processing...' : 'Excuse Fine'}
               </button>
               <button onClick={() => setModal(null)} className="flex-1 py-2 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer">
@@ -243,7 +243,7 @@ export default function FineModals({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-2xs">
           <div className="rounded-2xl p-6 w-full max-w-sm bg-white shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[#1a1245]">Fine Settings</h2>
+              <h2 className="text-lg font-bold text-[#881337]">Fine Settings</h2>
               <button onClick={() => setModal(null)} className="p-1 rounded-full text-slate-400 hover:bg-slate-100">
                 <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
               </button>
@@ -257,7 +257,7 @@ export default function FineModals({
                   step="0.5"
                   value={newRate}
                   onChange={(e) => setNewRate(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-bold rounded-xl outline-none border border-slate-200 bg-slate-50 focus:bg-white"
+                  className="w-full px-3 py-2 text-xs font-bold rounded-xl outline-none border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#9E0D0D]"
                 />
               </div>
               <div>
@@ -267,12 +267,12 @@ export default function FineModals({
                   min="0"
                   value={newGrace}
                   onChange={(e) => setNewGrace(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-bold rounded-xl outline-none border border-slate-200 bg-slate-50 focus:bg-white"
+                  className="w-full px-3 py-2 text-xs font-bold rounded-xl outline-none border border-slate-200 bg-slate-50 focus:bg-white focus:border-[#9E0D0D]"
                 />
                 <p className="text-[11px] text-slate-400 mt-1">Number of days after due date before fines apply.</p>
               </div>
               <div className="flex gap-2 pt-2">
-                <button onClick={saveConfig} disabled={saving} className="flex-1 py-2 rounded-xl text-xs font-bold bg-[#1a1245] hover:bg-[#2C2C3E] text-white shadow-sm cursor-pointer disabled:opacity-50">
+                <button onClick={saveConfig} disabled={saving} className="flex-1 py-2 rounded-xl text-xs font-bold bg-[#9E0D0D] hover:bg-[#7F0A0A] text-white shadow-sm cursor-pointer disabled:opacity-50">
                   {saving ? 'Saving...' : 'Save Settings'}
                 </button>
                 <button onClick={() => setModal(null)} className="flex-1 py-2 rounded-xl text-xs font-bold border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer">

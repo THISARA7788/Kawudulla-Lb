@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import BookProfileModal from '../../components/books/BookProfileModal';
+import { getEmptyBookCoverBackground } from '../../utils/bookCoverUtils';
 import api from '../../api/axios';
 
 export default function MyBorrowingsPage() {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('active'); // 'active' | 'history'
   const [activeLoans, setActiveLoans] = useState([]);
   const [historyLoans, setHistoryLoans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedBook, setSelectedBook] = useState(null);
 
   const fetchBorrowings = async () => {
     try {
@@ -49,46 +50,26 @@ export default function MyBorrowingsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6" style={{ fontFamily: "'Inter', sans-serif" }}>
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-800" style={{ fontFamily: "'Manrope', sans-serif" }}>
-              My Borrowings
-            </h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {activeLoans.length} active loan{activeLoans.length === 1 ? '' : 's'} • {historyLoans.length} returned
-            </p>
-          </div>
-
-          <button
-            onClick={() => navigate('/books')}
-            className="px-4 py-2 bg-[#9E0D0D] hover:bg-[#7F0A0A] text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shadow-sm"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>library_books</span>
-            Browse Catalog
-          </button>
-        </div>
-
         {/* Tabs & Search Filter */}
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
           {/* Tab Switcher */}
-          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/70 select-none">
+          <div className="flex items-center gap-1 bg-slate-100 border border-slate-200/80 p-1 rounded-2xl shadow-inner select-none w-fit">
             <button
               onClick={() => setActiveTab('active')}
-              className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === 'active'
-                  ? 'bg-white text-slate-800 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'bg-[#9E0D0D] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
               }`}
             >
               Active Loans ({activeLoans.length})
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === 'history'
-                  ? 'bg-white text-slate-800 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'bg-[#9E0D0D] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
               }`}
             >
               Borrowing History ({historyLoans.length})
@@ -96,8 +77,8 @@ export default function MyBorrowingsPage() {
           </div>
 
           {/* Search */}
-          <div className="relative w-full sm:w-64">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: 18 }}>
+          <div className="relative w-full sm:w-72">
+            <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: 18 }}>
               search
             </span>
             <input
@@ -105,16 +86,30 @@ export default function MyBorrowingsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Filter by title or author..."
-              className="w-full py-1.5 pl-9 pr-3 text-xs rounded-xl bg-white border border-slate-200 outline-none focus:border-[#9E0D0D] transition-all"
+              className="w-full py-2 pl-10 pr-3.5 text-xs rounded-2xl bg-white border border-slate-200 outline-none focus:border-[#9E0D0D] transition-all shadow-xs"
             />
           </div>
         </div>
 
         {/* Content Body */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <span className="material-symbols-outlined animate-spin mb-2" style={{ fontSize: 32 }}>progress_activity</span>
-            <p className="text-xs font-semibold">Loading borrowing records...</p>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
+            <div className="divide-y divide-slate-100 animate-pulse">
+              {Array.from({ length: 5 }).map((_, idx) => (
+                <div key={idx} className="p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="w-10 h-14 bg-slate-200 rounded-lg flex-shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-3.5 bg-slate-200 rounded w-1/3" />
+                      <div className="h-2.5 bg-slate-100 rounded w-1/4" />
+                    </div>
+                  </div>
+                  <div className="h-3 bg-slate-100 rounded w-24 hidden sm:block" />
+                  <div className="h-3 bg-slate-100 rounded w-24 hidden md:block" />
+                  <div className="h-6 w-20 bg-slate-200 rounded-full" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : filteredList.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center text-slate-400">
@@ -130,7 +125,7 @@ export default function MyBorrowingsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-400 uppercase tracking-wider">
+                  <tr className="border-b border-slate-200 bg-white text-slate-400 uppercase tracking-wider">
                     <th className="py-3 px-4 font-semibold">Book Details</th>
                     <th className="py-3 px-4 font-semibold">Issued Date</th>
                     <th className="py-3 px-4 font-semibold">
@@ -146,19 +141,35 @@ export default function MyBorrowingsPage() {
 
                     return (
                       <tr key={item._id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="py-3 px-4">
+                        <td
+                          className="py-3 px-4 cursor-pointer group"
+                          onClick={() => item.book && setSelectedBook(item.book)}
+                          title="Click to view book details"
+                        >
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-12 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden flex-shrink-0">
+                            <div
+                              className="w-9 h-12 rounded-lg border border-slate-100 overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform duration-200 flex items-center justify-center shadow-xs"
+                              style={
+                                !item.book?.coverImageUrl
+                                    ? { background: getEmptyBookCoverBackground(item.book) }
+                                  : {}
+                              }
+                            >
                               {item.book?.coverImageUrl ? (
                                 <img src={item.book.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                <div className="w-full h-full flex items-center justify-center text-white/90">
                                   <span className="material-symbols-outlined text-xs">menu_book</span>
                                 </div>
                               )}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-bold text-slate-800 line-clamp-1">{item.book?.title || 'Unknown Title'}</p>
+                              <p className="font-medium text-xs text-slate-800 line-clamp-1 group-hover:text-[#9E0D0D] transition-colors flex items-center gap-1.5">
+                                <span>{item.book?.title || 'Unknown Title'}</span>
+                                <span className="material-symbols-outlined text-[14px] text-slate-300 group-hover:text-[#9E0D0D] transition-colors opacity-0 group-hover:opacity-100">
+                                  open_in_new
+                                </span>
+                              </p>
                               <p className="text-[10px] text-slate-400 mt-0.5">
                                 {item.book?.author || 'Unknown'} • ID: {item.book?.bookId || '—'}
                               </p>
@@ -199,6 +210,15 @@ export default function MyBorrowingsPage() {
               </table>
             </div>
           </div>
+        )}
+
+        {/* Book Details Modal */}
+        {selectedBook && (
+          <BookProfileModal
+            book={selectedBook}
+            isOpen={!!selectedBook}
+            onClose={() => setSelectedBook(null)}
+          />
         )}
       </div>
     </DashboardLayout>

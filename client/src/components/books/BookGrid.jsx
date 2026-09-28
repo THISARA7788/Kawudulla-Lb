@@ -20,9 +20,18 @@ export default function BookGrid({
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24 text-slate-400">
-        <span className="material-symbols-outlined animate-spin mr-3 text-3xl" style={{ fontSize: 32 }}>progress_activity</span>
-        <span className="text-base font-medium">Loading catalog cards...</span>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 animate-pulse">
+        {Array.from({ length: 12 }).map((_, idx) => (
+          <div key={idx} className="bg-white rounded-2xl border border-slate-200/80 p-3 flex flex-col space-y-2.5 shadow-2xs">
+            <div className="h-44 w-full bg-slate-200 rounded-xl" />
+            <div className="h-3.5 bg-slate-200 rounded w-4/5" />
+            <div className="h-2.5 bg-slate-100 rounded w-1/2" />
+            <div className="pt-2 flex justify-between items-center">
+              <div className="h-4 w-12 bg-slate-100 rounded-full" />
+              <div className="h-4 w-14 bg-slate-100 rounded-full" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }

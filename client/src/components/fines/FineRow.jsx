@@ -21,13 +21,13 @@ export default function FineRow({ fine, index = 0, onView, onPay, onWaive, onDel
         {fine.fineId || fine.transaction?.transactionId || '—'}
       </td>
       <td className="py-3 px-4 text-left">
-        <div className={`text-sm font-semibold ${isSettled ? 'text-slate-600' : 'text-slate-800'}`}>{fine.user?.name || '—'}</div>
+        <div className={`text-xs font-medium ${isSettled ? 'text-slate-600' : 'text-slate-800'}`}>{fine.user?.name || '—'}</div>
         <div className="text-[11px] font-mono font-bold text-slate-400 mt-0.5">
           {fine.user?.memberId || '—'}
         </div>
       </td>
       <td className="py-3 px-4 text-left">
-        <div className={`text-sm font-semibold ${isSettled ? 'text-slate-600' : 'text-slate-800'}`}>{fine.book?.title || '—'}</div>
+        <div className={`text-xs font-medium ${isSettled ? 'text-slate-600' : 'text-slate-800'}`}>{fine.book?.title || '—'}</div>
         <div className="text-[11px] font-mono text-slate-400 mt-0.5">{fine.book?.bookId || '—'}</div>
       </td>
       <td className="py-3 px-4 text-center text-xs font-bold whitespace-nowrap" style={{ color: '#b31b25' }}>

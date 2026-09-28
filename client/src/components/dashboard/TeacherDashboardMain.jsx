@@ -20,10 +20,9 @@ export default function TeacherDashboardMain() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return { text: 'Good Morning', emoji: '🌅' };
-    if (hour >= 12 && hour < 17) return { text: 'Good Afternoon', emoji: '☀️' };
-    if (hour >= 17 && hour < 21) return { text: 'Good Evening', emoji: '🌆' };
-    return { text: 'Good Night', emoji: '🌙' };
+    if (hour >= 5 && hour < 12) return { text: 'Good Morning...', emoji: '🌅' };
+    if (hour >= 12 && hour < 17) return { text: 'Good Afternoon...', emoji: '☀️' };
+    return { text: 'Good Evening...', emoji: '🌙' };
   };
 
   const handleYearChange = async (selectedYear) => {
@@ -71,9 +70,36 @@ export default function TeacherDashboardMain() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-        <span className="material-symbols-outlined animate-spin mb-2" style={{ fontSize: 32 }}>progress_activity</span>
-        <p className="text-xs font-semibold">Loading teacher dashboard...</p>
+      <div className="space-y-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+        {/* 1. Hero Welcome Banner Skeleton */}
+        <div
+          className="py-2.5 px-4 sm:py-3 sm:px-5 rounded-2xl relative overflow-hidden shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3.5 animate-pulse"
+          style={{ background: 'linear-gradient(135deg, #3B0000 0%, #150000 100%)' }}
+        >
+          <div className="flex-1 min-w-0 flex flex-col justify-center space-y-2">
+            <div className="h-7 w-52 rounded-lg bg-white/20" />
+            <div className="h-5 w-36 rounded-md bg-white/15" />
+            <div className="h-3.5 w-64 rounded bg-white/10 mt-1" />
+          </div>
+          <div className="w-full md:w-[340px] lg:w-[375px] h-[94px] bg-white/10 rounded-xl border border-white/5" />
+        </div>
+
+        {/* 2. Recommended Books Skeleton */}
+        <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-2xs">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-7 h-7 rounded-lg bg-slate-100 animate-pulse" />
+            <div className="h-4 w-44 rounded bg-slate-200 animate-pulse" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex flex-col space-y-2 animate-pulse">
+                <div className="h-40 rounded-xl bg-slate-200" />
+                <div className="h-3 w-4/5 rounded bg-slate-200" />
+                <div className="h-2.5 w-1/2 rounded bg-slate-100" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -94,18 +120,24 @@ export default function TeacherDashboardMain() {
     <div className="space-y-4" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* 1. Dynamic Hero Welcome Banner */}
       <div
-        className="py-3.5 px-5 sm:py-4 sm:px-6 rounded-2xl relative overflow-hidden text-white shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+        className="py-2.5 px-4 sm:py-3 sm:px-5 rounded-2xl relative overflow-hidden text-white shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3.5"
         style={{ background: 'linear-gradient(135deg, #4C0000 0%, #150000 100%)' }}
       >
         {/* Left: Greetings & Faculty Info */}
-        <div className="relative z-10 flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-black mt-0.5 tracking-tight" style={{ fontFamily: "'Manrope', sans-serif" }}>
-            {greeting.text}, {(() => {
-              const rawName = user?.name?.trim().split(/\s+/)[0] || 'Teacher';
-              return rawName.charAt(0).toUpperCase() + rawName.slice(1);
-            })()}! {greeting.emoji}
-          </h1>
-          <p className="text-xs text-slate-300 mt-0.5">
+        <div className="relative z-10 flex-1 min-w-0 flex flex-col justify-center">
+          <div>
+            <div className="text-2xl sm:text-3xl lg:text-[30px] font-black text-white tracking-tight leading-tight flex items-center gap-2" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              <span>{greeting.text}</span>
+              <span>{greeting.emoji}</span>
+            </div>
+            <div className="text-lg sm:text-xl lg:text-[22px] font-extrabold text-white tracking-tight mt-0.5" style={{ fontFamily: "'Manrope', sans-serif" }}>
+              {(() => {
+                const rawName = user?.name?.trim().split(/\s+/)[0] || 'Teacher';
+                return rawName.charAt(0).toUpperCase() + rawName.slice(1);
+              })()}
+            </div>
+          </div>
+          <p className="text-xs sm:text-[12px] text-slate-300 mt-1.5 font-medium">
             Welcome back to your Kawudulla MV digital library space.
           </p>
         </div>

@@ -128,7 +128,7 @@ function PendingRegistration() {
     <DashboardLayout>
       <div className="p-1">
         {/* Top Control Panel Header (Fixed below top navbar on desktop, relative flow on mobile) */}
-        <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-[#F8FAFC] pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 shadow-xs">
+        <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-white pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-end">
             <div className="relative w-full max-w-sm">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: 18 }}>search</span>
@@ -155,12 +155,25 @@ function PendingRegistration() {
 
 
           {loading ? (
-            <div className="flex items-center justify-center py-20 bg-white rounded-2xl border border-slate-100">
-              <div className="text-center">
-                <div
-                  className="inline-block w-10 h-10 border-4 border-t-[#9E0D0D] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mb-4"
-                ></div>
-                <p className="text-sm" style={{ color: '#94a3b8' }}>Loading pending registrations...</p>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
+              <div className="divide-y divide-slate-100 animate-pulse">
+                {Array.from({ length: 5 }).map((_, idx) => (
+                  <div key={idx} className="p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-slate-200 flex-shrink-0" />
+                      <div className="space-y-1.5 flex-1">
+                        <div className="h-3.5 bg-slate-200 rounded w-1/3" />
+                        <div className="h-2.5 bg-slate-100 rounded w-1/4" />
+                      </div>
+                    </div>
+                    <div className="h-5 w-20 bg-slate-200 rounded-full hidden sm:block" />
+                    <div className="h-3 bg-slate-100 rounded w-24 hidden md:block" />
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-20 bg-slate-200 rounded-xl" />
+                      <div className="h-8 w-20 bg-slate-100 rounded-xl" />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ) : pendingUsers.length === 0 ? (
@@ -179,7 +192,7 @@ function PendingRegistration() {
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[800px]">
-                  <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
+                  <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#FFFFFF', borderBottom: '1px solid #CBD5E1' }}>
                   <tr>
                     <th className="px-6 py-4 text-left text-[13px] font-bold uppercase tracking-wide" style={{ color: '#881337' }}>
                       <div className="flex items-center justify-start gap-1.5">
@@ -222,13 +235,13 @@ function PendingRegistration() {
                           >
                             {u.name?.charAt(0).toUpperCase() || '?'}
                           </div>
-                          <span className="font-semibold text-sm" style={{ color: '#1a1245' }}>{u.name}</span>
+                          <span className="font-medium text-xs" style={{ color: '#1a1245' }}>{u.name}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-xs font-medium" style={{ color: '#64748b' }}>
                         {u.email}
                       </td>
-                      <td className="px-6 py-4 text-xs font-bold" style={{ color: '#1a1245' }}>
+                      <td className="px-6 py-4 text-xs font-medium text-center" style={{ color: '#64748b' }}>
                         {getGradeDisplay(u)}
                       </td>
                       <td className="px-6 py-4">
@@ -246,7 +259,7 @@ function PendingRegistration() {
                           <button
                             onClick={() => triggerApprove(u._id, u.name)}
                             disabled={actionLoading === u._id}
-                            className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-[#1a1245] hover:bg-[#4062BB] active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-50"
+                            className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-[#9E0D0D] hover:bg-[#7F0A0A] active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-50 shadow-xs"
                           >
                             {actionLoading === u._id ? (
                               <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -260,10 +273,10 @@ function PendingRegistration() {
                           <button
                             onClick={() => triggerReject(u._id, u.name)}
                             disabled={actionLoading === u._id}
-                            className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white bg-[#D9645E] hover:bg-[#B84A45] active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-50"
+                            className="flex items-center gap-1 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:opacity-50"
                           >
                             {actionLoading === u._id ? (
-                              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                              <span className="w-3.5 h-3.5 border-2 border-rose-400 border-t-rose-700 rounded-full animate-spin"></span>
                             ) : (
                               <>
                                 <span className="material-symbols-outlined text-[12px] font-black">close</span>
@@ -323,7 +336,7 @@ function PendingRegistration() {
                   <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 mb-4 border border-emerald-100">
                     <span className="material-symbols-outlined text-2xl font-bold">check_circle</span>
                   </div>
-                  <h3 className="text-lg font-bold text-[#1a1245] mb-2">Approve User Registration?</h3>
+                  <h3 className="text-lg font-bold text-[#881337] mb-2">Approve User Registration?</h3>
                   <p className="text-sm text-slate-500 mb-6">
                     Are you sure you want to approve <strong className="text-slate-800">{modal.userName}</strong>? They will be granted access to log into the library system.
                   </p>
@@ -337,7 +350,7 @@ function PendingRegistration() {
                     </button>
                     <button
                       onClick={executeApprove}
-                      className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md active:scale-[0.98] transition-all cursor-pointer"
+                      className="flex-1 px-4 py-2.5 bg-[#9E0D0D] hover:bg-[#7F0A0A] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md active:scale-[0.98] transition-all cursor-pointer"
                     >
                       Approve
                     </button>
@@ -348,7 +361,7 @@ function PendingRegistration() {
                   <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 mb-4 border border-rose-100">
                     <span className="material-symbols-outlined text-2xl font-bold">cancel</span>
                   </div>
-                  <h3 className="text-lg font-bold text-[#1a1245] mb-2">Reject User Registration?</h3>
+                  <h3 className="text-lg font-bold text-[#881337] mb-2">Reject User Registration?</h3>
                   <p className="text-sm text-slate-500 mb-4">
                     Please provide a reason for rejecting <strong className="text-slate-800">{modal.userName}</strong>.
                   </p>
@@ -358,7 +371,7 @@ function PendingRegistration() {
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
                     placeholder="Enter reason (optional)"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm mb-6 focus:outline-none focus:ring-2 focus:ring-[#1a1245]/20 focus:border-[#1a1245] transition-all"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm mb-6 focus:outline-none focus:ring-2 focus:ring-[#9E0D0D]/20 focus:border-[#9E0D0D] transition-all"
                   />
                   
                   <div className="flex gap-3 w-full">

@@ -89,7 +89,7 @@ export default function CirculationRecord() {
   return (
     <DashboardLayout>
       {/* Top Control Panel Header (Fixed below top navbar on desktop, relative flow on mobile) */}
-      <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-[#F8FAFC] pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 shadow-xs">
+      <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-white pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 shadow-xs">
         <div className="flex gap-3 items-center flex-wrap">
           <div className="relative flex-1 min-w-[200px]">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: 18 }}>search</span>
@@ -120,9 +120,17 @@ export default function CirculationRecord() {
         {/* Table */}
         <div className="rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs bg-white">
           {loading ? (
-            <div className="flex items-center justify-center py-16" style={{ color: '#94a3b8' }}>
-              <span className="material-symbols-outlined animate-spin mr-2" style={{ fontSize: 28 }}>progress_activity</span>
-              Loading transactions...
+            <div className="divide-y divide-slate-100 animate-pulse">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <div key={idx} className="p-4 flex items-center justify-between gap-4">
+                  <div className="h-4 bg-slate-200 rounded w-24" />
+                  <div className="h-4 bg-slate-200 rounded w-36" />
+                  <div className="h-4 bg-slate-200 rounded w-48 flex-1 hidden md:block" />
+                  <div className="h-3 bg-slate-100 rounded w-20 hidden lg:block" />
+                  <div className="h-3 bg-slate-100 rounded w-20 hidden lg:block" />
+                  <div className="h-6 w-20 bg-slate-200 rounded-full" />
+                </div>
+              ))}
             </div>
           ) : filteredTransactions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16" style={{ color: '#94a3b8' }}>
@@ -132,7 +140,7 @@ export default function CirculationRecord() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-center text-sm">
-                <thead className="sticky top-0 z-10 shadow-2xs bg-[#F8FAFC] border-b border-slate-200/80">
+                <thead className="sticky top-0 z-10 shadow-2xs bg-white border-b border-slate-200/80">
                   <tr>
                     <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Transaction ID</th>
                     <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Member</th>
@@ -166,13 +174,13 @@ export default function CirculationRecord() {
                       <tr key={t._id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}>
                         <td className="py-3 px-4 text-center text-[11px] font-mono font-bold" style={{ color: '#4F5B7D' }}>{t.transactionNumber || t.transactionId || '—'}</td>
                         <td className="py-3 px-4 text-left">
-                          <div className="text-sm font-semibold" style={{ color: '#2C2C3E' }}>{t.user?.name || '—'}</div>
+                          <div className="text-xs font-medium" style={{ color: '#2C2C3E' }}>{t.user?.name || '—'}</div>
                           <div className="text-[11px] font-mono font-bold" style={{ color: '#94a3b8' }}>
                             {t.user?.memberId || '—'}
                           </div>
                         </td>
                         <td className="py-3 px-4 text-left">
-                          <div className="text-sm font-semibold" style={{ color: '#2C2C3E' }}>{t.book?.title || '—'}</div>
+                          <div className="text-xs font-medium" style={{ color: '#2C2C3E' }}>{t.book?.title || '—'}</div>
                           <div className="text-[11px] font-mono" style={{ color: '#94a3b8' }}>{t.book?.bookId || ''}</div>
                         </td>
                         <td className="py-3 px-4 text-center text-xs font-medium" style={{ color: '#64748B' }}>{new Date(t.issueDate).toLocaleDateString()}</td>

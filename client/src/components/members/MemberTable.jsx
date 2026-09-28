@@ -79,9 +79,24 @@ export default function MemberTable({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16" style={{ color: '#94a3b8' }}>
-        <span className="material-symbols-outlined animate-spin mr-2" style={{ fontSize: 28 }}>progress_activity</span>
-        Loading members...
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="divide-y divide-slate-100 animate-pulse">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className="p-3.5 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="w-9 h-9 rounded-xl bg-slate-200 flex-shrink-0" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="h-3.5 bg-slate-200 rounded w-1/3" />
+                  <div className="h-2.5 bg-slate-100 rounded w-1/4" />
+                </div>
+              </div>
+              <div className="h-5 w-16 bg-slate-200 rounded-full hidden sm:block" />
+              <div className="h-3 bg-slate-100 rounded w-20 hidden md:block" />
+              <div className="h-5 w-20 bg-slate-200 rounded-full" />
+              <div className="h-8 w-16 bg-slate-100 rounded-xl" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -105,7 +120,7 @@ export default function MemberTable({
     <div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
+          <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#FFFFFF', borderBottom: '1px solid #CBD5E1' }}>
             <tr>
               <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-center" style={{ color: '#881337' }}>Member ID</th>
               <th className="py-3.5 px-4 text-[13px] font-bold uppercase tracking-wide text-left" style={{ color: '#881337' }}>Name</th>
@@ -122,12 +137,12 @@ export default function MemberTable({
                 key={m._id}
                 className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}
               >
-                <td className="py-3.5 px-4 text-xs font-mono font-bold" style={{ color: '#1a1245' }}>{m.memberId || '—'}</td>
-                <td className="py-3.5 px-4 font-semibold" style={{ color: '#2C2C3E' }}>{m.name}</td>
-                <td className="py-3.5 px-4 text-xs" style={{ color: '#595c5e' }}>{m.email}</td>
-                <td className="py-3.5 px-4">{roleBadge(m.role)}</td>
-                <td className="py-3.5 px-4">
-                  <span className="text-xs font-semibold" style={{ color: '#2C2C3E' }}>
+                <td className="py-3.5 px-4 text-xs font-mono font-bold text-center" style={{ color: '#1a1245' }}>{m.memberId || '—'}</td>
+                <td className="py-3.5 px-4 font-medium text-xs text-left" style={{ color: '#2C2C3E' }}>{m.name}</td>
+                <td className="py-3.5 px-4 text-xs text-left" style={{ color: '#595c5e' }}>{m.email}</td>
+                <td className="py-3.5 px-4 text-center">{roleBadge(m.role)}</td>
+                <td className="py-3.5 px-4 text-center">
+                  <span className="text-xs font-medium" style={{ color: '#2C2C3E' }}>
                     {displayGradeAndClass(m)}
                   </span>
                 </td>

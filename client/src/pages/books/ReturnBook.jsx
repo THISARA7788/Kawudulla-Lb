@@ -42,6 +42,7 @@ export default function ReturnBook() {
   const [successMsg, setSuccessMsg] = useState('');
 
   // Data
+  const [initialLoading, setInitialLoading] = useState(true);
   const [allUsers, setAllUsers] = useState([]);
   const [recentReturns, setRecentReturns] = useState([]);
 
@@ -66,6 +67,7 @@ export default function ReturnBook() {
   const [searchResults, setSearchResults] = useState(null);
   const [allActiveTransactions, setAllActiveTransactions] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [loadingMemberBorrows, setLoadingMemberBorrows] = useState(false);
 
   const fetchAllActiveTransactions = async () => {
     try {
@@ -85,6 +87,7 @@ export default function ReturnBook() {
   useEffect(() => {
     const init = async () => {
       try {
+        setInitialLoading(true);
         const [usersRes, activeTxRes, overdueTxRes, txRes] = await Promise.all([
           api.get('/users', { headers: { Authorization: `Bearer ${token}` } }),
           api.get('/library/transactions?status=active&limit=10000', { headers: { Authorization: `Bearer ${token}` } }),
@@ -98,18 +101,15 @@ export default function ReturnBook() {
         setAllActiveTransactions([...activeList, ...overdueList]);
         
         setRecentReturns(txRes.data.transactions || []);
-        
-        // Log data for debugging
-        console.log('Loaded users:', usersRes.data.users?.length || 0);
-        console.log('Loaded active/overdue transactions:', activeList.length + overdueList.length);
-        console.log('Loaded recent returns:', txRes.data.transactions?.length || 0);
       } catch (err) {
         console.error('Init error:', err);
         setError('Failed to load initial data');
+      } finally {
+        setInitialLoading(false);
       }
     };
     init();
-  }, []);
+  }, [token]);
 
   // Derived: grades and classes that exist
   const allStudents = allUsers.filter(u => u.role === 'student' && u.status === 'active');
@@ -207,6 +207,7 @@ export default function ReturnBook() {
 
   // Fetch borrows for a member
   const fetchBorrows = async (userId) => {
+    setLoadingMemberBorrows(true);
     setSearchLoading(true);
     try {
       const res = await api.get(`/library/users/${userId}/borrowing-info`);
@@ -225,6 +226,7 @@ export default function ReturnBook() {
       console.error('Fetch borrows error:', err);
       setError('Failed to load borrowing information');
     } finally {
+      setLoadingMemberBorrows(false);
       setSearchLoading(false);
     }
   };
@@ -637,11 +639,92 @@ export default function ReturnBook() {
 
       <div className="mx-auto space-y-4 flex flex-col min-h-0" style={{ maxWidth: '1280px', fontFamily: "'Inter', sans-serif" }}>
         
-        {/* Main Grid: Columns stretch to match sidebar */}
-        <div className="flex flex-col lg:flex-row gap-4 items-stretch min-h-0">
-          
-          {/* LEFT COLUMN: Main actions & forms (Flex-1) */}
-          <div className="flex-grow flex-1 flex flex-col space-y-4 min-h-0">
+        {initialLoading ? (
+          /* Skeleton Shimmer Loading Placeholder */
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch min-h-0 animate-pulse">
+            {/* Left Column Skeleton */}
+            <div className="flex-grow flex-1 flex flex-col space-y-4 min-h-0">
+              {/* Scanner Box Skeleton */}
+              <div className="rounded-2xl p-5 bg-white border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
+                <div className="flex-grow flex flex-col gap-3 min-w-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-slate-200"></div>
+                    <div className="space-y-1.5 flex-1">
+                      <div className="h-3.5 bg-slate-200 rounded w-44"></div>
+                      <div className="h-2.5 bg-slate-100 rounded w-64"></div>
+                    </div>
+                  </div>
+                  <div className="h-10 bg-slate-100 rounded-xl w-full"></div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-6 w-36 bg-slate-100 rounded-full"></div>
+                </div>
+              </div>
+
+              {/* Member Selection List Skeleton */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                  <div className="h-4 bg-slate-200 rounded w-36"></div>
+                  <div className="h-3 bg-slate-100 rounded w-20"></div>
+                </div>
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <div key={n} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-200 flex-shrink-0"></div>
+                        <div className="space-y-1.5">
+                          <div className="h-3.5 bg-slate-200 rounded w-32"></div>
+                          <div className="h-2.5 bg-slate-100 rounded w-24"></div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-16 bg-slate-200 rounded-lg"></div>
+                        <div className="h-8 w-20 bg-slate-200 rounded-xl"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column Skeleton */}
+            <div className="w-full lg:w-[380px] flex-shrink-0 flex flex-col space-y-4">
+              {/* Return Summary Card Skeleton */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                  <div className="w-6 h-6 rounded-lg bg-slate-200"></div>
+                  <div className="h-4 bg-slate-200 rounded w-28"></div>
+                </div>
+                <div className="space-y-2.5">
+                  <div className="h-16 bg-slate-100 rounded-xl"></div>
+                  <div className="h-10 bg-slate-200 rounded-xl"></div>
+                </div>
+              </div>
+
+              {/* Recent Returns History Skeleton */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                  <div className="h-3.5 bg-slate-200 rounded w-28"></div>
+                  <div className="h-3 bg-slate-100 rounded w-12"></div>
+                </div>
+                {[1, 2, 3].map((n) => (
+                  <div key={n} className="flex gap-2.5 items-center p-2 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="w-8 h-10 rounded bg-slate-200"></div>
+                    <div className="flex-1 space-y-1">
+                      <div className="h-3 bg-slate-200 rounded w-3/4"></div>
+                      <div className="h-2 bg-slate-100 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Main Grid: Columns stretch to match sidebar */
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch min-h-0">
+            
+            {/* LEFT COLUMN: Main actions & forms (Flex-1) */}
+            <div className="flex-grow flex-1 flex flex-col space-y-4 min-h-0">
             
             {/* 1. Barcode scanner workspace */}
             {!selectedMember && (
@@ -686,21 +769,6 @@ export default function ReturnBook() {
                 </div>
 
                 <div className="flex flex-row md:flex-col items-center md:items-end gap-3 justify-between md:justify-center flex-shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-5">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border select-none transition-all" style={{ 
-                    backgroundColor: scannerFocused ? '#FDF2F2' : '#F8FAFC', 
-                    borderColor: scannerFocused ? '#FECACA' : '#E2E8F0' 
-                  }}>
-                    <span className="relative flex h-2 w-2">
-                      {scannerFocused && (
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      )}
-                      <span className={`relative inline-flex rounded-full h-2 w-2 ${scannerFocused ? 'bg-[#9E0D0D]' : 'bg-slate-400'}`}></span>
-                    </span>
-                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-500">
-                      {scannerFocused ? 'Scanner Ready' : 'Click Input'}
-                    </span>
-                  </div>
-
                   <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setAutoSubmit(!autoSubmit)}>
                     <div className={`relative w-8 h-4 rounded-full transition-colors duration-200 ${autoSubmit ? 'bg-[#9E0D0D]' : 'bg-slate-200'}`}>
                       <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-200 ${autoSubmit ? 'translate-x-4' : ''}`} />
@@ -892,14 +960,37 @@ export default function ReturnBook() {
                         <span className="material-symbols-outlined text-white text-base">receipt_long</span>
                       </div>
                       <h2 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                        {multipleBorrowers.length > 0 && !selectedMember
+                        {loadingMemberBorrows
+                          ? 'Loading Active Books...'
+                          : multipleBorrowers.length > 0 && !selectedMember
                           ? `Multiple Borrowers (${multipleBorrowers.length})`
                           : `${activeBorrows.length} Active Book(s)`}
                       </h2>
                     </div>
                   </div>
 
-                  {multipleBorrowers.length > 0 && !selectedMember ? (
+                  {loadingMemberBorrows ? (
+                    <div className="flex-grow flex-1 min-h-0 flex flex-col justify-center items-center py-6 select-none animate-pulse space-y-3">
+                      <div className="w-full space-y-2.5 overflow-hidden">
+                        {[1, 2, 3].map((n) => (
+                          <div key={n} className="p-3 rounded-xl bg-slate-50/70 border border-slate-100 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-12 rounded-lg bg-slate-200 flex-shrink-0"></div>
+                              <div className="space-y-1.5">
+                                <div className="h-3.5 bg-slate-200 rounded w-36"></div>
+                                <div className="h-2.5 bg-slate-100 rounded w-24"></div>
+                              </div>
+                            </div>
+                            <div className="h-6 w-16 bg-slate-200 rounded-lg"></div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-400 text-xs font-bold pt-1">
+                        <span className="material-symbols-outlined animate-spin text-[#9E0D0D] text-base">progress_activity</span>
+                        <span>Loading member's borrowed books...</span>
+                      </div>
+                    </div>
+                  ) : multipleBorrowers.length > 0 && !selectedMember ? (
                     <div className="flex-grow flex-1 min-h-0 overflow-y-auto pr-1">
                       <div className="p-2.5 rounded-xl border border-dashed border-amber-250 bg-amber-50/20 text-xs flex justify-between items-center select-none mb-2">
                         <div className="min-w-0 mr-2">
@@ -969,7 +1060,15 @@ export default function ReturnBook() {
                 </div>
 
                 {/* Confirm Return Card */}
-                {selectedBorrows.length > 0 ? (
+                {loadingMemberBorrows ? (
+                  <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center h-[460px] animate-pulse select-none">
+                    <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mb-3">
+                      <span className="material-symbols-outlined text-[#9E0D0D] text-2xl animate-spin">progress_activity</span>
+                    </div>
+                    <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-1">Checking Loan Records</h3>
+                    <p className="text-[10px] text-slate-400">Fetching active borrowings and calculating status...</p>
+                  </div>
+                ) : selectedBorrows.length > 0 ? (
                   <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between h-[460px] animate-fadeIn">
                     <div className="flex-grow flex flex-col min-h-0 justify-start">
                       
@@ -1201,9 +1300,13 @@ export default function ReturnBook() {
 
                 <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
                   <span className="text-[10px] text-slate-455 font-bold">Active books:</span>
-                  <span className={`text-xs font-black px-1.5 py-0.5 rounded ${activeBorrows.length > 3 ? 'text-red-655 bg-red-50' : 'text-slate-700 bg-slate-100'}`}>
-                    {activeBorrows.length}
-                  </span>
+                  {loadingMemberBorrows ? (
+                    <span className="w-6 h-4 bg-slate-200 rounded animate-pulse inline-block"></span>
+                  ) : (
+                    <span className={`text-xs font-black px-1.5 py-0.5 rounded ${activeBorrows.length > 3 ? 'text-red-655 bg-red-50' : 'text-slate-700 bg-slate-100'}`}>
+                      {activeBorrows.length}
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -1235,6 +1338,7 @@ export default function ReturnBook() {
           </div>
 
         </div>
+        )}
 
       </div>
 
@@ -1290,7 +1394,7 @@ export default function ReturnBook() {
                   ) : (
                     <>
                       <div className="font-bold text-slate-800 truncate">{returnedDetails.book.title}</div>
-                      <div className="text-[10px] text-slate-500 font-mono">Catalog ID: {returnedDetails.book.bookId || '—'}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">Catalogue ID: {returnedDetails.book.bookId || '—'}</div>
                     </>
                   )}
                 </div>

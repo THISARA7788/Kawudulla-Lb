@@ -388,7 +388,7 @@ export default function BookManagement() {
   return (
     <DashboardLayout>
       {/* Top Control Panel Header (Fixed below top navbar on desktop, relative flow on mobile) */}
-      <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-[#F8FAFC] pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/30">
+      <div className="relative lg:fixed lg:top-16 lg:left-64 lg:right-0 lg:z-20 bg-white pb-3 pt-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200/80 shadow-xs">
         <div className="flex flex-col xl:flex-row gap-4 items-stretch xl:items-center justify-between" style={{ fontFamily: "'Inter', sans-serif" }}>
           {/* Search */}
           <div className="relative flex-1">
@@ -402,7 +402,7 @@ export default function BookManagement() {
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
-              placeholder="Search catalog by title, author, ISBN, or ID..."
+              placeholder="Search catalogue by title, author, ISBN, or ID..."
               className="w-full py-1.5 pl-10 pr-4 text-sm rounded-2xl outline-none border border-slate-200 focus:border-[#D97706] focus:ring-4 focus:ring-[#D97706]/10 transition-all bg-white shadow-sm"
             />
           </div>

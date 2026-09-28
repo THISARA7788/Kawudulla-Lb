@@ -40,13 +40,13 @@ export default function ReportSummaryCards({
               }}
               className={`p-4 rounded-2xl border border-l-4 ${item.border} bg-gradient-to-br ${item.bg} shadow-2xs flex items-center justify-between cursor-pointer transition-all duration-200 hover:shadow-md active:scale-[0.99] ${
                 isActive
-                  ? 'ring-2 ring-offset-2 ring-[#1a1245] border-slate-400'
+                  ? 'ring-2 ring-offset-2 ring-[#9E0D0D] border-slate-400'
                   : 'border-slate-200/80 hover:border-slate-300'
               }`}
             >
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{item.label}</p>
-                <p className="text-2xl font-black mt-1" style={{ color: item.color }}>{item.value}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: item.color }}>{item.label}</p>
+                <p className="text-2xl font-black text-slate-900 mt-1">{item.value}</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-white/80 border border-slate-100 flex items-center justify-center shadow-2xs">
                 <span className="material-symbols-outlined text-[20px]" style={{ color: item.color }}>{item.icon}</span>
@@ -87,13 +87,13 @@ export default function ReportSummaryCards({
               }}
               className={`p-4 rounded-2xl border border-l-4 ${item.border} bg-gradient-to-br ${item.bg} shadow-2xs flex items-center justify-between cursor-pointer transition-all duration-200 hover:shadow-md active:scale-[0.99] ${
                 isActive
-                  ? 'ring-2 ring-offset-2 ring-[#1a1245] border-slate-400'
+                  ? 'ring-2 ring-offset-2 ring-[#9E0D0D] border-slate-400'
                   : 'border-slate-200/80 hover:border-slate-300'
               }`}
             >
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{item.label}</p>
-                <p className="text-2xl font-black mt-1" style={{ color: item.color }}>{item.value}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: item.color }}>{item.label}</p>
+                <p className="text-2xl font-black text-slate-900 mt-1">{item.value}</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-white/80 border border-slate-100 flex items-center justify-center shadow-2xs">
                 <span className="material-symbols-outlined text-[20px]" style={{ color: item.color }}>{item.icon}</span>
@@ -132,13 +132,13 @@ export default function ReportSummaryCards({
               }}
               className={`p-4 rounded-2xl border border-l-4 ${item.border} bg-gradient-to-br ${item.bg} shadow-2xs flex items-center justify-between cursor-pointer transition-all duration-200 hover:shadow-md active:scale-[0.99] ${
                 isActive
-                  ? 'ring-2 ring-offset-2 ring-[#1a1245] border-slate-400'
+                  ? 'ring-2 ring-offset-2 ring-[#9E0D0D] border-slate-400'
                   : 'border-slate-200/80 hover:border-slate-300'
               }`}
             >
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{item.label}</p>
-                <p className="text-2xl font-black mt-1" style={{ color: item.color }}>{item.value}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: item.color }}>{item.label}</p>
+                <p className="text-2xl font-black text-slate-900 mt-1">{item.value}</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-white/80 border border-slate-100 flex items-center justify-center shadow-2xs">
                 <span className="material-symbols-outlined text-[20px]" style={{ color: item.color }}>{item.icon}</span>
@@ -177,13 +177,13 @@ export default function ReportSummaryCards({
               }}
               className={`p-4 rounded-2xl border border-l-4 ${item.border} bg-gradient-to-br ${item.bg} shadow-2xs flex items-center justify-between cursor-pointer transition-all duration-200 hover:shadow-md active:scale-[0.99] ${
                 isActive
-                  ? 'ring-2 ring-offset-2 ring-[#1a1245] border-slate-400'
+                  ? 'ring-2 ring-offset-2 ring-[#9E0D0D] border-slate-400'
                   : 'border-slate-200/80 hover:border-slate-300'
               }`}
             >
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{item.label}</p>
-                <p className="text-xl font-black mt-1" style={{ color: item.color }}>{item.value}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: item.color }}>{item.label}</p>
+                <p className="text-xl font-black text-slate-900 mt-1">{item.value}</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-white/80 border border-slate-100 flex items-center justify-center shadow-2xs">
                 <span className="material-symbols-outlined text-[20px]" style={{ color: item.color }}>{item.icon}</span>

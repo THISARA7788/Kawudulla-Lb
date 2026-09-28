@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { getEmptyBookCoverBackground } from '../../utils/bookCoverUtils';
 
@@ -22,11 +23,14 @@ export default function BookProfileModal({ book, isOpen, onClose }) {
 
   if (!isOpen || !book) return null;
 
-  const isAvailable = (book.availableCopies || 0) > 0;
-
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+      className="fixed inset-0 w-screen h-screen z-[99999] flex items-center justify-center p-4 transition-all animate-fadeIn"
+      style={{
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+      }}
       onClick={onClose}
     >
       <div
@@ -38,7 +42,7 @@ export default function BookProfileModal({ book, isOpen, onClose }) {
         <div className="h-1.5 w-full bg-gradient-to-r from-[#9E0D0D] via-[#DC2626] to-[#EAB308]" />
 
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-2 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 pt-4 pb-2 border-b border-slate-100 bg-white">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#9E0D0D] bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-100">
               Book Profile
@@ -91,26 +95,6 @@ export default function BookProfileModal({ book, isOpen, onClose }) {
                 by <span className="text-slate-700 font-bold">{book.author || 'Unknown Author'}</span>
               </p>
 
-              {/* Status Pill */}
-              <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-                <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold ${
-                    isAvailable
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-amber-50 text-amber-700 border border-amber-200'
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isAvailable ? 'bg-emerald-500' : 'bg-amber-500'
-                    }`}
-                  />
-                  {isAvailable
-                    ? `Available (${book.availableCopies} of ${book.totalCopies || 1} copies)`
-                    : 'All Copies Currently Loaned'}
-                </span>
-              </div>
-
               {/* Recommendation Context */}
               {book.recommendationReason && (
                 <div className="mt-2.5 flex items-center gap-1.5 text-[10.5px] font-bold text-amber-900 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200/70">
@@ -153,26 +137,10 @@ export default function BookProfileModal({ book, isOpen, onClose }) {
               </p>
             </div>
           </div>
-
-          {/* Synopsis / Description */}
-          <div className="pt-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              Synopsis & Overview
-            </h4>
-            <div className="bg-slate-50/60 rounded-xl p-3 border border-slate-100 text-xs text-slate-600 leading-relaxed max-h-36 overflow-y-auto">
-              {book.description ? (
-                <p className="whitespace-pre-line">{book.description}</p>
-              ) : (
-                <p className="italic text-slate-400">
-                  No synopsis available for this book in the catalog.
-                </p>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Modal Actions Footer */}
-        <div className="px-5 py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-3">
+        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
           <button
             onClick={onClose}
             className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200/70 rounded-xl transition-colors cursor-pointer"
@@ -188,10 +156,11 @@ export default function BookProfileModal({ book, isOpen, onClose }) {
             className="px-4 py-2 text-xs font-bold text-white bg-[#9E0D0D] hover:bg-[#7F0A0A] rounded-xl transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>menu_book</span>
-            View in Catalog
+            View in Catalogue
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -89,10 +89,11 @@ export default function Home() {
                ------------------------------------------------------------- */}
             <button
               onClick={() => navigate('/login')}
-              className="px-12 py-3 bg-[#9E0D0D] hover:bg-[#7F0A0A] text-white rounded-xl font-bold text-sm tracking-widest active:scale-[0.98] transform transition-all duration-150 shadow-lg shadow-red-900/10"
-              style={{ cursor: 'pointer', fontFamily: "Georgia, serif" }}
+              className="px-10 py-3.5 bg-[#9E0D0D] hover:bg-[#7F0A0A] active:scale-[0.98] text-white rounded-xl font-extrabold text-xs uppercase tracking-wider shadow-md shadow-[#9E0D0D]/30 hover:shadow-lg hover:shadow-[#9E0D0D]/40 transition-all duration-200 cursor-pointer flex items-center gap-2"
+              style={{ fontFamily: "'Manrope', sans-serif" }}
             >
-              Login
+              <span>Login</span>
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
           </div>
 

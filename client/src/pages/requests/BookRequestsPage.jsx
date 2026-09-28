@@ -187,16 +187,28 @@ export default function BookRequestsPage() {
               className="px-4 py-2 bg-[#9E0D0D] hover:bg-[#7F0A0A] text-white rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shadow-sm hover:shadow-md active:scale-95"
             >
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
-              {user?.role === 'teacher' ? 'Recommend a Book' : 'Request a Book'}
+              {user?.role === 'teacher' ? 'Recommend a Book' : 'Request a New Book'}
             </button>
           )}
         </div>
 
         {/* Request List */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <span className="material-symbols-outlined animate-spin mb-2" style={{ fontSize: 32 }}>progress_activity</span>
-            <p className="text-xs font-semibold">Loading requests...</p>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
+            <div className="divide-y divide-slate-100 animate-pulse">
+              {Array.from({ length: 5 }).map((_, idx) => (
+                <div key={idx} className="p-4 flex items-center justify-between gap-4">
+                  <div className="space-y-2 flex-1">
+                    <div className="h-3.5 bg-slate-200 rounded w-1/3" />
+                    <div className="h-2.5 bg-slate-100 rounded w-1/4" />
+                  </div>
+                  <div className="h-3 bg-slate-100 rounded w-28 hidden sm:block" />
+                  <div className="h-5 w-20 bg-slate-200 rounded-full" />
+                  <div className="h-3 bg-slate-100 rounded w-20 hidden md:block" />
+                  <div className="h-6 w-20 bg-slate-200 rounded-full" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : filteredRequests.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center text-slate-400">
@@ -210,87 +222,91 @@ export default function BookRequestsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-400 uppercase tracking-wider">
+                  <tr className="border-b border-slate-200 bg-white text-slate-400 uppercase tracking-wider">
                     <th className="py-3 px-4 font-semibold">Book Title & Author</th>
-                    {isLibrarian && <th className="py-3 px-4 font-semibold">Requested By</th>}
-                    <th className="py-3 px-4 font-semibold">Category</th>
-                    <th className="py-3 px-4 font-semibold">Date</th>
-                    <th className="py-3 px-4 font-semibold">Status</th>
-                    <th className="py-3 px-4 font-semibold text-right">Actions</th>
+                    {isLibrarian && <th className="py-3 px-4 font-semibold w-40">Requested By</th>}
+                    <th className="py-3 px-4 font-semibold w-32">Category</th>
+                    <th className="py-3 px-4 font-semibold w-28">Date</th>
+                    <th className="py-3 px-4 font-semibold w-28">Status</th>
+                    {filterStatus !== 'approved' && filterStatus !== 'declined' && (
+                      <th className="py-3 px-4 font-semibold text-right w-24">Actions</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {filteredRequests.map((req) => (
                     <tr key={req._id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="py-3 px-4">
-                        <p className="font-bold text-slate-800">{req.title}</p>
+                        <p className="font-medium text-xs text-slate-800">{req.title}</p>
                         <p className="text-[10px] text-slate-400 mt-0.5">by {req.author} {req.isbn && `• ISBN: ${req.isbn}`}</p>
                         {req.reason && (
                           <p className="text-[10px] text-slate-500 mt-1 italic line-clamp-1">"{req.reason}"</p>
                         )}
                       </td>
                       {isLibrarian && (
-                        <td className="py-3 px-4">
-                          <p className="font-bold text-slate-700">{req.user?.name || 'Unknown'}</p>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <p className="font-medium text-xs text-slate-700">{req.user?.name || 'Unknown'}</p>
                           <p className="text-[10px] text-slate-400 capitalize">
                             {req.user?.role} {req.user?.grade && `• ${req.user.grade}`}
                           </p>
                         </td>
                       )}
-                      <td className="py-3 px-4 text-slate-600 font-medium">
+                      <td className="py-3 px-4 text-slate-600 font-medium whitespace-nowrap">
                         {req.category}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 font-medium">
+                      <td className="py-3 px-4 text-slate-500 font-medium whitespace-nowrap">
                         {new Date(req.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         {getStatusBadge(req.status)}
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        {isLibrarian ? (
-                          <div className="flex items-center justify-end gap-1.5">
-                            {req.status === 'pending' && (
-                              <>
-                                <button
-                                  onClick={() => handleQuickStatus(req._id, 'approved')}
-                                  className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
-                                  title="Approve Request"
-                                >
-                                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>check</span>
-                                </button>
-                                <button
-                                  onClick={() => handleQuickStatus(req._id, 'declined')}
-                                  className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
-                                  title="Decline Request"
-                                >
-                                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>close</span>
-                                </button>
-                              </>
-                            )}
-                            <button
-                              onClick={() => handleDelete(req._id)}
-                              className="p-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-100 hover:border-rose-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer shadow-2xs active:scale-95"
-                              title="Delete Record"
-                            >
-                              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-end">
-                            {req.status === 'pending' ? (
+                      {filterStatus !== 'approved' && filterStatus !== 'declined' && (
+                        <td className="py-3 px-4 text-right whitespace-nowrap w-24">
+                          {isLibrarian ? (
+                            <div className="flex items-center justify-end gap-1.5">
+                              {req.status === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={() => handleQuickStatus(req._id, 'approved')}
+                                    className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+                                    title="Approve Request"
+                                  >
+                                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>check</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleQuickStatus(req._id, 'declined')}
+                                    className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+                                    title="Decline Request"
+                                  >
+                                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>close</span>
+                                  </button>
+                                </>
+                              )}
                               <button
                                 onClick={() => handleDelete(req._id)}
                                 className="p-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-100 hover:border-rose-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer shadow-2xs active:scale-95"
-                                title="Cancel Request"
+                                title="Delete Record"
                               >
                                 <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
                               </button>
-                            ) : (
-                              <span className="text-slate-300 font-bold text-xs pr-2">-</span>
-                            )}
-                          </div>
-                        )}
-                      </td>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-end">
+                              {req.status === 'pending' ? (
+                                <button
+                                  onClick={() => handleDelete(req._id)}
+                                  className="p-1.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-100 hover:border-rose-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer shadow-2xs active:scale-95"
+                                  title="Cancel Request"
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
+                                </button>
+                              ) : (
+                                <span className="text-slate-300 font-bold text-xs pr-2">-</span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

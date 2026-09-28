@@ -13,7 +13,7 @@ import api from '../../api/axios'
 
 const librarianNavItems = [
   { icon: "grid_view", label: "Dashboard", route: "/dashboard" },
-  { icon: "library_books", label: "Books Catalog", route: "/books" },
+  { icon: "library_books", label: "Book Catalogue", route: "/books" },
   { icon: "book_5", label: "Issue Book", route: "/issue-book" },
   { icon: "assignment_return", label: "Return Book", route: "/return-book" },
   { icon: "autorenew", label: "Renew Book", route: "/renew-book" },
@@ -86,8 +86,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen w-64 flex flex-col z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-[#3B0000] ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
+      className={`fixed left-0 top-0 h-screen w-64 flex flex-col transform transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-[#3B0000] ${
+        isOpen ? 'z-50 translate-x-0' : 'z-30 -translate-x-full lg:translate-x-0'
       }`}
       style={{ 
         padding: '1rem', 

@@ -28,11 +28,11 @@ export default function HeroBorrowingChart({ yearlyStats, onYearChange }) {
 
   // SVG Chart Dimensions
   const svgWidth = 360;
-  const svgHeight = 110;
+  const svgHeight = 94;
   const paddingLeft = 26;
   const paddingRight = 14;
-  const paddingTop = 8;
-  const paddingBottom = 22;
+  const paddingTop = 6;
+  const paddingBottom = 19;
 
   const chartWidth = svgWidth - paddingLeft - paddingRight;
   const chartHeight = svgHeight - paddingTop - paddingBottom;
@@ -76,9 +76,9 @@ export default function HeroBorrowingChart({ yearlyStats, onYearChange }) {
   const areaD = `${pathD} L ${points[points.length - 1].x.toFixed(1)} ${(paddingTop + chartHeight).toFixed(1)} L ${points[0].x.toFixed(1)} ${(paddingTop + chartHeight).toFixed(1)} Z`;
 
   return (
-    <div className="w-full md:w-[370px] lg:w-[410px] bg-white rounded-xl py-2 px-3 shadow-md border border-slate-100 select-none text-slate-800">
+    <div className="w-full md:w-[340px] lg:w-[375px] bg-white rounded-xl py-1.5 px-3 shadow-md border border-slate-100 select-none text-slate-800">
       {/* Header */}
-      <div className="flex items-center justify-between mb-1.5 px-1">
+      <div className="flex items-center justify-between mb-1 px-1">
         <div className="flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[#9E0D0D]" style={{ fontSize: 16 }}>
             show_chart

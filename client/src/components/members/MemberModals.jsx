@@ -480,7 +480,7 @@ export default function MemberModals({
                     ) : (
                       <div className="overflow-y-auto rounded-2xl border border-slate-200" style={{ maxHeight: 340 }}>
                         <table className="w-full text-left text-xs">
-                          <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#F1F5F9', borderBottom: '1px solid #CBD5E1' }}>
+                          <thead className="sticky top-0 z-10 shadow-xs" style={{ background: '#FFFFFF', borderBottom: '1px solid #CBD5E1' }}>
                             <tr>
                               <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wide" style={{ color: '#881337' }}>Book</th>
                               <th className="py-2.5 px-3 font-bold text-center uppercase tracking-wide" style={{ color: '#881337' }}>Issue Date</th>
@@ -498,7 +498,7 @@ export default function MemberModals({
                                 <tr key={t._id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFB]'} hover:bg-[#EAEFF5] transition-colors duration-150`}>
                                   <td className="py-2 px-3">
                                     <div>
-                                      <span className="font-semibold" style={{ color: '#2C2C3E' }}>{t.book?.title || 'Unknown'}</span>
+                                      <span className="font-medium text-xs" style={{ color: '#2C2C3E' }}>{t.book?.title || 'Unknown'}</span>
                                       <span className="block text-[10px]" style={{ color: '#94a3b8' }}>{t.book?.author || ''}</span>
                                     </div>
                                   </td>
